@@ -1,0 +1,11 @@
+ALTER TABLE `oc_x_bd_visit_history`
+ADD COLUMN `comment`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `visit_result_id`;
+
+
+ALTER TABLE `oc_x_bd_visit_new`
+ADD COLUMN `visit_times`  int(5) NOT NULL COMMENT '拜访该未注册客户的次数' AFTER `visit_date`;
+
+
+ALTER TABLE `oc_x_bd_visit_new`
+ADD COLUMN `location`  varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '地理位置经纬度坐标' AFTER `comment`;
+

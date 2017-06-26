@@ -1,0 +1,50 @@
+CREATE TABLE `oc_x_bd_visit_history` (
+  `history_id` int(15) unsigned NOT NULL AUTO_INCREMENT,
+  `visit_id` int(15) NOT NULL,
+  `bd_id` int(10) NOT NULL,
+  `customer_id` int(10) NOT NULL,
+  `merchant_name` varchar(255) NOT NULL,
+  `merchant_address` varchar(255) NOT NULL,
+  `telephone` varchar(11) NOT NULL,
+  `visit_date` datetime NOT NULL,
+  `visit_result_id` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`history_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+
+
+CREATE TABLE `oc_x_bd_visit_new` (
+  `new_visit_id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'BD跑新客户记录表的主ID',
+  `customer_id_no` tinyint(1) NOT NULL DEFAULT '0' COMMENT '不确定其是否注册，统一设拜访的客户ID为0',
+  `merchant_name` varchar(255) NOT NULL,
+  `merchant_address` varchar(255) NOT NULL,
+  `telephone` varchar(11) NOT NULL,
+  `visit_status_id` int(5) NOT NULL COMMENT '新客户跟进状态ID',
+  `is_registed` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1表示拜访客户注册，0表示该拜访客户未注册',
+  `bd_id` int(5) NOT NULL COMMENT '跟进的BD人员id',
+  `customer_id` int(10) NOT NULL DEFAULT '0' COMMENT 'BD跟进得到的注册用户',
+  `visit_date` date NOT NULL,
+  `comment` varchar(255) NOT NULL,
+  PRIMARY KEY (`new_visit_id`),
+  KEY `visit_status_id` (`visit_status_id`) USING BTREE,
+  KEY `is_register` (`is_registed`) USING BTREE,
+  KEY `bd_id` (`bd_id`) USING BTREE
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+
+
+CREATE TABLE `oc_x_bd_visit_history` (
+  `history_id` int(15) unsigned NOT NULL AUTO_INCREMENT,
+  `visit_id` int(15) NOT NULL,
+  `bd_id` int(10) NOT NULL,
+  `customer_id` int(10) NOT NULL,
+  `merchant_name` varchar(255) NOT NULL,
+  `merchant_address` varchar(255) NOT NULL,
+  `telephone` varchar(11) NOT NULL,
+  `visit_date` datetime NOT NULL,
+  `visit_result_id` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`history_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+
+
+
+
+
