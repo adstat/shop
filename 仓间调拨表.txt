@@ -1,0 +1,45 @@
+CREATE TABLE `oc_x_warehouse_requisition` (
+  `relevant_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '调拨单号',
+  `relevant_status_id` int(5) NOT NULL DEFAULT '1' COMMENT '调拨单状态',
+  `from_warehouse` tinyint(5) NOT NULL COMMENT '来自仓库',
+  `to_warehouse` tinyint(5) NOT NULL COMMENT '前往仓库',
+  `date_added` datetime NOT NULL COMMENT '添加时间',
+  `added_by` varchar(50) NOT NULL COMMENT '添加人',
+  `status` tinyint(5) NOT NULL DEFAULT '1' COMMENT '是否有效',
+  `confirm_by` varchar(50) DEFAULT NULL COMMENT '确认人',
+  `deliver_date` datetime NOT NULL,
+  `arrival_date` datetime DEFAULT NULL COMMENT '实际到货日期',
+  PRIMARY KEY (`relevant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8
+
+
+CREATE TABLE `oc_x_warehouse_requisition_item` (
+  `relevant_id_item` int(15) NOT NULL AUTO_INCREMENT,
+  `relevant_id` int(15) NOT NULL COMMENT '调拨单号',
+  `product_id` int(15) NOT NULL COMMENT '商品ID',
+  `num` int(15) NOT NULL COMMENT '调拨数量',
+  `date_added` datetime NOT NULL COMMENT '添加时间',
+  `added_by` varchar(50) NOT NULL COMMENT '添加人',
+  `status` tinyint(5) NOT NULL DEFAULT '1' COMMENT '是否确认',
+  `confirm_by` varchar(50) NOT NULL COMMENT '确认人',
+  `price` decimal(15,4) NOT NULL COMMENT '基础价',
+  `product_section_title` varchar(50) DEFAULT NULL COMMENT '货位号',
+  PRIMARY KEY (`relevant_id_item`)
+) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8
+
+
+
+CREATE TABLE `oc_x_warehouse_requisition_status` (
+  `relevant_status_id` int(11) NOT NULL AUTO_INCREMENT,
+  `language_id` int(11) NOT NULL,
+  `name` varchar(32) NOT NULL,
+  `msg` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否发送消息',
+  `msg_template_id` int(11) NOT NULL DEFAULT '1' COMMENT '使用短信消息模板',
+  PRIMARY KEY (`relevant_status_id`,`language_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8
+
+
+
+insert  into `oc_x_warehouse_requisition_status`(`relevant_status_id`,`language_id`,`name`,`msg`,`msg_template_id`) values (1,2,'待审核',0,1),(2,2,'已确认',0,1),(3,2,'已取消',0,1),(4,2,'已出库',0,1),(5,2,'已收货',0,1);
+
+

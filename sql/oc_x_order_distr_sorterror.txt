@@ -1,0 +1,35 @@
+/*
+SQLyog Ultimate v11.3 (32 bit)
+MySQL - 5.5.47 : Database - xsjb2b2
+*********************************************************************
+*/
+
+/*!40101 SET NAMES utf8 */;
+
+/*!40101 SET SQL_MODE=''*/;
+
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/`xsjb2b2` /*!40100 DEFAULT CHARACTER SET gbk */;
+
+USE `xsjb2b2`;
+
+/*Table structure for table `oc_x_order_distr_sorterror` */
+
+DROP TABLE IF EXISTS `oc_x_order_distr_sorterror`;
+
+CREATE TABLE `oc_x_order_distr_sorterror` (
+  `sorterror_id` int(15) unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` int(15) NOT NULL COMMENT '定都号',
+  `sorterror_type` varchar(15) COLLATE utf8_unicode_ci NOT NULL COMMENT '分拣错误选项',
+  `comment` varchar(50) COLLATE utf8_unicode_ci NOT NULL COMMENT '备注',
+  `date_added` datetime DEFAULT NULL COMMENT '记录时间',
+  PRIMARY KEY (`sorterror_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=38 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

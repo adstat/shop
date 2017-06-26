@@ -1,0 +1,15 @@
+{
+  "name": "xianshiji/admin",
+  "description": "鲜世纪后台管理用第三方包",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "author's name",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+    "phpoffice/phpexcel": "^1.8"
+  }
+}

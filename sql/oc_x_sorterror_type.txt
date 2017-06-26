@@ -1,0 +1,37 @@
+/*
+SQLyog Ultimate v11.3 (32 bit)
+MySQL - 5.5.47 : Database - xsjb2b2
+*********************************************************************
+*/
+
+/*!40101 SET NAMES utf8 */;
+
+/*!40101 SET SQL_MODE=''*/;
+
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/`xsjb2b2` /*!40100 DEFAULT CHARACTER SET gbk */;
+
+USE `xsjb2b2`;
+
+/*Table structure for table `oc_x_sorterror_type` */
+
+DROP TABLE IF EXISTS `oc_x_sorterror_type`;
+
+CREATE TABLE `oc_x_sorterror_type` (
+  `sorterror_id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '分拣错误id',
+  `name` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT '分拣错误类型',
+  `status` int(11) DEFAULT '0',
+  PRIMARY KEY (`sorterror_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+/*Data for the table `oc_x_sorterror_type` */
+
+insert  into `oc_x_sorterror_type`(`sorterror_id`,`name`,`status`) values (1,'整件少拣(出库前)',0),(2,'整件错拣(出库前)',0),(3,'整件多拣(出库前)',0),(4,'未提交框(出库前)',0),(5,'扎带未封(出库前)',0),(6,'货号写错或放错货位(出库前)',0),(7,'散件缺货(出库后)(少配)',0),(8,'整件缺货(出库后)(物流)',0),(9,'散件品类错配(出库后)',0);
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

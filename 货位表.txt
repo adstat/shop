@@ -1,0 +1,51 @@
+CREATE TABLE `oc_product_section` (
+  `product_section_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` int(20) NOT NULL COMMENT '商品ID',
+  `warehouse_id` int(20) NOT NULL COMMENT '所属仓库ID',
+  `station_id` int(11) DEFAULT NULL,
+  `product_section_title` varchar(11) DEFAULT NULL COMMENT '显示名称',
+  `sort` int(11) DEFAULT NULL COMMENT '排序',
+  `product_section_type_id` int(1) DEFAULT NULL COMMENT '分区类型',
+  `is_tray` tinyint(1) NOT NULL DEFAULT '0' COMMENT '为托盘',
+  `is_shelf` tinyint(1) NOT NULL DEFAULT '0' COMMENT '为货架',
+  `is_mobile` tinyint(1) NOT NULL DEFAULT '0' COMMENT '为移动分拣',
+  `memo` varchar(255) DEFAULT NULL COMMENT '备注',
+  `area` decimal(8,2) DEFAULT NULL COMMENT '占地面积',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否启用',
+  `date_added` datetime DEFAULT NULL,
+  `added_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`product_section_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=42 DEFAULT CHARSET=utf8
+
+
+
+CREATE TABLE `oc_product_section` (
+  `product_section_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` int(20) NOT NULL COMMENT '商品ID',
+  `warehouse_id` int(20) NOT NULL COMMENT '所属仓库ID',
+  `station_id` int(11) DEFAULT NULL,
+  `product_section_title` varchar(11) DEFAULT NULL COMMENT '显示名称',
+  `sort` int(11) DEFAULT NULL COMMENT '排序',
+  `product_section_type_id` int(1) DEFAULT NULL COMMENT '分区类型',
+  `is_tray` tinyint(1) NOT NULL DEFAULT '0' COMMENT '为托盘',
+  `is_shelf` tinyint(1) NOT NULL DEFAULT '0' COMMENT '为货架',
+  `is_mobile` tinyint(1) NOT NULL DEFAULT '0' COMMENT '为移动分拣',
+  `memo` varchar(255) DEFAULT NULL COMMENT '备注',
+  `area` decimal(8,2) DEFAULT NULL COMMENT '占地面积',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否启用',
+  `date_added` datetime DEFAULT NULL,
+  `added_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`product_section_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=42 DEFAULT CHARSET=utf8
+
+
+
+CREATE TABLE `oc_x_product_section_type` (
+  `station_section_type_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`station_section_type_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+
+
+insert  into `oc_x_product_section_type`(`station_section_type_id`,`name`) values (1,'分拣区'),(2,'存货区'),(3,'报损区'),(4,'出货区');
+

@@ -1,0 +1,15 @@
+CREATE TABLE `oc_x_promotion_activity` (
+  `promotion_activity_id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '赠品赠送记录',
+  `promotion_id` int(11) NOT NULL DEFAULT '0' COMMENT '赠品规则编号',
+  `title` varchar(50) DEFAULT NULL COMMENT '赠品规则名称',
+  `product_id` int(11) NOT NULL DEFAULT '0' COMMENT '赠品商品编号',
+  `price` decimal(15,2) NOT NULL DEFAULT '0.00' COMMENT '赠品价格',
+  `special_price` decimal(15,2) NOT NULL DEFAULT '0.00' COMMENT '赠品促销价格',
+  `quantity` int(11) NOT NULL DEFAULT '0' COMMENT '赠品数量',
+  `order_id` int(11) NOT NULL DEFAULT '0' COMMENT '相关订单编号',
+  `customer_id` int(11) NOT NULL DEFAULT '0' COMMENT '相关用户编号',
+  `date_added` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '添加时间',
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否有效',
+  `added_by` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '添加用户id',
+  PRIMARY KEY (`promotion_activity_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=489 DEFAULT CHARSET=utf8;

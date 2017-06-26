@@ -1,0 +1,6 @@
+//添加一个return_action_id的字段,以在确认退货的同时确认本次退货类型
+
+
+ALTER TABLE `oc_return_deliver_product`
+ADD COLUMN `return_action_id`  int(11) NOT NULL DEFAULT 0 COMMENT '退货类型' AFTER `confirmed`;
+

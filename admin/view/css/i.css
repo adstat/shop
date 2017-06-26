@@ -1,0 +1,167 @@
+html, body, div, object, pre, code, h1, h2, h3, h4, h5, h6, p, span, em,
+cite, del, a, img, ul, li, ol, dl, dt, dd, fieldset, legend, form,
+input, button, textarea, header, section, footer, article, nav, aside,
+menu, figure, figcaption {
+    margin: 0;
+    padding: 0;
+    outline: none
+}
+
+h1, h2, h3, h4, h5, h6, sup {
+    font-size: 100%;
+    font-weight: normal
+}
+
+fieldset, img {
+    border: 0;
+}
+
+input, textarea, select {
+    -webkit-appearance: none;
+    outline: none;
+}
+
+mark {
+    background: transparent;
+}
+
+header, section, footer, article, nav, aside, menu {
+
+    display: block;
+
+}
+
+.clr {
+    display: block;
+    clear: both;
+    height: 0;
+    overflow: hidden;
+}
+/*table {
+    border-collapse:collapse;
+    border-spacing:0;
+}*/
+ol, ul, li {
+    list-style: none;
+}
+
+em {
+    font-style: normal;
+}
+
+label, input, button, textarea {
+    border: none;
+    vertical-align: middle;
+}
+
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+html {
+    -webkit-text-size-adjust: none;
+}
+
+body {
+    text-align: left;
+    font-family: Helvetica, Tahoma, Arial, Microsoft YaHei, sans-serif;
+    color: #666;
+    background-color: #fff;
+    font-size: 1em;
+}
+
+#shortage{
+    border-radius: 0.2em;
+}
+#single_shortage{
+    border-radius: 0.2em;
+}
+#single_button{
+    border-radius: 0.2em;
+}
+.invopt{
+
+    width:3em;
+    height:3em;
+    line-height: 1em;
+    padding: 0.5em 0.5em;
+    margin:0.1em 0.1em;
+
+    text-decoration: none;
+    border: 0.1em solid #CC0101;
+    border-radius: 0.2em;
+    color: #ffffff;
+    cursor: pointer;
+    text-align: center;
+
+}
+#return_index{
+   float: left;
+}
+
+#return_index1{
+    float:right;
+}
+#small_title{
+
+}
+.title{
+
+    width: 100%;
+    height: 3em;
+    text-align: center;
+}
+
+
+.invback{
+    background-color:#DF0000;
+    width:5em;
+    height:3em;
+    line-height: 1em;
+    padding: 0.5em 0.5em;
+    margin:0.1em 0.1em;
+    font-size: 1em;
+    text-decoration: none;
+    border: 0.1em solid #CC0101;
+    border-radius: 0.2em;
+    color: #ffffff;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+}
+
+.qtyopt{
+    background-color:#DF0000;
+    width:2em;
+    height:1.8em;
+    line-height: 1.2em;
+    padding: 0.1em 0.1em;
+    margin:0.1em 0.1em;
+    font-size: 1.2em;
+    text-decoration: none;
+    border: 0.1em solid #CC0101;
+    border-radius: 0.2em;
+    color: #ffffff;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+    float: left;
+    font-weight: bold;
+}
+
+.submit{
+    background-color: #DF0000;
+    padding: 0.3em 0.8em;
+    margin:0.1em 0.1em;
+    font-size: 1em;
+    text-decoration: none;
+    border: 0.1em solid #CC0101;
+    border-radius: 0.2em;
+    color: #ffffff;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+    float: right;
+}
+

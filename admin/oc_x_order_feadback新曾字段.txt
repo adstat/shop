@@ -1,0 +1,6 @@
+ALTER TABLE `oc_x_order_feadback`
+ADD COLUMN   `user_comments` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+ADD COLUMN   `logistic_score` int(15) DEFAULT NULL,
+ADD COLUMN   `cargo_check` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+ADD COLUMN   `bill_of` int(15) DEFAULT NULL,
+ADD COLUMN   `box` int(15) DEFAULT NULL,

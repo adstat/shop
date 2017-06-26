@@ -1,0 +1,57 @@
+CREATE TABLE `oc_x_vmipurchase_order` (
+  `purchase_order_id` int(11) NOT NULL AUTO_INCREMENT,
+  `station_id` int(11) NOT NULL DEFAULT '1' COMMENT '仓库ID',
+  `date` date NOT NULL DEFAULT '0000-00-00' COMMENT '添加日期',
+  `date_added` datetime NOT NULL COMMENT '添加时间',
+  `added_by` int(11) NOT NULL DEFAULT '0' COMMENT '添加用户',
+  `add_user_name` varchar(30) DEFAULT NULL COMMENT '添加操作用户名',
+  `confirmed` tinyint(11) NOT NULL DEFAULT '0' COMMENT '已确认',
+  `confirmed_by` int(11) NOT NULL DEFAULT '0' COMMENT '确认用户',
+  `confirm_user_name` varchar(30) DEFAULT NULL COMMENT '确认用户名',
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是够有效',
+  PRIMARY KEY (`purchase_order_id`),
+  KEY `station_id` (`station_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8
+
+
+
+CREATE TABLE `oc_x_vmipurchase_order_product` (
+  `purchase_order_product_id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '库存订单ID',
+  `purchase_order_id` int(11) NOT NULL,
+  `station_id` int(11) DEFAULT NULL,
+  `sku_id` int(11) NOT NULL DEFAULT '0' COMMENT '原料号',
+  `product_id` int(11) NOT NULL DEFAULT '0' COMMENT '商品ID',
+  `date` date DEFAULT NULL COMMENT '库存数量',
+  `weight_class_id` tinyint(1) DEFAULT '0' COMMENT '规格类型，1为按重',
+  `weight` int(11) DEFAULT '0' COMMENT '克重',
+  `purchase_in_pcs` decimal(15,2) DEFAULT NULL COMMENT '库存件数',
+  `purchase_price_500g_gross` decimal(15,2) DEFAULT NULL COMMENT '采购毛重价，比价用',
+  `purchase_price_500g` decimal(15,2) DEFAULT NULL COMMENT '库存价(斤/份)',
+  `purchase_qty_500g` decimal(15,2) DEFAULT NULL COMMENT '库存斤数',
+  `purchase_total` decimal(15,2) DEFAULT NULL COMMENT '库存总价',
+  `purchase_weight_total` decimal(15,2) NOT NULL DEFAULT '0.00' COMMENT '库存总量(克/份)',
+  `buyer` varchar(10) DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否有效',
+  PRIMARY KEY (`purchase_order_product_id`),
+  KEY `product_id_2` (`product_id`),
+  KEY `date` (`date`),
+  KEY `status` (`status`),
+  KEY `purchase_order_id` (`purchase_order_id`,`status`),
+  KEY `date_2` (`date`,`status`),
+  KEY `sku_id` (`sku_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8
+
+2017-02-16 by liang
+供应商添加借款时间字段，没周几或者月几
+
+ALTER TABLE `oc_x_supplier`
+ADD COLUMN `checkout_cycle_date`  int(5) NULL AFTER `checkout_cycle_num`;
+
+
+
+
+采购单添加系统默认付款日期
+
+ALTER TABLE `oc_x_pre_purchase_order`
+ADD COLUMN `checkout_plan_date`  date NULL COMMENT '预计付款日期' AFTER `checkout_status`;
+
