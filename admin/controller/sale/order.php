@@ -2032,6 +2032,7 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
 
         //Load Driver List
         $this->load->model('common/common');
+        $this->load->model('station/station');
         $data['driverList'] = $this->model_common_common->getLogisticDriverList();
 
         //Load customer group
