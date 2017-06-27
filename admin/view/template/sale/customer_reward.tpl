@@ -14,6 +14,8 @@
       <tr>
         <td class="text-left"><?php echo $column_date_added; ?></td>
         <td class="text-left"><?php echo $column_description; ?></td>
+        <td class="text-left">积分类型</td>
+        <td class="text-center">积分订单</td>
         <td class="text-right"><?php echo $column_points; ?></td>
       </tr>
     </thead>
@@ -23,17 +25,21 @@
       <tr>
         <td class="text-left"><?php echo $reward['date_added']; ?></td>
         <td class="text-left"><?php echo $reward['description']; ?></td>
+        <td class="text-left"><?php echo $reward['type']; ?></td>
+        <td class="text-center"><?php if($reward['order_id']){ echo $reward['order_id']; } ?></td>
         <td class="text-right"><?php echo $reward['points']; ?></td>
       </tr>
       <?php } ?>
       <tr>
+        <td></td>
+        <td></td>
         <td></td>
         <td class="text-right"><b><?php echo $text_balance; ?></b></td>
         <td class="text-right"><?php echo $balance; ?></td>
       </tr>
       <?php } else { ?>
       <tr>
-        <td class="text-center" colspan="3"><?php echo $text_no_results; ?></td>
+        <td class="text-center" colspan="5"><?php echo $text_no_results; ?></td>
       </tr>
       <?php } ?>
     </tbody>

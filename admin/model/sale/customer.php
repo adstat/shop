@@ -766,8 +766,16 @@ class ModelSaleCustomer extends Model
 
     public function getRewards($customer_id, $start = 0, $limit = 10)
     {
-        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "customer_reward WHERE customer_id = '" .
-            (int)$customer_id . "' ORDER BY date_added DESC LIMIT " . (int)$start . "," . (int)$limit);
+        $sql = "select cr.*,r.name
+            from oc_customer_reward cr
+            left join oc_reward r on r.reward_id = cr.reward_id
+            where cr.customer_id = '".(int) $customer_id."'
+            order by cr.date_added desc limit " . (int)$start . "," . (int)$limit;
+
+        $query = $this->db->query($sql);
+
+//        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "customer_reward WHERE customer_id = '" .
+//            (int)$customer_id . "' ORDER BY date_added DESC LIMIT " . (int)$start . "," . (int)$limit);
 
         return $query->rows;
     }

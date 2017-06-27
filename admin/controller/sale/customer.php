@@ -1575,9 +1575,12 @@ class ControllerSaleCustomer extends Controller
 
         foreach ($results as $result) {
             $data['rewards'][] = array(
+                'order_id' => $result['order_id'],
                 'points' => $result['points'],
+                'type' => $result['name'],
                 'description' => $result['description'],
-                'date_added' => date($this->language->get('date_format_short'), strtotime($result['date_added']))
+                'date_added' => $result['date_added'],
+//                'date_added' => date($this->language->get('date_format_short'), strtotime($result['date_added']))
             );
         }
 
