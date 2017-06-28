@@ -136,6 +136,9 @@ class COMMON{
         elseif($product_id ==5002){
             $sql .= " WHERE oc_order.station_id = 1 and p.product_type_id = 3";
     	}
+        elseif($product_id ==5003){
+            $sql .= " WHERE oc_order.station_id = 1 and p.product_type_id = 11";
+    	}
         //elseif($product_id ==5003){
         //  $sql .= " WHERE ptc.category_id in (72,74,157) and oc_order.station_id = 1 ";
     	//}

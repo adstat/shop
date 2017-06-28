@@ -83,7 +83,7 @@ define('CREDIT_REFUND_ORDER_STATUS',5);
 
 //array('api method'=>array(inventory_type_id, operation))
 //define('INVENTORY_TYPE_OP',serialize(array('inventoryInit'=>array(1,1), 'inventoryIn'=>array(2,1), 'inventoryBreakage'=>array(3,-1), 'inventoryOut'=>array(4,-1), 'stationRetail'=>array(5,-1), 'inventoryLoss'=>array(6,-1), 'inventoryProfit'=>array(7,1), 'inventoryReturn'=>array(8,1), 'inventoryOverdue'=>array(9,-1))));
-define('INVENTORY_TYPE_OP',serialize(array('inventoryInit'=>array(1,1), 'inventoryIn'=>array(2,1), 'inventoryBreakage'=>array(3,-1), 'inventoryOut'=>array(4,-1), 'stationRetail'=>array(5,-1), 'inventoryLoss'=>array(6,-1), 'inventoryProfit'=>array(7,1), 'inventoryReturn'=>array(8,1), 'inventoryOverdue'=>array(9,-1), 'inventoryCancelOrder'=>array(10,1),'inventoryInProduct'=>array(11,1),'inventoryOrderIn'=>array(12,-1),'inventoryOutProduct'=>array(13,-1),'inventoryCheck'=>array(14,1),'inventoryChange'=>array(15,-1),'inventoryAdjust'=>array(16,1),'inventoryVegCheck'=>array(17,1))));
+define('INVENTORY_TYPE_OP',serialize(array('inventoryInit'=>array(1,1), 'inventoryIn'=>array(2,1), 'inventoryBreakage'=>array(3,-1), 'inventoryOut'=>array(4,-1), 'stationRetail'=>array(5,-1), 'inventoryLoss'=>array(6,-1), 'inventoryProfit'=>array(7,1), 'inventoryReturn'=>array(8,1), 'inventoryOverdue'=>array(9,-1), 'inventoryCancelOrder'=>array(10,1),'inventoryInProduct'=>array(11,1),'inventoryOrderIn'=>array(12,-1),'inventoryOutProduct'=>array(13,-1),'inventoryCheck'=>array(14,1),'inventoryChange'=>array(15,-1),'inventoryAdjust'=>array(16,1),'inventoryVegCheck'=>array(17,1),'inventoryInProductPreset'=>array(18,1),'inventoryMissing'=>array(19,-1),'inventoryMissingRecover'=>array(20,1),'inventoryReturnCancel'=>array(21,-1))));
 define('INVENTORY_TYPE_AUTO_SYNC', serialize(array(8,16)));
 //退货入库,8,inventoryReturn
 //暂不处理  //采购入库,11,inventoryInProduct 其他方法中已处理
@@ -117,6 +117,10 @@ define('SEARCH_PRODUCT_PRICE','PRODUCT_PRICE');
 
 define('API_RETURN_SUCCESS','SUCCESS');
 define('API_RETURN_ERROR','ERROR');
+
+define('POINTS_TO_PAYMENT_RATE',100);
+define('POINTS_TO_PAYMENT_RULE_ID',6);
+define('POINTS_TO_PAYMENT_CANCEL_RULE_ID',7);
 
 define('FREE_FRAME',5);
 define('NON_FREE_FRAME_CUSTOMER_ID_START',9350);

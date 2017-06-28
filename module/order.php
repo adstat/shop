@@ -325,24 +325,30 @@ class ORDER{
         //}
 
         //Order total and Credit Paid Orders Status
+        $order_total = isset($data['total'])?(float)$data['total']:0;
         $total_adjust = isset($data['total_adjust'])?(float)$data['total_adjust']:0;
         $line_total = isset($data['line_total'])?(float)$data['line_total']:0;
-
         $sub_total = isset($data['sub_total'])?(float)$data['sub_total']:0;
         $discount_total = isset($data['discount_total'])?(float)$data['discount_total']:0;
+        $coupon_discount = isset($data['couponDiscountTotal'])?(float)$data['couponDiscountTotal']:0;
+        $promotion_discount = isset($data['promotionDiscountTotal'])?(float)$data['promotionDiscountTotal']:0;
         $shipping_fee= isset($data['shipping_fee'])?(int)$data['shipping_fee']:0;
         $balance_container_deposit= isset($data['balance_container_deposit'])?(int)$data['balance_container_deposit']:0;
+        $credit_pay = isset($data['credit_pay'])?(int)$data['credit_pay']:0;
         $credit_paid = isset($data['credit_paid'])?(float)$data['credit_paid']:0;
+        $point_pay = isset($data['point_pay'])?(int)$data['point_pay']:0;
+        $point_paid = isset($data['point_paid'])?(float)$data['point_paid']:0;
+
         $cashback_status = isset($data['order_cashback_status_id'])?(int)$data['order_cashback_status_id']:0;
         $warehouse_id = !empty($data['warehouse_id']) ? (int)$data['warehouse_id'] : 0;
 
-        if($sub_total <=0 || $discount_total > 0 || $shipping_fee <0 || $balance_container_deposit < 0){
+        //异常订单
+        if($sub_total <= 0 || $discount_total > 0 || $shipping_fee < 0 || $balance_container_deposit < 0 || $order_total < 0){
             return false;
         }
 
         $order_status_id = 1;
-        $credit_pay = isset($data['credit_pay'])?(int)$data['credit_pay']:0;
-        if($credit_pay && ($sub_total+$discount_total+$shipping_fee+$balance_container_deposit+$credit_paid)==0 ){
+        if($order_total==0){
             $order_status_id = 2;
         }
 
@@ -367,7 +373,7 @@ class ORDER{
         telephone = '" . $db->escape($data['telephone']) . "',
         fax = '',
         custom_field = '',
-            payment_firstname = '".$db->escape($data['name'])."',
+        payment_firstname = '',
         payment_lastname = '',
         payment_company = '',
         payment_address_1 = '',
@@ -432,15 +438,19 @@ class ORDER{
         order_status_id = '" . $order_status_id . "',
         order_payment_status_id = '" . (int)$data['order_payment_status_id'] . "',
 
-        sub_total = '" . (float)$data['sub_total'] . "',
-        discount_total = '" . (float)$data['discount_total'] . "',
-        shipping_fee = '" . (int)$data['shipping_fee'] . "',
+        sub_total = '" . $sub_total . "',
+        discount_total = '" . $discount_total . "',
+        coupon_discount = '" . $coupon_discount . "',
+        promotion_discount = '" . $promotion_discount . "',
+        shipping_fee = '" . $shipping_fee . "',
         balance_container_deposit = '" . $balance_container_deposit . "',
-        credit_pay = '" . (int)$data['credit_pay'] . "',
-        credit_paid = '" . (float)$data['credit_paid'] . "',
-            line_total = '" . (float)$data['line_total'] . "',
-            total_adjust = '" . (float)$data['total_adjust'] . "',
-        total = '" . (float)$data['total'] . "',
+        credit_pay = '" . $credit_pay . "',
+        credit_paid = '" . $credit_paid . "',
+        point_pay = '" . $point_pay . "',
+        point_paid = '" . $point_paid . "',
+        line_total = '" . $line_total . "',
+        total_adjust = '" . $total_adjust . "',
+        total = '" . $order_total . "',
 
         order_cashback_status_id = '" . $cashback_status . "'
         ";
@@ -456,18 +466,12 @@ class ORDER{
         //$order_id = 10;
 
         //Use Master, Start to write products
-        $cashBackProducts = array();
         $sql = "INSERT INTO `oc_order_product` (`order_id`, `product_id`, `weight_inv_flag`, `name`, `model`, `quantity`, `price`, `total`, `tax`, `reward`, `price_ori`, `retail_price`, `is_gift`, `shipping`) VALUES";
         foreach($data['products'] as $product){
-            $is_gift = isset($product['is_gift'])?(int)$product['is_gift']:0;//兼容生鲜平台结构
+            $is_gift = isset($product['is_gift'])?(int)$product['is_gift']:0; //兼容生鲜平台结构
+            $reward = isset($product['reward'])?(int)$product['reward']:0; //商品返积分，兼容
             //$sql .= "(".(int)$order_id.",".(int)$product['itemid'].", '".$db->escape($product['name'])."', '', ".(int)$product['num'].", ".(float)$product['price'].", ".(float)$product['price']*(int)$product['num'].", 0.0000, 0, ".(float)$product['oldprice'].", 0, 1),";
-            $sql .= "(".(int)$order_id.",".(int)$product['product_id'].",".(int)$product['weight_inv_flag'].", '".$db->escape($product['name'])."', '', ".(int)$product['qty'].", ".(float)$product['special_price'].", ".(float)$product['special_price']*(int)$product['qty'].", 0.0000, 0, ".(float)$product['price'].",".(float)$product['retail_price'].", '".$is_gift."', 1),";
-
-            //if($product['cashback']>0){
-            //    $cashBackProducts[(int)$product['product_id']]['product_id'] = (int)$product['product_id'];
-            //    $cashBackProducts[(int)$product['product_id']]['qty'] = (int)$product['qty'];
-            //    $cashBackProducts[(int)$product['product_id']]['cashback'] = (float)$product['cashback'];
-            //}
+            $sql .= "(".(int)$order_id.",".(int)$product['product_id'].",".(int)$product['weight_inv_flag'].", '".$db->escape($product['name'])."', '', ".(int)$product['qty'].", ".(float)$product['special_price'].", ".(float)$product['special_price']*(int)$product['qty'].", 0.0000, '" . $reward . "', ".(float)$product['price'].",".(float)$product['retail_price'].", '".$is_gift."', 1),";
         }
         $sql = rtrim($sql, ","); //Get ride of last comma
         $bool = $bool && $dbm->query($sql);
@@ -545,6 +549,13 @@ class ORDER{
                     $bool = $bool && $dbm->query($sql);
                 }
             }
+        }
+
+        //添加积分支付
+        if($point_pay){
+            $sql = "INSERT INTO `oc_customer_reward` (`customer_id`,`order_id`, `points`,  `date_added`, `reward_id`, `add_by`) VALUES";
+            $sql .= "('".$data['customer_id']."', '".(int)$order_id."', '".$point_paid*POINTS_TO_PAYMENT_RATE."', NOW(), '".POINTS_TO_PAYMENT_RULE_ID."', '0')";
+            $bool = $bool && $dbm->query($sql);
         }
 
         //添加库存扣减记录, 仅明天配送订单参与实时库存计算
@@ -651,11 +662,18 @@ class ORDER{
         $sql = "update oc_coupon_history set status = '0' where order_id = '".$order_id."'";
         $bool = $bool && $dbm->query($sql);
 
-        //订单已经取消，已订单状态为3（已取消）作为依据
+        //订单已经取消，以订单状态为3（已取消）作为依据
         $sql = "INSERT INTO `oc_customer_transaction` (`customer_id`, `order_id`, `customer_transaction_type_id`, `description`, `amount`, `date_added`)
                 select A.customer_id, A.order_id, 4, '取消订单退余额', abs(B.value), now()
                 from oc_order A left join oc_order_total B on A.order_id = B.order_id
                 where A.order_status_id = '".CANCELLED_ORDER_STATUS."' and A.order_payment_status_id = '".UNPAID_ORDER_STATUS."' and A.order_id = '".$order_id."' and B.code = 'credit_paid';";
+        $bool = $bool && $dbm->query($sql);
+
+        //恢复扣除的积分支付记录
+        $sql = "INSERT INTO `oc_customer_reward` (`customer_id`,`order_id`, `points`,  `date_added`, `reward_id`, `add_by`)
+                select A.`customer_id`, A.`order_id`, abs(B.`points`),  NOW(), '".POINTS_TO_PAYMENT_CANCEL_RULE_ID."', 0 from oc_order A
+                inner join oc_customer_reward B on A.order_id = B.order_id and B.reward_id = '".POINTS_TO_PAYMENT_RULE_ID."'
+                where A.order_id = '".$order_id."' and A.order_status_id = '".CANCELLED_ORDER_STATUS."'";
         $bool = $bool && $dbm->query($sql);
 
         //查找是否已有库存扣减记录，如有添加库存增加记录

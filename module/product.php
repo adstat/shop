@@ -50,7 +50,7 @@ class PRODUCT{
         $language_id = (int)$language_id;
 
         $sql = "SELECT
-                    p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                    p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
                     p.is_gift, round(p.price,2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                     p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
                     round(p.weight,0) unit_amount,wcd.title unit_title,wcd.unit,
@@ -73,6 +73,7 @@ class PRODUCT{
 
                     LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
                     LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
+                    left join oc_product_reward r on p.product_id = r.product_id
                     left join oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = '".$station_id."' and A.status=1
                     WHERE c.status =1 and p.station_id = '".$station_id."'";
 
@@ -443,7 +444,7 @@ class PRODUCT{
 
         if(strlen($keyword) >= 3){
             $sql = "SELECT
-                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
                         p.is_gift, round(p.price,2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
@@ -468,6 +469,7 @@ class PRODUCT{
 
                         LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
                         LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
+                        left join oc_product_reward r on p.product_id = r.product_id
                         left join oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = '".$station_id."' and A.status=1
                         WHERE c.status =1 and p.station_id = '".$station_id."'
                         ";
@@ -488,23 +490,8 @@ class PRODUCT{
 
             //Get PRODUCT_BRIEF_INFO
             if($keyword == SEARCH_PRODUCT_BRIEF_INFO && sizeof($products)){ //Just Get Product Inv
-//                $sql = "SELECT
-//                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order,
-//                        p.is_gift, round(p.price,2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
-//                        p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock,
-//                        p.shipping,p.weight_inv_flag, p.date_new_on, p.date_new_off, if( current_date() between p.date_new_on and p.date_new_off,1,0) new_arrive,
-//                        LEAST(if(isnull(p.maximum),999,p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
-//                        p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
-//                        if(p.instock=1, if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock
-//                        FROM oc_product p
-//                        LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
-//                        LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
-//                        LEFT JOIN oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = '".$station_id."' and A.status=1
-//                        WHERE p.station_id = '".$station_id."'
-//                        AND p.product_id in (".implode(',',$products).")
-//                        GROUP BY p.product_id";
                 $sql = "SELECT
-                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
                         p.is_gift, round(p.price,2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price, p.cashback, p.inv_size, p.is_selected, p.is_soon_to_expire,
                         p.weight_inv_flag,
@@ -515,6 +502,7 @@ class PRODUCT{
                         FROM oc_product p
                         LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
                         LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
+                        left join oc_product_reward r on p.product_id = r.product_id
                         LEFT JOIN oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = '".$station_id."' and A.status=1
                         WHERE p.station_id = '".$station_id."'
                         AND p.product_id in (".implode(',',$products).")
@@ -534,7 +522,7 @@ class PRODUCT{
             //Get Activity Product
             if($keyword == SEARCH_ACTIVITY_PRODUCT){ //Just Get Product Inv
                 $sql = "SELECT
-                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.product_id, pd.name, pd.abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
                         p.is_gift, round(p.price,2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
@@ -554,6 +542,7 @@ class PRODUCT{
                         LEFT JOIN oc_weight_class_description uwcd ON (p.unit_weight_class_id = uwcd.weight_class_id)
                         LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
                         LEFT JOIN oc_product_description pd ON p.product_id = pd.product_id and pd.language_id = 2
+                        left join oc_product_reward r on p.product_id = r.product_id
                         LEFT JOIN oc_x_inventory_move_item A ON p.product_id = A.product_id and A.station_id = '".$station_id."' and A.status=1
                         WHERE p.station_id = '".$station_id."' and ap.act_id = '".$activity_id."' and p.status = 1
                         GROUP BY p.product_id
@@ -630,7 +619,7 @@ class PRODUCT{
 
         if(strlen($keyword) >= 3 && $warehouseId){
             $sql = "SELECT
-                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
                         p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
@@ -657,6 +646,7 @@ class PRODUCT{
                         LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
                         LEFT JOIN oc_product_inventory pi ON (p.product_id = pi.product_id AND pi.warehouse_id = {$warehouseId})
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
+			left join oc_product_reward r on p.product_id = r.product_id
                         WHERE c.status = 1
                         AND p.station_id = '".$station_id."'
                         AND pw.warehouse_id = {$warehouseId}
@@ -679,7 +669,7 @@ class PRODUCT{
             //Get PRODUCT_BRIEF_INFO
             if($keyword == SEARCH_PRODUCT_BRIEF_INFO && sizeof($products)){ //Just Get Product Inv
                 $sql = "SELECT
-                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
                         p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price, p.cashback, p.inv_size, p.is_selected, p.is_soon_to_expire,
                         p.weight_inv_flag,
@@ -692,6 +682,7 @@ class PRODUCT{
                         LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
                         LEFT JOIN oc_product_inventory pi ON (p.product_id = pi.product_id AND pi.warehouse_id = {$warehouseId})
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
+			left join oc_product_reward r on p.product_id = r.product_id
                         WHERE p.station_id = '".$station_id."'
                         AND p.product_id in (".implode(',',$products).")
                         AND pw.warehouse_id = {$warehouseId}
@@ -735,6 +726,7 @@ class PRODUCT{
                         LEFT JOIN oc_product_description pd ON p.product_id = pd.product_id and pd.language_id = 2
                         LEFT JOIN oc_product_inventory pi ON (p.product_id = pi.product_id AND pi.warehouse_id = {$warehouseId})
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
+			left join oc_product_reward r on p.product_id = r.product_id
                         WHERE
                         p.station_id = '".$station_id."'
                         and ap.act_id = '".$activity_id."'
@@ -958,13 +950,14 @@ class PRODUCT{
         $language_id = (int)$language_id;
 
         $sql = "SELECT
-                p.product_id, pd.name,p.sku,p.weight_inv_flag,
+                p.product_id, pd.name,p.sku,p.weight_inv_flag, if(r.points is null, 0, r.points) reward_points,
                 p.is_gift, p.price, if(isnull(ps.price),p.price,ps.price) special_price,
                 round(p.weight,0) unit_amount,wcd.title unit_title,
                 p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
                 LEAST(if(isnull(p.maximum),".REDIS_CART_ITEM_QTY_LIMIT.",p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
                 p.shipping, p.status,ps.is_promo, ps.promo_title, ps.promo_limit,p.sale_start_quantity,p.sale_jump_quantity
                 FROM oc_product p
+                left join oc_product_reward r on p.product_id = r.product_id
                 LEFT JOIN oc_weight_class_description wcd ON (p.weight_class_id = wcd.weight_class_id)
                 LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
                 LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id AND pd.language_id = {$language_id})
@@ -996,7 +989,7 @@ class PRODUCT{
         $productIds = implode(',', $product_ids);
 
         $sql = "SELECT
-                p.product_id, if(isnull(pw.name), pd.name, pw.name) name, p.sku,p.weight_inv_flag,
+                p.product_id, if(isnull(pw.name), pd.name, pw.name) name, p.sku,p.weight_inv_flag, if(r.points is null, 0, r.points) reward_points,
                 p.is_gift, if(isnull(pw.price), p.price, pw.price) price, if(isnull(ps.price),p.price,ps.price) special_price,
                 round(p.weight,0) unit_amount,wcd.title unit_title,
                 p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
@@ -1004,6 +997,7 @@ class PRODUCT{
                 p.shipping, p.status,ps.is_promo, ps.promo_title, ps.promo_limit,p.sale_start_quantity,p.sale_jump_quantity
                 FROM oc_product p
                 LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
+		left join oc_product_reward r on p.product_id = r.product_id
                 LEFT JOIN oc_weight_class_description wcd ON (p.weight_class_id = wcd.weight_class_id)
                 LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end AND ps.warehouse_id = {$warehouse_id} AND area_id = 0)
                 LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id AND pd.language_id = {$language_id})

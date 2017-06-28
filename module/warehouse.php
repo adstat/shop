@@ -662,7 +662,7 @@ class WAREHOUSE{
  ";
 
         $sql .=" GROUP BY A.order_id";
-        $sql .=" ORDER BY A.order_id ";
+        $sql .=" ORDER BY E.logistic_driver_id ,A.order_deliver_status_id, A.order_id desc";
 
         $query = $db->query($sql);
         $result = $query->rows;

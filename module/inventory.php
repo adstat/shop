@@ -4059,8 +4059,8 @@ ORDER BY
                     $sql = "select oi.order_id from oc_order_inv as oi
                     left join oc_order as o on o.order_id = oi.order_id
                     where o.deliver_date = (select deliver_date from oc_order where order_id = '".$order_id."')
-                    and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%')
-                    and oi.order_id != " . $order_id;
+                    and (frame_vg_list like '%" . $div . "%')
+                    and o.order_deliver_status_id not in (3,7) and oi.order_id != " . $order_id;
                 }
 
                 $query = $dbm->query($sql);

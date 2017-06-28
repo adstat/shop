@@ -199,7 +199,8 @@ class CUSTOMER{
     private function checkAgentCustomer($customer_id){
         global $db;
 
-        $sql = "select customer_id from oc_customer where customer_id = '".$customer_id."' and is_agent = 0";
+        //代理用户和账期用户不可使用余额
+        $sql = "select customer_id from oc_customer where customer_id = '".$customer_id."' and is_agent = 0 and payment_cycle = 0";
         $query = $db->query($sql);
 
         if(!$query->num_rows){
@@ -278,8 +279,8 @@ class CUSTOMER{
         }
 
         $sql = "SELECT A.order_id, A.orderstamp, A.shipping_method, A.shipping_code,
-            round(A.line_total,2) line_total, round(A.total_adjust,2) total_adjust, round(A.discount_total,2) discount_total,
-            round(A.total,2) total, round(A.credit_paid,2) credit_paid, round(A.sub_total+A.shipping_fee+A.discount_total+A.balance_container_deposit,2) order_total,
+            round(A.line_total,2) line_total, round(A.total_adjust,2) total_adjust, round(A.discount_total,2) discount_total, round(A.coupon_discount,2) coupon_discount, round(A.promotion_discount,2) promotion_discount,
+            round(A.total,2) total, round(A.credit_paid,2) credit_paid,round(A.point_paid,2) point_paid, round(A.sub_total+A.shipping_fee+A.discount_total+A.balance_container_deposit,2) order_total,
             round(A.balance_container_deposit,2) balance_container_deposit,if(sum(T.value)<0, 0, round(sum(T.value),2) ) due,
             A.deliver_date, A.shipping_name, left(A.date_added,10) order_date, A.sub_total, A.shipping_fee, A.shipping_address_1,
             A.order_status_id, A.order_payment_status_id, A.order_deliver_status_id, B.name order_status, C.name order_payment_status, D.name order_deliver_status,
@@ -838,14 +839,11 @@ class CUSTOMER{
             LEFT JOIN oc_x_pickupspot PS ON A.pickupspot_id  = PS.pickupspot_id
             LEFT JOIN oc_x_logistic_allot_order LAO ON A.order_id = LAO.order_id
             LEFT JOIN oc_x_logistic_allot LA ON LAO.logistic_allot_id =LA.logistic_allot_id
-            WHERE A.type = 1 AND A.customer_id = {$customer_id}
-            AND A.station_id = {$station_id}
+            WHERE A.type = 1 AND A.customer_id = {$customer_id} AND A.station_id = {$station_id}
             GROUP BY T.order_id
             ORDER BY order_id DESC LIMIT $start, $limit";
 
-
         $query = $db->query($sql);
-
         return array(
             'return_code' => 'SUCCESS',
             'order_list'  => $query->rows,
@@ -1370,6 +1368,131 @@ class CUSTOMER{
         $return_data = array(
             //'type_name' => $type_name,
             'credit_total' => $credit_total
+        );
+
+        return array(
+            'return_code' => $return_code,
+            'return_msg' => $return_msg,
+            'return_data' => $return_data
+        );
+    }
+
+    function getRewardTotal(array $data){
+
+//        return array(
+//            'return_code' => 'SUCCESS',
+//            'return_msg' => 'OK',
+//            'return_data' => array('total'=>0)
+//        );
+
+        global $db;
+
+        $customer_id = isset($data['customer_id']) && $data['customer_id'] ? (int)$data['customer_id'] : 0;
+        if(!$customer_id){
+            return array(
+                'return_code' => 'FAIL',
+                'return_msg'  => '请求错误'
+            );
+        }
+
+        //Check Agent
+        if($this->checkAgentCustomer($customer_id)){
+            return array(
+                'return_code' => 'FAIL',
+                'return_msg'  => '账户不可使用余额'
+            );
+        }
+
+        $credit_total = 0;
+        $sql = "SELECT if(sum(points) is null, 0, round(sum(points),2)) points
+                FROM oc_customer_reward
+                WHERE customer_id='" . $customer_id . "'";
+        $query = $db->query($sql);
+        if($query->row){
+            $rewardTotalRaw = $query->row;
+            $rewardTotal = $rewardTotalRaw['points'];
+        }
+
+        return array(
+            'return_code' => 'SUCCESS',
+            'return_msg' => 'OK',
+            'return_data' => array(
+                'reward_total' => $rewardTotal,
+                'points_payment_account' => $rewardTotal/POINTS_TO_PAYMENT_RATE,
+            )
+        );
+
+    }
+
+    function getRewardDetail(array $data){
+        //查询间隔不超过7天
+
+        global $db;
+
+        $customer_id = isset($data['customer_id']) && $data['customer_id'] ? (int)$data['customer_id'] : 0;
+        if(!$customer_id){
+            return array(
+                'return_code' => 'FAIL',
+                'return_msg'  => '请求错误'
+            );
+        }
+
+        //Check Agent
+        if($this->checkAgentCustomer($customer_id)){
+            return array(
+                'return_code' => 'FAIL',
+                'return_msg'  => '账户不可使用积分'
+            );
+        }
+
+        $post = $data['data'];
+        $page = isset($post['page']) ? (int)$post['page'] : 1;
+        $page_size = isset($post['page_size']) ? (int)$post['page_size'] : 5;
+        $start = ($page-1)*$page_size;
+        $limit = $page_size;
+
+        $data_start = isset($post['date_start']) ? $post['date_start'] : false;
+        $data_end = isset($post['date_end']) ? $post['date_end'] : false;
+
+        //Get Credit List
+        $sql = "
+            select
+                A.customer_reward_id id,
+                B.name 'type',
+                A.points,
+                A.order_id,
+                A.date_added,
+                A.description
+                from oc_customer_reward A
+                left join oc_reward B on A.reward_id = B.reward_id
+            where A.customer_id = '".$customer_id."' and date(A.date_added) between '".$data_start."' and '".$data_end."'
+            order by A.date_added desc
+            limit ".$start.", ".$limit." ";
+
+        $query = $db->query($sql);
+        $reward_list = $query->rows;
+
+        //Get period credit total
+        $reward_list_total = 0;
+        $sql = "SELECT if(sum(A.points) is null, 0, sum(A.points)) total_amount
+                FROM oc_customer_reward A
+                where A.customer_id = '".$customer_id."' and date(A.date_added) between '".$data_start."' and '".$data_end."'";
+        $query = $db->query($sql);
+        if($query->row){
+            $rewardPeriodTotalRaw = $query->row;
+            $reward_list_total = $rewardPeriodTotalRaw['total_amount'];
+        }
+
+        $return_code = 'SUCCESS';
+        $return_msg = 'OK';
+        if(!count($reward_list)){
+            $return_msg = 'NO RECORD';
+        }
+
+        $return_data = array(
+            'reward_list'   => $reward_list,
+            'reward_list_total' => $reward_list_total,
+            'reward_rows' => count($reward_list)
         );
 
         return array(

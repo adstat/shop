@@ -2857,7 +2857,32 @@ $services['soa.submitcheck'] = array(
             )
         );
 	
-	
+	//添加用户积分20170623
+        $services['soa.getRewardTotal'] = array(
+            'function' => 'soaFunctions::getRewardTotal',
+            'docstring'=> 'getRewardTotal($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getRewardDetail'] = array(
+            'function' => 'soaFunctions::getRewardDetail',
+            'docstring'=> 'getRewardDetail($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
 	
 
         $services['soa.getNoticeWithWarehouse'] = array(
@@ -5074,6 +5099,25 @@ class soaFunctions{
         }
 
         return $warehouse->getLogisticId(json_decode($data, true));
+    }
+    
+    //添加用户积分2017-06-23
+    function getRewardTotal($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $customer;
+        return $customer->getRewardTotal(json_decode($data, true));
+    }
+
+    function getRewardDetail($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $customer;
+        return $customer->getRewardDetail(json_decode($data, true));
     }
 
     function getNoticeWithWarehouse($data, $origin_id, $key){

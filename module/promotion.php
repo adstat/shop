@@ -186,6 +186,9 @@ class PROMOTION{
                     $returnRules[$promoId]['targetProducts'][$m['product_id']]['discountAmount'] = $finalDiscountAmount;
 
                     $discountQtyBound = min($returnRules[$promoId]['validQty'],$m['max_quantity']);
+                    $discountQtyBound = min($promotionRelevantProducts[$m['product_id']]['maximum'],$discountQtyBound); //获取商品限购设置
+
+                    //设置前台限购显示
                     $returnRules[$promoId]['targetProducts'][$m['product_id']]['discountQtyBound'] = $discountQtyBound;
 
                     //计算促销折扣，判断是否满足指定商品数量，如果addup为1则累加
