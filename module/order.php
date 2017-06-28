@@ -570,15 +570,15 @@ class ORDER{
         }
         //$inv_status = 1;
 
-        $sql = "INSERT INTO `oc_x_inventory_move` (`station_id`, `date`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `status`)
+        $sql = "INSERT INTO `oc_x_inventory_move` (`station_id`, `date`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `status`, `warehouse_id`)
                 VALUES
-                (".(int)$data['station_id'].", current_date(), unix_timestamp(now()), 0, 0, '".$order_id."', ".INVENTORY_TYPE_ORDERED.", now(), 1);";
+                (".(int)$data['station_id'].", current_date(), unix_timestamp(now()), 0, 0, '".$order_id."', ".INVENTORY_TYPE_ORDERED.", now(), 1, {$warehouse_id});";
         $bool = $bool && $dbm->query($sql);
         $inventory_move_id = $dbm->getLastId();
 
         //添加明细
-        $sql = "INSERT INTO `oc_x_inventory_move_item` (`inventory_move_id`, `station_id`, `order_id`, `customer_id`,`product_id`, `quantity`, `status`)
-                select '".$inventory_move_id."', ".(int)$data['station_id'].", B.order_id, B.customer_id, C.product_id, abs(C.quantity)*-1 quantity, '".$inv_status."'
+        $sql = "INSERT INTO `oc_x_inventory_move_item` (`inventory_move_id`, `station_id`, `order_id`, `customer_id`,`product_id`, `quantity`, `status`, `warehouse_id`)
+                select '".$inventory_move_id."', ".(int)$data['station_id'].", B.order_id, B.customer_id, C.product_id, abs(C.quantity)*-1 quantity, '".$inv_status."', {$warehouse_id}
                 from oc_order B
                 left join oc_order_product C on B.order_id = C.order_id
                 where B.order_id = '".$order_id."'";
@@ -677,8 +677,8 @@ class ORDER{
         $bool = $bool && $dbm->query($sql);
 
         //查找是否已有库存扣减记录，如有添加库存增加记录
-        $sql = "INSERT INTO `oc_x_inventory_move` (`station_id`, `date`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `status`)
-                select ".$station_id." station_id, current_date() date, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, ".INVENTORY_TYPE_ORDER_CANCEL." inventory_type_id, now() date_added, 1 status
+        $sql = "INSERT INTO `oc_x_inventory_move` (`station_id`, `date`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `status`, `warehouse_id`)
+                select ".$station_id." station_id, current_date() date, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, ".INVENTORY_TYPE_ORDER_CANCEL." inventory_type_id, now() date_added, 1 status, A.warehouse_id warehouse_id
                 from oc_order A
                 inner join oc_x_inventory_move B on A.order_id = B.order_id and inventory_type_id = '".INVENTORY_TYPE_ORDERED."'
                 where A.order_id = '".$order_id."'";
@@ -686,8 +686,8 @@ class ORDER{
         //$inventory_move_id = $dbm->getLastId();
 
         //按照添加的，除明天配送订单，其他设置状态为0, 不参与实时库存计算
-        $sql = "INSERT INTO `oc_x_inventory_move_item` (`inventory_move_id`, `station_id`, `order_id`, `customer_id`, `product_id`, `quantity`, `status`)
-                select A.inventory_move_id, B.station_id, B.order_id, B.customer_id, C.product_id, C.quantity quantity, if(B.deliver_date = date_add(date(B.date_added), interval 1 day), 1, 0) status
+        $sql = "INSERT INTO `oc_x_inventory_move_item` (`inventory_move_id`, `station_id`, `order_id`, `customer_id`, `product_id`, `quantity`, `status`, `warehouse_id`)
+                select A.inventory_move_id, B.station_id, B.order_id, B.customer_id, C.product_id, C.quantity quantity, if(B.deliver_date = date_add(date(B.date_added), interval 1 day), 1, 0) status, B.warehouse_id warehouse_id
                 from oc_x_inventory_move A
                 left join oc_order B on A.order_id = B.order_id
                 left join oc_order_product C on B.order_id = C.order_id
