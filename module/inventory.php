@@ -1794,34 +1794,62 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
         }
 
         $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock,
-                SUM(A.quantity) inventory_raw,
                 if(P.instock=1, IF(PI.inventory IS NULL OR PI.inventory < 0, 0, PI.inventory-P.safestock), 999) inventory
                 FROM oc_product P
                 LEFT JOIN oc_product_inventory PI ON P.product_id = PI.product_id
                 LEFT JOIN oc_product_to_warehouse PW ON P.product_id = PW.product_id
-                LEFT JOIN oc_x_inventory_move_item A ON (P.product_id = A.product_id and A.status = 1 and A.station_id = {$station_id})
                 WHERE PW.warehouse_id = {$warehouse_id}
                 AND PI.warehouse_id = {$warehouse_id}
                 GROUP BY P.product_id";
 
+        $query  = $db->query($sql);
+        $result = $query->rows;
+
         if (sizeof($product_ids)) {
             $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock,
-                    ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 1, A.quantity, 0))) customer_ordered_today,
-                    ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 0, A.quantity, 0))) customer_ordered_tmr,
-                    SUM(IF(A.status = 1, A.quantity, 0)) inventory_raw,
                     IF(P.instock=1, IF(PI.inventory IS NULL OR PI.inventory < 0, 0, PI.inventory-P.safestock), 999) inventory
                     FROM oc_product P
                     LEFT JOIN oc_product_inventory PI ON P.product_id = PI.product_id
                     LEFT JOIN oc_product_to_warehouse PW ON P.product_id = PW.product_id
-                    LEFT JOIN oc_x_inventory_move_item A ON P.product_id = A.product_id
                     WHERE P.product_id IN (". implode(',', $product_ids) .")
                     AND PI.warehouse_id = {$warehouse_id}
                     AND PW.warehouse_id = {$warehouse_id}
                     GROUP BY P.product_id";
+            $query  = $db->query($sql);
+            $result = $query->rows;
+
+            $sql = "SELECT
+                    A.product_id
+                    ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 1, A.quantity, 0))) customer_ordered_today,
+                    ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 0, A.quantity, 0))) customer_ordered_tmr
+                    FROM oc_x_inventory_move_item A
+                    WHERE A.status = 1
+                    AND A.station_id = {$station_id}
+                    AND A.product_id IN (". implode(',', $product_ids) .")
+                    GROUP BY A.product_id";
+            $query  = $db->query($sql);
+            $move_result = $query->rows;
+
+            $customer_order = array();
+            if(!empty($move_result)){
+                foreach($move_result as $val){
+                    $customer_order[$val['product_id']]['today'] = $val['customer_ordered_today'];
+                    $customer_order[$val['product_id']]['tmr']   = $val['customer_ordered_tmr'];
+                }
+            }
+
+            if(!empty($result)){
+                foreach($result as $key => $value){
+                    $result[$key]['customer_ordered_today'] = 0;
+                    $result[$key]['customer_ordered_tmr']   = 0;
+                    if(!empty($customer_order[$value['product_id']])){
+                        $result[$key]['customer_ordered_today'] = $customer_order[$value['product_id']]['today'];
+                        $result[$key]['customer_ordered_tmr']   = $customer_order[$value['product_id']]['tmr'];
+                    }
+                }
+            }
         }
 
-        $query  = $db->query($sql);
-        $result = $query->rows;
 
         $redis     = new MyRedis();
         $stockTime = defined('REDIS_STOCK_CACHE_TIME') ? REDIS_STOCK_CACHE_TIME : 600;
