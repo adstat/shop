@@ -1819,7 +1819,7 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
             $result = $query->rows;
 
             $sql = "SELECT
-                    A.product_id
+                    A.product_id,
                     ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 1, A.quantity, 0))) customer_ordered_today,
                     ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 0, A.quantity, 0))) customer_ordered_tmr
                     FROM oc_x_inventory_move_item A
