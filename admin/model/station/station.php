@@ -138,7 +138,7 @@ class ModelStationStation extends Model{
 
     //查找平台下所有的仓库
     public function getWarehouseBelongToStation($station_id,$warehosue_id = 0){
-        $sql = "select warehouse_id,title from oc_x_warehouse where station_id =" . $station_id;
+        $sql = "select warehouse_id,title from oc_x_warehouse where status = 1 and station_id =" . $station_id;
 
         if($warehosue_id > 0){
             $sql .= " and warehouse_id = ". $warehosue_id;
