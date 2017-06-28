@@ -1286,6 +1286,23 @@ class ControllerCatalogProduct extends Controller {
 			}
 		}
 
+        //商品积分
+//        if (isset($this->request->post['points'])) {
+//            $data['points'] = $this->request->post['points'];
+//        } elseif (!empty($product_info)) {
+//            $data['points'] = $product_info['points'];
+//        } else {
+//            $data['points'] = '';
+//        }
+
+        if (isset($this->request->post['product_reward'])) {
+            $data['product_reward'] = $this->request->post['product_reward'];
+        } elseif (isset($this->request->get['product_id'])) {
+            $data['product_reward'] = $this->model_catalog_product->getProductRewards($this->request->get['product_id']);
+        } else {
+            $data['product_reward'] = 0;
+        }
+
 		// 商品描述 多语言
 		$data['product_description'] = $product_id ? $this->model_catalog_product->getProductDescriptions($product_id) : array();
 

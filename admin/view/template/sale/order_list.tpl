@@ -329,24 +329,23 @@
                       <?php echo $order['deliver_status']; ?>
                       <!-- 仅未锁定的，已分拣的订单可以配送出库 -->
                       <?php if( in_array($order['order_deliver_status_id'],unserialize(ALLOW_M_DELIVER)) && !$lock && $updateDeliverOn && $order['order_status_id'] == ORDER_SORTED_STATUS ){ ?>
-                          <br /><i>改为:</i>
+                          <i>改为:</i><br />
                           <?php if($order['order_deliver_status_id'] == 1) { ?>
-                              <?php if($order['shipping_code']=='PSPOT') { ?>
-                                <button class="change_status" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 4);return false;">已配送到自提点</button>
-                              <?php }else{ ?>
-                                <button class="change_status" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 2);return false;">配送出库</button>
-                              <?php } ?>
+                                <button class="change_status" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 2, '配送出库');return false;">配送出库</button>
                           <?php } ?>
-                      <br />
                       <?php } ?>
 
-                      <?php if($order['order_deliver_status_id'] == 2 && $updateDeliverStatus) { ?>
-                          <button class="change_status" style="color:#117700" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 3);return false;">[配送完成]</button>
-                          <button class="change_status" style="color:#ff2222" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 7);return false;">[配送失败]</button>
+                      <?php if( ($order['order_deliver_status_id'] == 2) && $updateDeliverStatus) { ?>
+                          <button class="change_status" style="color:#117700" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 3, '配送完成');return false;">配送完成</button>
+                          <?php if($order['station_id'] == 1){ ?>
+                              <button class="change_status"  style="color:#ff2222" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 7, '配送失败(生鲜)');return false;">配送失败</button>
+                          <?php } ?>
                       <?php } ?>
-                      <?php if($order['order_deliver_status_id'] == 4 && $updateDeliverStatus) { ?>
-                          <button class="change_status"  style="color:#117700" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 3);return false;">[配送完成]</button>
-                          <button class="change_status"  style="color:#ff2222" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 5);return false;">[自提点退回]</button>
+
+                      <?php if($order['order_deliver_status_id'] == 10 && $updateReDeliverStatus) { ?>
+                          <br />
+                          <button class="change_status"  style="color:#117700" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 7, '配送失败(后续操作退货入库)');return false;">配送失败</button>
+                          <button class="change_status"  style="color:#ff2222" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 11, '重新配送(配送日期延后一天)');return false;">重新配送</button>
                       <?php } ?>
                   </td>
                    <td class="text-left">
@@ -499,7 +498,7 @@ function download(type){
 }
 
 //Add extra order operations
-function processOrder(method,order_id,status_id){
+function processOrder(method,order_id,status_id,msg){
     var bool=false;
     switch(method)
     {
@@ -512,7 +511,12 @@ function processOrder(method,order_id,status_id){
             }
             break;
         case 'deliver':
-            bool = confirm('确认配送订单['+order_id+']?');
+            if(msg !== ''){
+                bool = confirm('确认将订单['+order_id+']改为['+msg+']?');
+            }
+            else{
+                bool = confirm('确认配送订单['+order_id+']?');
+            }
             break;
         case 'payment':
             bool = confirm('确认订单['+order_id+']已支付?');

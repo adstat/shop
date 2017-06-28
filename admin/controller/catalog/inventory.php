@@ -279,7 +279,7 @@ class ControllerCatalogInventory extends Controller
             $products = $this->request->post['products'];
             $comment = $this->request->post['comment'];
             $inventory_type = $this->request->post['inventory_type'];
-
+            $warehouse_id = $this->request->post['global_warehouse_id'];
             // 写入数据库
             $time = time()+8*3600;
             $date = date("Y-m-d", $time);
@@ -290,11 +290,11 @@ class ControllerCatalogInventory extends Controller
             $this->db->query("START TRANSACTION");
             $this->db->query("INSERT INTO oc_x_inventory_move (`station_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`) VALUES('1', '{$date}', '{$time}', '1', '" . $inventory_type . "', '{$date_added}', '{$user_id}', '{$user_name}', '{$comment}')");
             $inventory_move_id = $this->db->getLastId();
-            $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`) VALUES';
+            $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `warehouse_id`, `product_id`, `quantity`) VALUES';
 
             $m=0;
             foreach($products as $product){
-                $sql .= "('{$inventory_move_id}', '{$product['station_id']}', '{$product['product_id']}', '{$product['quantity']}')";
+                $sql .= "('{$inventory_move_id}', '{$product['station_id']}', '{$warehouse_id}','{$product['product_id']}', '{$product['quantity']}')";
                 if(++$m < sizeof($products)){
                     $sql .= ', ';
                 }

@@ -681,6 +681,20 @@ class ModelCatalogProduct extends Model {
 			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,'". $user_id ."',now() from oc_product where product_id = '". $product_id ."'";
 
 		$query_s = $this->db->query($sql_p);
+		
+		        //商品积分相关
+        //TODO 兼容多仓
+        //$this->db->query("DELETE FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
+        //if (isset($data['product_reward'])) {
+        //    foreach ($data['product_reward'] as $customer_group_id => $value) {
+        //       $this->db->query("INSERT INTO " . DB_PREFIX . "product_reward SET product_id = '" . (int)$product_id . "', customer_group_id = '" . (int)$customer_group_id . "', points = '" . (int)$value['points'] . "'");
+        //    }
+        //}
+
+        if (isset($data['product_reward'])) {
+            $this->db->query("DELETE FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
+            $this->db->query("INSERT INTO " . DB_PREFIX . "product_reward SET product_id = '" . (int)$product_id . "', points = '" . (int)$data['product_reward'] . "'");
+        }
 
 		//删除原有商品原有的仓库信息,如果全局仓库ID变量存在，则只删除全局仓库ID的信息
 //		$sql = "DELETE FROM oc_product_to_warehouse where product_id =". (int) $product_id;

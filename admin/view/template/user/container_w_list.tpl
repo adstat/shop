@@ -113,7 +113,9 @@
                     <?php } ?>-->
                       会员
                       </td>
-                  
+                  <td>会员ID</td>
+                  <td>BD ID</td>
+                  <td>BD</td>
                   <td>商家店名</td>
                   <td>商家地址</td>
                   <td>总未还框数</td>
@@ -143,6 +145,9 @@
                   <td class="text-left"><?php echo $container['container_id']; ?></td>
                   <td class="text-left"><?php echo $container['type_name']; ?></td>
                   <td class="text-left"><a href="<?php echo $container['customer_url'];?>" target="_blank" ><?php echo $container['customer_name']; ?></a></td>
+                  <td class="text-left"><?php echo $container['customer_id']; ?></td>
+                  <td class="text-left"><?php echo $container['bd_id']; ?></td>
+                  <td class="text-left"><?php echo $container['bd_name']; ?></td>
                   <td class="text-left"><?php echo $container['merchant_name']; ?></td>
                   <td class="text-left"><?php echo $container['merchant_address']; ?></td>
                   <td class="text-left"><?php echo $container['container_total']; ?></td>

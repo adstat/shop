@@ -119,7 +119,7 @@ class ControllerMarketingOrderInstead extends Controller {
         } else {
             exit('请上传文件.');
         }
-//        var_dump($this->request->files['file']['tmp_name']);die;
+
         $target = DIR_UPLOAD . 'order_instead_' . date('YmdHis') . '_' . $this->user->getId() . '.' . $file_extension;
         $bool = move_uploaded_file($this->request->files['file']['tmp_name'], $target);
         if(!$bool){
@@ -181,7 +181,8 @@ class ControllerMarketingOrderInstead extends Controller {
                 $merchants[$i] = $currentSheet->getCell('A' . $i)->getValue();
                 $merchantOrders[$i] = $currentSheet->getCell('B' . $i)->getValue();
                 $products[$i] = array(
-                    'product_id' => $currentSheet->getCell('P' . $i)->getValue(),
+//                    'product_id' => $currentSheet->getCell('P' . $i)->getValue(),
+                    'product_id' => array_key_exists($currentSheet->getCell('O' . $i)->getValue(),$sys_names) ? $sys_names[$currentSheet->getCell('O' . $i)->getValue()]['product_id'] : 0,
                     'product_name' => $currentSheet->getCell('M' . $i)->getValue(),
                     'sys_name' => isset($sys_names[$currentSheet->getCell('P' . $i)->getValue()]) ? $sys_names[$currentSheet->getCell('P' . $i)->getValue()] : '无此商品',
                     'price' => $currentSheet->getCell('Q' . $i)->getValue(),
@@ -378,7 +379,8 @@ class ControllerMarketingOrderInstead extends Controller {
                     $merchants[$i] = $currentSheet->getCell('A' . $i)->getValue();
                     $merchantOrders[$i] = $currentSheet->getCell('B' . $i)->getValue();
                     $products[$i] = array(
-                        'product_id' => $currentSheet->getCell('P' . $i)->getValue(),
+//                        'product_id' => $currentSheet->getCell('P' . $i)->getValue(),
+                        'product_id' => array_key_exists($currentSheet->getCell('O' . $i)->getValue(),$sys_names) ? $sys_names[$currentSheet->getCell('O' . $i)->getValue()]['product_id'] : 0,
                         'product_name' => $currentSheet->getCell('M' . $i)->getValue(),
                         'sys_name' => isset($sys_names[$currentSheet->getCell('P' . $i)->getValue()]) ? $sys_names[$currentSheet->getCell('P' . $i)->getValue()] : '无此商品',
                         'price' => $currentSheet->getCell('Q' . $i)->getValue(),
@@ -433,6 +435,7 @@ class ControllerMarketingOrderInstead extends Controller {
                     'quantity' => $currentSheet->getCell('S' .$k)->getValue(),
                     'line_sum' => sprintf("%.2f",$currentSheet->getCell('Q' . $k)->getValue()*$currentSheet->getCell('S' . $k)->getValue()),
                     'excel_order' => $v['excel_order'],
+                    'out_order_id' => $v['out_order_id'],
                 );
             }
 
@@ -466,7 +469,7 @@ class ControllerMarketingOrderInstead extends Controller {
                     'telephone' => $currentSheet->getCell('L' . $k)->getValue(),
                     'internal_note' => $currentSheet->getCell('B' . $k)->getValue(),
                 );
-                foreach($products as $vv){
+                foreach($orders_products as $vv){
                     if($vv['out_order_id'] == $v){
                         //商家订单里包含的产品明细
                         $order_products[$v][] = $vv;

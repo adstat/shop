@@ -6,7 +6,7 @@
 $_['heading_title']       = '首页促销管理';
 
 // Text
-$_['text_success']        = '成功: 已修改赠品!';
+$_['text_success']        = '成功: 已修改促销商品。';
 $_['text_list']           = '首页促销列表';
 $_['text_add']            = '添加促销商品';
 $_['text_edit']           = '编辑促销商品';

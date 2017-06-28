@@ -3,13 +3,13 @@
  * $Author: http://www.opencartchina.com 
 **/
 // Heading
-$_['heading_title']       = '赠品管理';
+$_['heading_title']       = '促销规则管理';
 
 // Text
 $_['text_success']        = '成功: 已修改赠品!';
-$_['text_list']           = '赠品规则列表';
-$_['text_add']            = '添加赠品规则';
-$_['text_edit']           = '编辑赠品规则';
+$_['text_list']           = '促销规则列表';
+$_['text_add']            = '添加促销规则';
+$_['text_edit']           = '编辑促销规则';
 $_['text_gift']        = '赠品';
 $_['text_discount']         = '折扣';
 

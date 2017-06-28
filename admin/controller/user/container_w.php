@@ -433,6 +433,8 @@ class ControllerUserContainerW extends Controller {
                                 'merchant_name' => $result['merchant_name'],
                                 'merchant_address' => $result['merchant_address'],
 				'customer_id' => $result['customer_id'],
+                                'bd_id' => $result['bd_id'],
+                                'bd_name' => $result['bd_name'],
                                 'customer_url' => $this->url->link('sale/customer/edit', 'token=' . $this->session->data['token'] . '&customer_id=' . $result['customer_id'] . $url, 'SSL')
 				
 			);

@@ -144,12 +144,13 @@ class ModelUserContainer extends Model {
         public function getContainersW($data = array()) {
         
                 $sql = "SELECT
-                        cm.container_id,cm.date_added,ct.type_name,cu.firstname,cu.lastname,cm.order_id,cu.merchant_name,cu.merchant_address,cm.customer_id
+                        cm.container_id,cm.date_added,ct.type_name,cu.firstname,cu.lastname,cm.order_id,cu.merchant_name,cu.merchant_address,cm.customer_id,cu.bd_id,b.bd_name
                     FROM
                             oc_x_container_move AS cm
                     LEFT JOIN oc_x_container AS c ON c.container_id = cm.container_id
                     LEFT JOIN oc_x_container_type AS ct ON ct.type_id = c.type
                     left join oc_customer as cu on cu.customer_id = cm.customer_id 
+                    left join oc_x_bd as b on b.bd_id = cu.bd_id
                     where 1=1 
                 ";
 		$implode = array();

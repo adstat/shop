@@ -31,6 +31,7 @@
             <li><a href="#tab-links" data-toggle="tab">关联</a></li>
             <?php if($rbac){ ?><li><a href="#tab-special" data-toggle="tab">特价</a></li><?php } ?>
             <li><a href="#tab-special-history" data-toggle="tab" onclick="specialHistory();">特价记录</a></li>
+            <li><a href="#tab-reward" data-toggle="tab"><?php echo $tab_reward; ?></a></li>
             <!--<?php if($rbac){ ?><li><a href="#tab-discount" data-toggle="tab">多件折扣(覆盖特价)</a></li><?php } ?>-->
             <li style="display: none"><a href="#tab-modify" data-toggle="tab" onclick="modifyHistory();"> 商品属性修改历史</a></li>
             <li><a href="#tab-warehouse" data-toggle="tab">商品仓库属性</a></li>
@@ -811,6 +812,35 @@
 
               <div class="tab-pane" id="tab-special-history">
                 <div id="special-history"></div>
+              </div>
+
+              <div class="tab-pane" id="tab-reward">
+                <div class="form-group">
+                    <label class="col-lg-2 control-label" for="input-points"><span data-toggle="tooltip" title="<?php echo $help_points; ?>">积分值</span></label>
+                    <div class="col-lg-3">
+                        <input type="text" name="product_reward" value="<?php echo $product_reward; ?>" placeholder="<?php echo $entry_points; ?>" id="input-points" class="form-control" />
+                    </div>
+                </div>
+                <!--
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <td class="text-left"><?php echo $entry_customer_group; ?></td>
+                            <td class="text-right"><?php echo $entry_reward; ?></td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($customer_groups as $customer_group) { ?>
+                        <tr>
+                            <td class="text-left"><?php echo $customer_group['name']; ?></td>
+                            <td class="text-right"><input type="text" name="product_reward[<?php echo $customer_group['customer_group_id']; ?>][points]" value="<?php echo isset($product_reward[$customer_group['customer_group_id']]) ? $product_reward[$customer_group['customer_group_id']]['points'] : ''; ?>" class="form-control" /></td>
+                        </tr>
+                        <?php } ?>
+                        </tbody>
+                    </table>
+                </div>
+                -->
               </div>
 
               <div class="tab-pane" id="tab-discount" style="display:none">

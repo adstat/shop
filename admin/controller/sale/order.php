@@ -865,32 +865,48 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
             $order_id = (int) $_REQUEST['order_id'];
             $status_id = (int) $_REQUEST['status_id'];
 
-            
             $sql = "select customer_id,customer_group_id,is_nopricetag,order_status_id,firstname,lastname,deliver_date,email,telephone,date_added,order_deliver_status_id,station_id,order_payment_status_id from oc_order where order_id = " . $order_id;
             $query = $this->db->query($sql);
             $order_customer = $query->row;
-            
-            
-            
-            $sql = "update " . DB_PREFIX . "order set order_deliver_status_id = '{$status_id}' where order_id = '{$order_id}'";
+
             $result = false;
-            $result = $this->db->query($sql);
 
-            //对于鲜奶T+4用户，配送完成且使用了鲜奶优惠券的用户
-            if($status_id == 3){ //配送完成状态为3
-                //20170217 判定更改为订购了鲜奶的用户，配送日期为T+4
-                //$sql = "update oc_customer set milk_ordered = 1 where customer_id in (select customer_id from oc_coupon_history where order_id = '".$order_id."' and status = 1 and coupon_id = 6)";
-                $sql = "update oc_customer set milk_ordered = 1 where customer_id in (select if(datediff(deliver_date, date(date_added))=4, customer_id, 0) customer_id from oc_order where order_status_id not in (3) and order_id = '".$order_id."')";
-                $this->db->query($sql);
+            //var_dump($order_customer);
 
-                $sql = "INSERT INTO oc_customer_history (customer_id, comment, date_added, added_by)
+            if($order_customer['order_status_id'] == 6){
+                $sql = "update " . DB_PREFIX . "order set order_deliver_status_id = '{$status_id}' where order_id = '{$order_id}'";
+                //订单改为重新配送，修改订单配送日期
+                if($status_id == 11){
+                    $sql = "update " . DB_PREFIX . "order set order_deliver_status_id = '".$status_id."', deliver_date = date_add(deliver_date, interval 1 day) where order_id = '".$order_id."'";
+                }
+                $result = $this->db->query($sql);
+
+                //原状态为整单退回，更新退回订单状态时修改
+                if($order_customer['order_deliver_status_id'] == 10){
+                    $sql = "update oc_order_deliver_issue set status = 2, date_updated = now(), updated_by = '".$user_id."' where status = 1 and order_id = '".$order_id."'";
+                    $result = $this->db->query($sql);
+                }
+
+                //对于鲜奶T+4用户，配送完成且使用了鲜奶优惠券的用户
+                if($status_id == 3){ //配送完成状态为3
+                    //20170217 判定更改为订购了鲜奶的用户，配送日期为T+4
+                    //$sql = "update oc_customer set milk_ordered = 1 where customer_id in (select customer_id from oc_coupon_history where order_id = '".$order_id."' and status = 1 and coupon_id = 6)";
+                    $sql = "update oc_customer set milk_ordered = 1 where customer_id in (select if(datediff(deliver_date, date(date_added))=4, customer_id, 0) customer_id from oc_order where order_status_id not in (3) and order_id = '".$order_id."')";
+                    $this->db->query($sql);
+
+                    $sql = "INSERT INTO oc_customer_history (customer_id, comment, date_added, added_by)
                         select customer_id, 'milk_ordered=1', NOW(), '".$user_id."' from oc_order where order_id = '".$order_id."' and order_status_id not in (3) and datediff(deliver_date, date(date_added))=4";
-                $this->db->query($sql);
+                    $this->db->query($sql);
+                }
+
+                //SUCCESS
+                $this->addOrderHistory($order_id);
+                $this->session->data['success'] = "订单[{$_REQUEST['order_id']}]配送状态已更新";
             }
-
-            //SUCCESS
-            $this->addOrderHistory($order_id);
-
+            else{
+                $this->session->data['success'] = "";
+                $this->error['warning'] = "订单[{$_REQUEST['order_id']}]未提交分拣出库，不能修改配送状态";
+            }
 
             //快消品缺货分拣完成时自动匹配，这里仅处理生鲜平台
             if ($result && $order_customer['order_status_id'] == 6 && $order_customer['station_id'] == 1 ) {
@@ -1288,15 +1304,9 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
 
                 $url = $this->setUrl();
                 $this->response->redirect($this->url->link('sale/order', 'token=' . $this->session->data['token'] . $url, 'SSL'));
-            } else {
-                //ERROR
-                if($order_customer['order_status_id'] != 6){
-                    $this->error['warning'] = "订单[{$_REQUEST['order_id']}]未提交分拣出库，不能修改配送状态";
-                }
-                else{
-                $this->error['warning'] = "订单[{$_REQUEST['order_id']}]配送状态更新失败";
             }
-        }
+        }else{
+            $this->error['warning'] = "未知的订单编号或状态编号";
         }
 
         $this->getList();
@@ -2027,6 +2037,7 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
         $data['updateOrderStatus'] = in_array($data['user_group_id'], array(1, 17, 20, 28)) ? true : false;
         $data['updateDeliverOn'] = in_array($data['user_group_id'], array(1,17,15,21)) ? true : false; //管理员，仓库主管，分拣组长可改配送出库
         $data['updateDeliverStatus'] = in_array($data['user_group_id'], array(1,17,18,20,28)) ? true : false; //管理员，物流主管，客服可更改配送状态
+        $data['updateReDeliverStatus'] = in_array($data['user_group_id'], array(1,20,28)) ? true : false; //管理员，客服可更改重新配送状态
         $data['updatePrintFlag'] = in_array($data['user_group_id'], array(1, 17, 21)) ? true : false;
         $data['updatePayment'] = in_array($data['user_group_id'], array(1, 26, 33)) ? true : false;
 
@@ -4202,6 +4213,13 @@ foreach ($products_weight_inv as $k => $v) {
         $return_order_arr = array();
         foreach ($orders as $order_id) {
             $order_info = $this->model_sale_order->getOrder($order_id);
+
+            if ($order_info['order_deliver_status_id'] == 1 || $order_info['order_deliver_status_id'] == 11) {
+                //if ($product['weight_inv_flag'] == 1 && $order_info['order_deliver_status_id'] == 1 ) {
+                header("Content-type: text/html; charset=utf-8");
+                echo "订单 " . $order_info['order_id'] . "需修改配送状态为后才能打印面单";
+                exit;
+            }
 
             //获取订单的分拣序号, 若已指定order_id, 获取该订单在当天的分拣序号。
             // 注意，按次方法订单的配送时间不可更改 !!!

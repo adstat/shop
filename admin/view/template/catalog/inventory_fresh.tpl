@@ -100,6 +100,7 @@
                       </tr>
                       </tfoot>
                     </table>
+                      <input type="hidden" name="global_warehouse_id" value="<?php echo $filter_warehouse_id_global; ?>" />
                   </form>
               </div>
             </div>

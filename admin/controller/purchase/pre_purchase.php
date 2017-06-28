@@ -887,6 +887,7 @@ class ControllerPurchasePrePurchase extends Controller {
                 'product_category' => $result['product_category'],
                 'status' => $result['status'],
                 'supplier_type_name' => $result['name'],
+                'status' => $result['status'],
                 'status_name' => $result['status_name'],
                 'order_total' => $result['order_total'],
                 'use_credits_total' => $result['use_credits_total'],
