@@ -21,7 +21,7 @@
     <?php } ?>
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title"><i class="fa fa-pencil"></i>编辑商品</h3>
+        <h3 class="panel-title"><i class="fa fa-pencil"></i>编辑商品:[<?php echo $product_id; ?>--<?php echo $name; ?>]</h3>
       </div>
       <div class="panel-body">
         <form action="<?php echo $action; ?>" method="post" enctype="multipart/form-data" id="form-product" class="form-horizontal" onsubmit="return check()">
@@ -908,14 +908,14 @@
                             <td>仓库</td>
                             <td>分仓摘要</td>
                             <td>价格</td>
-                            <td>积分</td>
-                            <td>安全库存</td>
-                            <td>每天限量</td>
-                            <td>是否启用</td>
+                            <!--<td>积分</td>-->
+                            <td style="display:none">安全库存</td>
+                            <td style="display:none">每天限量</td>
+                            <td>是否覆盖</td>
                             <td style="display:none">分拣条码</td>
                             <td>货位</td>
                             <td>可售库存</td>
-                            <td>编辑</td>
+                            <!--<td>编辑</td>-->
                         </tr>
                         </thead>
                         <tbody>
@@ -925,16 +925,16 @@
                             <td class="text-center"><?php echo $warehouse['title']; ?></td>
                             <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][abstract]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['abstract'] : '分仓摘要'; ?>"/></td>
                             <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][price]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['w_price'] : '仓库价格'; ?>"/></td>
-                            <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][points]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['points'] : '仓库价格'; ?>"/></td>
-                            <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][safe_stock]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['safe_stock'] : '安全库存'; ?>"/></td>
-                            <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][daily_limit]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['daily_limit'] : '安全库存'; ?>"/></td>
+                            <!--<td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][points]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['points'] : '仓库价格'; ?>"/></td>-->
+                            <td style="display:none" class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][safe_stock]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['safe_stock'] : '安全库存'; ?>"/></td>
+                            <td style="display:none" class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][daily_limit]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['daily_limit'] : '安全库存'; ?>"/></td>
                             <td class="text-center">
                                 <input type="checkbox" name="warehouse_info[<?php echo $warehouse_row; ?>][status]" <?php if(array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['status'] : 0){ ?> checked="checked" <?php } ?> value="1"/>
                             </td>
                             <td class="text-center"style="display:none" ><?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['sku_barcode'] : '  分拣条码' ; ?></td>
                             <td class="text-center"><?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['stock_area'] : '货位' ; ?></td>
-                            <td class="text-center"></td>
-                            <td class="text-center"><button type="button" value="<?php echo $warehouse_row ; ?>" class="btn btn-primary"><i class="fa fa-save"></i></button></td>
+                            <td class="text-center"><?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['inventory'] : '可售库存' ; ?></td>
+                            <!--<td class="text-center"><button type="button" value="<?php echo $warehouse_row ; ?>" class="btn btn-primary"><i class="fa fa-save"></i></button></td>-->
                         </tr>
                         <?php } ?>
                         </tbody>
@@ -947,13 +947,13 @@
                           <table>
                               <tr>
                                   <td>
-                                      <input type="checkbox" name="warehouse_all_set" id="warehouse-all-set" <?php if(!$filter_warehouse_id_global) { ?> checked="checked" <?php } ?> value="1" class="form-control" />
+                                      <input type="checkbox" name="warehouse_all_set" id="warehouse-all-set"  value="1" class="form-control" />
                                   </td>
                                   <td>
                                       应用到所有仓库
                                   </td>
                                   <td class="text-right">
-                                      <button style="margin-left: 110px" class="btn btn-primary"><i class="fa fa-save"></i></button>
+                                      <!--<button style="margin-left: 110px" class="btn btn-primary"><i class="fa fa-save"></i></button>-->
                                   </td>
                               </tr>
                           </table>
@@ -973,19 +973,19 @@
                                   <input type="text" name="warehouse_info_all[price]" value="" placeholder="价格" class="form-control" />
                               </div>
                           </div>
-                          <div class="form-group">
+                          <div class="form-group" style="display:none">
                               <label class="col-sm-2 control-label">积分</label>
                               <div class="col-sm-4">
                                   <input type="text" name="warehouse_info_all[points]" value="" placeholder="积分" class="form-control" />
                               </div>
                           </div>
-                          <div class="form-group">
+                          <div class="form-group" style="display:none">
                               <label class="col-sm-2 control-label">安全库存</label>
                               <div class="col-sm-4">
                                   <input type="text" name="warehouse_info_all[safe_stock]" value="" placeholder="安全库存" class="form-control" />
                               </div>
                           </div>
-                          <div class="form-group">
+                          <div class="form-group" style="display:none">
                               <label class="col-sm-2 control-label" >每天限量</label>
                               <div class="col-sm-4">
                                   <input type="text" name="warehouse_info_all[daily_limit]" value="" placeholder="每天限量" class="form-control" />

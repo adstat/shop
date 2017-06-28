@@ -877,7 +877,7 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
                 $sql = "update " . DB_PREFIX . "order set order_deliver_status_id = '{$status_id}' where order_id = '{$order_id}'";
                 //订单改为重新配送，修改订单配送日期
                 if($status_id == 11){
-                    $sql = "update " . DB_PREFIX . "order set order_deliver_status_id = '".$status_id."', deliver_date = date_add(deliver_date, interval 1 day) where order_id = '".$order_id."'";
+                    $sql = "update " . DB_PREFIX . "order set order_deliver_status_id = '".$status_id."', deliver_date = date_add(current_date(), interval 1 day) where order_id = '".$order_id."'";
                 }
                 $result = $this->db->query($sql);
 

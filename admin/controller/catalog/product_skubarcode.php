@@ -35,9 +35,9 @@ class ControllerCatalogProductSkubarcode extends Controller {
                 $url .= '&filter_model=' . urlencode(html_entity_decode($this->request->get['filter_model'], ENT_QUOTES, 'UTF-8'));
             }
 
-            if (isset($this->request->get['filter_price'])) {
-                $url .= '&filter_price=' . $this->request->get['filter_price'];
-            }
+//            if (isset($this->request->get['filter_price'])) {
+//                $url .= '&filter_price=' . $this->request->get['filter_price'];
+//            }
 
             if (isset($this->request->get['filter_quantity'])) {
                 $url .= '&filter_quantity=' . $this->request->get['filter_quantity'];
@@ -59,7 +59,7 @@ class ControllerCatalogProductSkubarcode extends Controller {
                 $url .= '&page=' . $this->request->get['page'];
             }
 
-            $this->response->redirect($this->url->link('catalog/product_skubarcode', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+            $this->response->redirect($this->url->link('catalog/product_sku_list', 'token=' . $this->session->data['token'] . $url, 'SSL'));
         }
 
         $this->getForm();
@@ -499,6 +499,7 @@ class ControllerCatalogProductSkubarcode extends Controller {
     }
 
     public function history(){
+        $this->load->language('catalog/product');
         $this->load->model('catalog/product_inv');
         $product_id = $this->request->get['product_id']?$this->request->get['product_id']:0;
         $warehouse= $this->request->post['warehouses']?$this->request->post['warehouses']:'';
@@ -520,6 +521,7 @@ class ControllerCatalogProductSkubarcode extends Controller {
                 );
             }
         }
+        $data['text_no_results'] = $this->language->get('text_no_results');
         $this->response->setOutput($this->load->view('catalog/product_sku_history.tpl', $data));
     }
 

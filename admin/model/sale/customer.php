@@ -732,29 +732,29 @@ class ModelSaleCustomer extends Model
             $this->db->query("INSERT INTO " . DB_PREFIX . "customer_reward SET customer_id = '" . (int)$customer_id .
                 "', order_id = '" . (int)$order_id . "', points = '" . (int)$points . "', description = '" .
                 $this->db->escape($description) . "', date_added = NOW()");
-
-            $this->load->language('mail/customer');
-
-            $this->load->model('setting/store');
-
-            $store_info = $this->model_setting_store->getStore($customer_info['store_id']);
-
-            if ($store_info) {
-                $store_name = $store_info['name'];
-            } else {
-                $store_name = $this->config->get('config_name');
-            }
-
-            $message = sprintf($this->language->get('text_reward_received'), $points) . "\n\n";
-            $message .= sprintf($this->language->get('text_reward_total'), $this->getRewardTotal($customer_id));
-
-            $mail = new Mail($this->config->get('config_mail'));
-            $mail->setTo($customer_info['email']);
-            $mail->setFrom($this->config->get('config_email'));
-            $mail->setSender($store_name);
-            $mail->setSubject(sprintf($this->language->get('text_reward_subject'), $store_name));
-            $mail->setText(html_entity_decode($message, ENT_QUOTES, 'UTF-8'));
-            $mail->send();
+//
+//            $this->load->language('mail/customer');
+//
+//            $this->load->model('setting/store');
+//
+//            $store_info = $this->model_setting_store->getStore($customer_info['store_id']);
+//
+//            if ($store_info) {
+//                $store_name = $store_info['name'];
+//            } else {
+//                $store_name = $this->config->get('config_name');
+//            }
+//
+//            $message = sprintf($this->language->get('text_reward_received'), $points) . "\n\n";
+//            $message .= sprintf($this->language->get('text_reward_total'), $this->getRewardTotal($customer_id));
+//
+//            $mail = new Mail($this->config->get('config_mail'));
+//            $mail->setTo($customer_info['email']);
+//            $mail->setFrom($this->config->get('config_email'));
+//            $mail->setSender($store_name);
+//            $mail->setSubject(sprintf($this->language->get('text_reward_subject'), $store_name));
+//            $mail->setText(html_entity_decode($message, ENT_QUOTES, 'UTF-8'));
+//            $mail->send();
         }
     }
 

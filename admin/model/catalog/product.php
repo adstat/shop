@@ -751,21 +751,16 @@ class ModelCatalogProduct extends Model {
 					if(!sizeof($query)){
 					$insert = "INSERT INTO oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',
 						price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
-						safe_stock='".(int)$data['warehouse_info'][$filter_warehouse_id_global]['safe_stock']."',
-						daily_limit='".(int)$data['warehouse_info'][$filter_warehouse_id_global]['daily_limit']."',
-						points = '".(int)$data['warehouse_info'][$filter_warehouse_id_global]['points']."',
 						warehouse_id = '".(int) $filter_warehouse_id_global."',
 						product_id = '".(int) $product_id."',
 						status = '".(int)$status."',
 						station_id = '".(int)$data['station_id']."'
 						";
 					}else{
-						$insert = "UPDATE oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
-						   safe_stock='".(int)$data['warehouse_info'][$filter_warehouse_id_global]['safe_stock']."',
-						   daily_limit='".(int)$data['warehouse_info'][$filter_warehouse_id_global]['daily_limit']."',
-						   points = '".(int)$data['warehouse_info'][$filter_warehouse_id_global]['points']."',
-						   status = '".(int)$status."',station_id = '".(int)$data['station_id']."'
-						   where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'";
+						$insert = "UPDATE oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',
+							price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
+						    status = '".(int)$status."',station_id = '".(int)$data['station_id']."'
+						    where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'";
 					}
 					$this->db->query($insert);
 				}
@@ -778,7 +773,7 @@ class ModelCatalogProduct extends Model {
 					$warehouselist = array();
 					$product_warehouselist = array();
 					if($station_id){
-						$sql = "select warehouse_id,title from oc_x_warehouse where station_id =" . $station_id;
+						$sql = "select warehouse_id,title from oc_x_warehouse where status = 1 and  station_id =" . $station_id;
 						$query = $this->db->query($sql)->rows;
 						foreach($query as $value){
 							$warehouselist[] = $value['warehouse_id'];
@@ -797,18 +792,15 @@ class ModelCatalogProduct extends Model {
 								$status = 0;
 							}
 							if(array_key_exists($value,$product_warehouselist)){
-								$sql = "update oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',price = '".$data['warehouse_info_all']['price']."',safe_stock='".(int)$data['warehouse_info_all']['safe_stock']."',
-										daily_limit = '".(int)$data['warehouse_info_all']['daily_limit']."',status = '".(int)$status."',
-										points = '".(int)$data['warehouse_info_all']['points']."'
+								$sql = "update oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',
+										price = '".$data['warehouse_info_all']['price']."',
+										status = '".(int)$status."'
 										where warehouse_id = '".(int) $value."' and product_id = '".(int)$product_id."'";
 								$this->db->query($sql);
 							}else{
 								$sql = "INSERT INTO oc_product_to_warehouse set
 											abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',
 											price = '".$data['warehouse_info_all']['price']."',
-											safe_stock='".(int)$data['warehouse_info_all']['safe_stock']."',
-											daily_limit = '".(int)$data['warehouse_info_all']['daily_limit']."',
-											points = '".(int)$data['warehouse_info_all']['points']."',
 											warehouse_id = '".(int)$value."',
 											product_id = '".(int)$product_id."',
 											station_id = '".(int)$station_id."',
@@ -1691,15 +1683,19 @@ class ModelCatalogProduct extends Model {
 	}
 
 	public function getProductRewards($product_id) {
-		$product_reward_data = array();
 
-		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
+		$query = $this->db->query("SELECT product_id, points FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
+        $productReward = $query->row;
+        if($productReward){
+            return $productReward['points'];
+        }
 
-		foreach ($query->rows as $result) {
-			$product_reward_data[$result['customer_group_id']] = array('points' => $result['points']);
-		}
+        return 0;
+		//foreach ($query->rows as $result) {
+		//	$product_reward_data[$result['customer_group_id']] = array('points' => $result['points']);
+		//}
 
-		return $product_reward_data;
+		//return $product_reward_data;
 	}
 
 	public function getProductDownloads($product_id) {
@@ -1976,10 +1972,12 @@ class ModelCatalogProduct extends Model {
 	//获取商品在不同仓库的个性信息，如价格，库存等
 	public function getProductInAllWarehouse($product_id){
 		$sql = "select if(pw.warehouse_id is not null,pw.warehouse_id,0) warehouse_id,p.product_id,p.name,p.price,if(pw.price is not null,pw.price,0)as w_price,
-				pw.abstract,pw.safe_stock,pw.sku_barcode,pw.stock_area,pw.status,pw.daily_limit,pw.points
+				pw.abstract,pw.safe_stock,pw.sku_barcode,pw.stock_area,pw.status,pw.daily_limit,pi.inventory
 				from oc_product p
 				left join oc_product_to_warehouse pw on pw.product_id = p.product_id
-				where p.product_id = '". (int)$product_id ."'
+				left join oc_x_warehouse w on pw.warehouse_id = w.warehouse_id
+				left join oc_product_inventory pi on pi.product_id = pw.product_id and pi.warehouse_id = pw.warehouse_id
+				where p.product_id = '". (int)$product_id ."' and w.status = 1
 				group by p.product_id,pw.warehouse_id";
 
 		$query = $this->db->query($sql);
