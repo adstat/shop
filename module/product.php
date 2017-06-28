@@ -155,8 +155,8 @@ class PRODUCT{
 
 
         $sql = "SELECT
-                    p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
-                    p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
+                    p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) OR pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                    p.is_gift, round(if(isnull(pw.price) OR pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                     p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
                     round(p.weight,0) unit_amount,wcd.title unit_title,wcd.unit,
 
@@ -619,8 +619,8 @@ class PRODUCT{
 
         if(strlen($keyword) >= 3 && $warehouseId){
             $sql = "SELECT
-                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
-                        p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
+                        p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) or pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
+                        p.is_gift, round(if(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
                         round(p.weight,0) unit_amount,wcd.title unit_title,wcd.unit,
@@ -669,8 +669,8 @@ class PRODUCT{
             //Get PRODUCT_BRIEF_INFO
             if($keyword == SEARCH_PRODUCT_BRIEF_INFO && sizeof($products)){ //Just Get Product Inv
                 $sql = "SELECT
-                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
-                        p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
+                        p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) or pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order, if(r.points is null, 0, r.points) reward_points,
+                        p.is_gift, round(if(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price, p.cashback, p.inv_size, p.is_selected, p.is_soon_to_expire,
                         p.weight_inv_flag,
                         LEAST(if(isnull(p.maximum),999,p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
@@ -691,7 +691,7 @@ class PRODUCT{
 
             if($keyword == SEARCH_PRODUCT_PRICE && sizeof($products)){ //Just Get Product Inv
                 $sql = "SELECT
-                        p.product_id,round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price
+                        p.product_id,round(if(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price
                         FROM oc_product p
                         LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end AND ps.warehouse_id = {$warehouseId} AND ps.area_id = 0)
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
@@ -704,8 +704,8 @@ class PRODUCT{
             //Get Activity Product
             if($keyword == SEARCH_ACTIVITY_PRODUCT){ //Just Get Product Inv
                 $sql = "SELECT
-                        p.product_id, if(isnull(pw.name), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
-                        p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
+                        p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) or pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.is_gift, round(if(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
                         round(p.weight,0) unit_amount,wcd.title unit_title,wcd.unit,
@@ -740,8 +740,8 @@ class PRODUCT{
             //Get Agent Product
             if($keyword == SEARCH_PROMO_PROD && $agent_id){
                 $sql = "SELECT
-                        p.product_id, concat(p.product_id,'#',if(isnull(pw.name)), pd.name, pw.name) name, if(isnull(pw.abstract), pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
-                        p.is_gift, round(if(isnull(pw.price), p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
+                        p.product_id, concat(p.product_id,'#',if(isnull(pw.name)) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) or pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.is_gift, round(if(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
                         round(p.weight,0) unit_amount,wcd.title unit_title,wcd.unit,
@@ -989,8 +989,8 @@ class PRODUCT{
         $productIds = implode(',', $product_ids);
 
         $sql = "SELECT
-                p.product_id, if(isnull(pw.name), pd.name, pw.name) name, p.sku,p.weight_inv_flag, if(r.points is null, 0, r.points) reward_points,
-                p.is_gift, if(isnull(pw.price), p.price, pw.price) price, if(isnull(ps.price),p.price,ps.price) special_price,
+                p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, p.sku,p.weight_inv_flag, if(r.points is null, 0, r.points) reward_points,
+                p.is_gift, if(isnull(pw.price) or pw.price<0, p.price, pw.price) price, if(isnull(ps.price),p.price,ps.price) special_price,
                 round(p.weight,0) unit_amount,wcd.title unit_title,
                 p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
                 LEAST(if(isnull(p.maximum),".REDIS_CART_ITEM_QTY_LIMIT.",p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
@@ -1106,7 +1106,7 @@ class PRODUCT{
         if(!$area_id)       { return array('return_code' => 'FAIL', 'return_msg'  => '需要区域ID'); }
 
         $sql = "SELECT p.product_id, p.image, p.oss, p.retail_price, p.minimum, p.maximum, p.weight, p.weight_class_id, pd.description,
-                  IF(isnull(pw.name), pd.name, pw.name) name, round(IF(isnull(pw.price), p.price, pw.price),2) price
+                  IF(isnull(pw.name) or pw.name='', pd.name, pw.name) name, round(IF(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price
                   FROM oc_product p
                   LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
                   LEFT JOIN oc_product_description pd ON p.product_id = pd.product_id
