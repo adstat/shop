@@ -761,7 +761,7 @@ AND xsm.purchase_order_id = " . $order_id . "
         $purchase_order_id = $this->db->getLastId();
 
         //增加采购
-        $sql = "INSERT INTO `oc_x_pre_purchase_order_product` (`purchase_order_id`, station_id, `sku_id`, `product_id`, `weight`, `weight_class_id`, `date`,`price`,`real_cost`,quantity,supplier_quantity,quantity_old) VALUES ";
+        $sql = "INSERT INTO `oc_x_pre_purchase_order_product` (`purchase_order_id`, station_id, `sku_id`, `product_id`, `weight`, `weight_class_id`, `date`,`price`,`real_cost`,quantity,supplier_quantity,quantity_old,warehouse_id) VALUES ";
         $m=0;
 
 
@@ -773,7 +773,7 @@ AND xsm.purchase_order_id = " . $order_id . "
 
         $order_total = 0;
         foreach($products as $product){
-            $sql .= "(".$purchase_order_id."," . $data['station_id'] . ", '".$sku_weight_arr[$product['product_id']]['sku_id'] ."'," . $product['product_id'] . " , '" . $sku_weight_arr[$product['product_id']]['weight'] . "', '" . $sku_weight_arr[$product['product_id']]['weight_class_id'] . "', '".$data['date_deliver']."', '" . (!empty($product['price']) ? $product['price'] : 0) . "','".(!empty($product['real_cost']) ? $product['real_cost'] : 0). "'," . (isset($product['quantity']) ? $product['quantity'] : 0) . ", " . (!empty($product['supplier_quantity']) ? $product['supplier_quantity'] : 0) . "," . (!empty($product['purchase_quantity_old']) ? $product['purchase_quantity_old'] : 0) . ")";
+            $sql .= "(".$purchase_order_id."," . $data['station_id'] . ", '".$sku_weight_arr[$product['product_id']]['sku_id'] ."'," . $product['product_id'] . " , '" . $sku_weight_arr[$product['product_id']]['weight'] . "', '" . $sku_weight_arr[$product['product_id']]['weight_class_id'] . "', '".$data['date_deliver']."', '" . (!empty($product['price']) ? $product['price'] : 0) . "','".(!empty($product['real_cost']) ? $product['real_cost'] : 0). "'," . (isset($product['quantity']) ? $product['quantity'] : 0) . ", " . (!empty($product['supplier_quantity']) ? $product['supplier_quantity'] : 0) . "," . (!empty($product['purchase_quantity_old']) ? $product['purchase_quantity_old'] : 0) . ", {$warehouse_id})";
             if(++$m < sizeof($products)){
                 $sql .= ', ';
             }
