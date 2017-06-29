@@ -144,7 +144,7 @@ class ModelMarketingIndexPromotion extends Model {
 
         if(!$warehouse_id){
             //没有选择指定仓库，将会保存到指定平台下的所有仓库
-            $sql = "select warehouse_id from oc_x_warehouse where station_id =" . (int)$data['set-station'];
+            $sql = "select warehouse_id from oc_x_warehouse where status = 1 and station_id = '".(int)$data['set-station']."'";
 
             $warehouse = $this->db->query($sql)->rows;
 
