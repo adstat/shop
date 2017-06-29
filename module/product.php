@@ -4,15 +4,20 @@ require_once(DIR_SYSTEM.'/redis.php');
 
 class PRODUCT{
     private $db;
-    private $redis;
     private $expireTime;
     private $stockTime;
 
     public function __construct()
     {
-        $this->redis      = new MyRedis();
-        $this->expireTime = defined('REDIS_CACHE_TIME') ? REDIS_CACHE_TIME : 1800;
+        $this->expireTime = defined('REDIS_CACHE_TIME')       ? REDIS_CACHE_TIME       : 1800;
         $this->stockTime  = defined('REDIS_STOCK_CACHE_TIME') ? REDIS_STOCK_CACHE_TIME : 600;
+    }
+
+    private function newRedis()
+    {
+        $redis = new MyRedis();
+        $redis->selectdb(1);
+        return $redis;
     }
 
     function getProductKey($warehouseId, $productId){
@@ -131,18 +136,19 @@ class PRODUCT{
         }
 
         // 先判断List key存不存在
+        $redis      = $this->newRedis();
         $listKey    = $this->getListKey($warehouseId, $id);
-        $productLen = $this->redis->llen($listKey);
+        $productLen = $redis->llen($listKey);
         if($productLen){
-            $productIds = $this->redis->lrange($listKey, $start, $end);
+            $productIds = $redis->lrange($listKey, $start, $end);
             foreach($productIds as $productId){
                 $productKey  = $this->getProductKey($warehouseId, $productId);
-                $productInfo = $this->redis->get($productKey);
+                $productInfo = $redis->get($productKey);
                 $productInfo = unserialize($productInfo);
 
                 $stockKey  = $this->getStockKey($warehouseId, $productId);
-                if($this->redis->exists($stockKey)){
-                    $stock = $this->redis->get($stockKey); // 缓存查询库存
+                if($redis->exists($stockKey)){
+                    $stock = $redis->get($stockKey); // 缓存查询库存
                 }else{
                     $stock = $this->getProductStock($warehouseId, $productId); // 查询库存 && 写入缓存
                 }
@@ -156,7 +162,7 @@ class PRODUCT{
 
         $sql = "SELECT
                     p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) OR pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
-                    p.is_gift, round(if(isnull(pw.price) OR pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
+                    p.is_gift, round(if(isnull(pw.price) OR pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,if(r.points is null, 0, r.points) reward_points,
                     p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
                     round(p.weight,0) unit_amount,wcd.title unit_title,wcd.unit,
 
@@ -181,6 +187,7 @@ class PRODUCT{
                     LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
                     LEFT JOIN oc_product_inventory pi ON p.product_id = pi.product_id
                     LEFT JOIN oc_product_to_warehouse pw ON (pw.product_id = pc.product_id AND pw.status = 1)
+                    left join oc_product_reward r on p.product_id = r.product_id
                     WHERE c.status =1 and p.station_id = '{$station_id}'
                     AND pw.warehouse_id = {$warehouseId}
                     AND pi.warehouse_id = {$warehouseId}
@@ -240,16 +247,16 @@ class PRODUCT{
                 $productKey = $this->getProductKey($warehouseId, $value['product_id']);
                 $stockKey   = $this->getStockKey($warehouseId, $value['product_id']);
 
-                $this->redis->setex($productKey, $this->expireTime, serialize($value));
+                $redis->setex($productKey, $this->expireTime, serialize($value));
                 // search 有设置缓存
-                if(!$this->redis->exists($stockKey)){
-                    $this->redis->setex($stockKey, $this->stockTime, $value['stock']);
+                if(!$redis->exists($stockKey)){
+                    $redis->setex($stockKey, $this->stockTime, $value['stock']);
                 }
-                $this->redis->rpush($listKey, $value['product_id']);
+                $redis->rpush($listKey, $value['product_id']);
 
                 if(($start<=$key) && ($key<=$end)){ $return[] = $value; }
             }
-            $this->redis->expire($listKey, $this->expireTime);
+            $redis->expire($listKey, $this->expireTime);
 
             return $return;
         }
@@ -298,17 +305,18 @@ class PRODUCT{
         $customerId  = (int)$data['customer_id'];
         if($stationId <= 0 || $customerId <= 0 || $warehouseId <= 0){ return false; }
 
+        $redis      = $this->newRedis();
         $cartKey    = $this->getCartKey($customerId, $stationId);
-        $cartInfo   = $this->redis->hgetall($cartKey);
+        $cartInfo   = $redis->hgetall($cartKey);
 
         if(is_array($cartInfo) && sizeof($cartInfo)){
             foreach($cartInfo as $productId => $num){
                 $stockKey  = $this->getStockKey($warehouseId, $productId);
-                if( $this->redis->exists($stockKey) ){
-                    $stock = $this->redis->get($stockKey);
+                if( $redis->exists($stockKey) ){
+                    $stock = $redis->get($stockKey);
                     $stock = $stock - $num;
                     if($stock < 0){ $stock = 0; }
-                    $this->redis->setex($stockKey, $this->stockTime, $stock);
+                    $redis->setex($stockKey, $this->stockTime, $stock);
                 }else{
                     $this->getProductStock($warehouseId, $productId);// 查询Stock & 写入缓存
                 }
@@ -334,14 +342,15 @@ class PRODUCT{
             }
         }
 
+        $redis     = $this->newRedis();
         if(sizeof($productInfo)){
             foreach($productInfo as $productId => $num){
                 $stockKey  = $this->getStockKey($warehouseId, $productId);
-                if( $this->redis->exists($stockKey) ){
-                    $stock = $this->redis->get($stockKey);
+                if( $redis->exists($stockKey) ){
+                    $stock = $redis->get($stockKey);
                     $stock = $stock + $num;
                     if($stock < 0){ $stock = 0; }
-                    $this->redis->setex($stockKey, $this->stockTime, $stock);
+                    $redis->setex($stockKey, $this->stockTime, $stock);
                 }else{
                     $this->getProductStock($warehouseId, $productId);// 查询Stock & 写入缓存
                 }
@@ -371,8 +380,9 @@ class PRODUCT{
         $stock  = 0;
         if($result){ $stock = $result['stock']; }
 
+        $redis     = $this->newRedis();
         $stockKey  = $this->getStockKey($warehouseId, $productId);
-        $this->redis->setex($stockKey, $this->stockTime, $stock);
+        $redis->setex($stockKey, $this->stockTime, $stock);
 
         return $stock;
     }
@@ -787,8 +797,8 @@ class PRODUCT{
                     $product_ids[] = $results[$m]['product_id'];;
                 }
 
+                $redis        = $this->newRedis();
                 $special_data = $this->getAreaProductSpecial($areaId, $warehouseId, $product_ids);
-
                 foreach($results as &$val){
                     if(array_key_exists($val['product_id'], $special_data)){
                         isset($val['special_price'])        && !empty($special_data[$val['product_id']]['special_price'])           && $val['special_price']        = $special_data[$val['product_id']]['special_price'];
@@ -803,10 +813,10 @@ class PRODUCT{
                     // 库存缓存 [ 存在->获取缓存 不存在->设置缓存 ]
                     if( isset($val['stock']) ){
                         $stockKey = $this->getStockKey($warehouseId, $val['product_id']);
-                        if( $this->redis->exists($stockKey) ){
-                            $val['stock'] = $this->redis->get($stockKey);
+                        if( $redis->exists($stockKey) ){
+                            $val['stock'] = $redis->get($stockKey);
                         } else {
-                            $this->redis->setex($stockKey, $this->stockTime, $val['stock']);
+                            $redis->setex($stockKey, $this->stockTime, $val['stock']);
                         }
                     }
                 }

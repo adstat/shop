@@ -4,14 +4,20 @@ require_once(DIR_SYSTEM.'/log.php');
 require_once(DIR_SYSTEM.'/redis.php');
 
 class CUSTOMER{
-    private $redis;
     private $orderTime;
+    private $orderStatusTime;
 
     public function __construct()
     {
-        $this->redis     = new MyRedis();
-        $this->orderTime = defined('REDIS_CACHE_TIME') ? REDIS_CACHE_TIME : 1800;
+        $this->orderTime       = defined('REDIS_CACHE_TIME')              ? REDIS_CACHE_TIME              : 1800;
         $this->orderStatusTime = defined('REDIS_ORDER_STATUS_CACHE_TIME') ? REDIS_ORDER_STATUS_CACHE_TIME : 600;
+    }
+
+    private function newRedis()
+    {
+        $redis = new MyRedis();
+        $redis->selectdb(1);
+        return $redis;
     }
 
     function getOrderKey($stationId=1, $orderId){
@@ -245,9 +251,9 @@ class CUSTOMER{
         $result = $query->row;
 
         if (!empty($result['customer_id'])) {
+            $redis        = $this->newRedis();
             $generate_key = $this->getGenerateKey($uid, $station_id);
-
-            $this->redis->setex($generate_key, $this->orderTime, base64_encode($result['customer_id']));
+            $redis->setex($generate_key, $this->orderTime, base64_encode($result['customer_id']));
             return base64_encode($result['customer_id']);
         }
 
@@ -262,10 +268,10 @@ class CUSTOMER{
 
         if (!$uid || !$station_id) { return false; }
 
+        $redis        = $this->newRedis();
         $generate_key = $this->getGenerateKey($uid, $station_id);
-
-        if ($this->redis->exists($generate_key)) {
-            $customer_id = $this->redis->get($generate_key);
+        if ($redis->exists($generate_key)) {
+            $customer_id = $redis->get($generate_key);
         } else {
             $customer_id = $this->generateCustomerIdCache(array('uid' => $uid, 'station_id' => $station_id));
         }
@@ -404,13 +410,14 @@ class CUSTOMER{
         if(!$customer_id){ return false; }
 
         // 获取订单 [info] 缓存
+        $redis              = $this->newRedis();
         $orderDetailListKey = $this->getOrderDetailListKey($station_id, $customer_id);
-        if($this->redis->llen($orderDetailListKey)){
+        if($redis->llen($orderDetailListKey)){
             $results  = array();
-            $orderIds = $this->redis->lrange($orderDetailListKey, 0, -1);
+            $orderIds = $redis->lrange($orderDetailListKey, 0, -1);
             foreach($orderIds as $orderId){
                 $orderKey = $this->getOrderKey($station_id, $orderId);
-                $orderInfo = $this->redis->hgetall($orderKey);
+                $orderInfo = $redis->hgetall($orderKey);
                 // 获取订单各状态
                 $orderStatusInfo = $this->getOrderStatusWithCache(array('stationId' => $station_id, 'orderId' => $orderId));
                 if(sizeof($orderStatusInfo)) {
@@ -446,9 +453,9 @@ class CUSTOMER{
             // 缓存订单 [info] 详情
             foreach($results as $value){
                 $this->setOrderAndStatusCache($station_id, $value);
-                $this->redis->rpush($orderDetailListKey, $value['order_id']);
+                $redis->rpush($orderDetailListKey, $value['order_id']);
             }
-            $this->redis->expire($orderDetailListKey, $this->orderTime);
+            $redis->expire($orderDetailListKey, $this->orderTime);
 
             return $results;
         }
@@ -932,13 +939,14 @@ class CUSTOMER{
         $start   = ( $page - 1 ) * $pageSize;
         $end     = $page * $pageSize - 1;
 
+        $redis        = $this->newRedis();
         $orderListKey = $this->getOrderListKey($station_id, $customer_id);
-        $orderLen     = $this->redis->llen($orderListKey);
+        $orderLen     = $redis->llen($orderListKey);
         if($orderLen){
-            $orderIds = $this->redis->lrange($orderListKey, $start, $end);
+            $orderIds = $redis->lrange($orderListKey, $start, $end);
             foreach($orderIds as $orderId){
                 $orderKey  = $this->getOrderKey($station_id, $orderId);
-                $orderInfo = $this->redis->hgetall($orderKey);
+                $orderInfo = $redis->hgetall($orderKey);
 
                 // 获取订单各状态
                 $orderStatusInfo = $this->getOrderStatusWithCache(array('stationId' => $station_id, 'orderId' => $orderId));
@@ -978,10 +986,10 @@ class CUSTOMER{
         if($result && sizeof($result)){
             foreach($result as $key => $value){
                 $this->setOrderAndStatusCache($station_id, $value);
-                $this->redis->rpush($orderListKey, $value['order_id']);
+                $redis->rpush($orderListKey, $value['order_id']);
                 if(($start<=$key) && ($key<=$end)){ $return[] = $value; }
             }
-            $this->redis->expire($orderListKey, $this->orderTime);
+            $redis->expire($orderListKey, $this->orderTime);
         }
 
         return array('return_code' => 'SUCCESS', 'order_list' => $return, 'order_num' => count($return));
@@ -1039,12 +1047,13 @@ class CUSTOMER{
         $orderStatusId = isset($data['data']['order_status_id']) ? $data['data']['order_status_id'] : 0;
         if($orderId < 0 || $stationId < 0 ){ return false; }
 
-        $orderStatusKey      = $this->getOrderStatusKey($stationId, $orderId);
-        if($this->redis->hlen($orderStatusKey)){
-            if(!empty($orderStatus))  { $this->redis->hset($orderStatusKey, 'order_status', $orderStatus); }
-            if(!empty($orderStatusId)){ $this->redis->hset($orderStatusKey, 'order_status_id', $orderStatusId); }
+        $redis          = $this->newRedis();
+        $orderStatusKey = $this->getOrderStatusKey($stationId, $orderId);
+        if($redis->hlen($orderStatusKey)){
+            if(!empty($orderStatus))  { $redis->hset($orderStatusKey, 'order_status', $orderStatus); }
+            if(!empty($orderStatusId)){ $redis->hset($orderStatusKey, 'order_status_id', $orderStatusId); }
 
-            $this->redis->expire($orderStatusKey, $this->orderStatusTime);
+            $redis->expire($orderStatusKey, $this->orderStatusTime);
         }
 
         return true;
@@ -1057,13 +1066,14 @@ class CUSTOMER{
         $customerId    = (int)$data['customer_id'];
         if($stationId < 0 || $customerId < 0 ){ return false; }
 
+        $redis              = $this->newRedis();
         $orderListKey       = $this->getOrderListKey($stationId, $customerId);
         $orderDetailListKey = $this->getOrderDetailListKey($stationId, $customerId);
-        if( $this->redis->llen($orderListKey) ){
-            $this->redis->del($orderListKey);
+        if( $redis->llen($orderListKey) ){
+            $redis->del($orderListKey);
         }
-        if( $this->redis->llen($orderDetailListKey) ){
-            $this->redis->del($orderDetailListKey);
+        if( $redis->llen($orderDetailListKey) ){
+            $redis->del($orderDetailListKey);
         }
 
         return true;
@@ -1077,9 +1087,10 @@ class CUSTOMER{
         $orderId    = !empty($data['orderId'])    ? (int)$data['orderId']    : 0;
         if($orderId < 0 || $stationId < 0){ return array(); }
 
+        $redis          = $this->newRedis();
         $orderStatusKey = $this->getOrderStatusKey($stationId, $orderId);
-        if($this->redis->hlen($orderStatusKey)) {
-            $orderStatusInfo = $this->redis->hgetall($orderStatusKey);
+        if($redis->hlen($orderStatusKey)) {
+            $orderStatusInfo = $redis->hgetall($orderStatusKey);
             return $orderStatusInfo;
         }
 
@@ -1095,9 +1106,9 @@ class CUSTOMER{
         if($result && sizeof($result)){
             $orderStatusKey = $this->getOrderStatusKey($stationId, $orderId);
             foreach($result[0] as $key => $value){
-                $this->redis->hset($orderStatusKey, $key, $value);
+                $redis->hset($orderStatusKey, $key, $value);
             }
-            $this->redis->expire($orderStatusKey, $this->orderStatusTime);
+            $redis->expire($orderStatusKey, $this->orderStatusTime);
 
             return $result[0];
         }
@@ -1112,14 +1123,15 @@ class CUSTOMER{
         if($stationId < 0 || !sizeof($data) || $orderId < 0 ){ return false; }
 
         $statusArray    = array('order_status_id', 'order_payment_status_id', 'order_deliver_status_id', 'order_status', 'order_payment_status', 'order_deliver_status');
+        $redis          = $this->newRedis();
         $orderKey       = $this->getOrderKey($stationId, $orderId);
         $orderStatusKey = $this->getOrderStatusKey($stationId, $orderId);
         foreach($data as $k => $v){
-            $this->redis->hsetnx($orderKey, $k, $v);
-            if(in_array($k, $statusArray)){ $this->redis->hset($orderStatusKey, $k, $v); }
+            $redis->hsetnx($orderKey, $k, $v);
+            if(in_array($k, $statusArray)){ $redis->hset($orderStatusKey, $k, $v); }
         }
-        $this->redis->expire($orderKey, $this->orderTime);
-        $this->redis->expire($orderStatusKey, $this->orderStatusTime);
+        $redis->expire($orderKey, $this->orderTime);
+        $redis->expire($orderStatusKey, $this->orderStatusTime);
         return true;
     }
 
@@ -1130,9 +1142,10 @@ class CUSTOMER{
         $stationId = !empty($data['station_id'])       ? (int)$data['station_id']       : 0;
         if($stationId < 0 || $orderId < 0 ){ return false; }
 
+        $redis          = $this->newRedis();
         $orderStatusKey = $this->getOrderStatusKey($stationId, $orderId);
-        if($this->redis->hlen($orderStatusKey)){
-            $this->redis->del($orderStatusKey);
+        if($redis->hlen($orderStatusKey)){
+            $redis->del($orderStatusKey);
         }
 
         return true;
@@ -1709,9 +1722,10 @@ class CUSTOMER{
         }
 
         // 获取缓存
+        $redis        = $this->newRedis();
         $myAccountKey = $this->getMyAccountKey($customer_id);
-        if( $this->redis->exists($myAccountKey) ){
-            $result = $this->redis->get($myAccountKey);
+        if( $redis->exists($myAccountKey) ){
+            $result = $redis->get($myAccountKey);
             return json_decode($result);
         }
 
@@ -1740,7 +1754,7 @@ class CUSTOMER{
 
         // 缓存
         $cacheTime    = defined('REDIS_MY_ACCOUNT_CACHE_TIME') ? REDIS_MY_ACCOUNT_CACHE_TIME : 3600;
-        $this->redis->setex($myAccountKey, $cacheTime, json_encode($result));
+        $redis->setex($myAccountKey, $cacheTime, json_encode($result));
 
         return $result;
     }

@@ -22,6 +22,13 @@ class INVENTORY {
         return trim($str);
     }
 
+    private function newRedis()
+    {
+        $redis = new MyRedis();
+        $redis->selectdb(1);
+        return $redis;
+    }
+
     function getStockKey($warehouseId, $productId){
         $keyPrefix = REDIS_STOCK_KEY_PREFIX ? REDIS_STOCK_KEY_PREFIX : 'stock';
         $key       = $keyPrefix.':'.$warehouseId.':'.$productId; //stock : warehouseId : productId
@@ -1851,7 +1858,7 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
         }
 
 
-        $redis     = new MyRedis();
+        $redis     = $this->newRedis();
         $stockTime = defined('REDIS_STOCK_CACHE_TIME') ? REDIS_STOCK_CACHE_TIME : 600;
         foreach($result as &$val){
             // 库存缓存 [ 存在->获取缓存 不存在->设置缓存 ]

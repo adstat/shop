@@ -5,13 +5,18 @@ require_once('inventory.php');
 
 class ORDER{
     private $dbm,$db;
-    private $redis;
     private $orderTime;
 
     public function __construct()
     {
-        $this->redis     = new MyRedis();
         $this->orderTime = defined('REDIS_CACHE_TIME') ? REDIS_CACHE_TIME : 1800;
+    }
+
+    private function newRedis()
+    {
+        $redis = new MyRedis();
+        $redis->selectdb(1);
+        return $redis;
     }
 
     function getOrderDetailInfoKey($stationId=1, $orderId){
@@ -70,10 +75,11 @@ class ORDER{
         $stationId = isset($data['stationId'])        ? (int)$data['stationId']        : 1;
         if(!$orderId){ return false; }
 
+        $redis              = $this->newRedis();
         $orderDetailInfoKey = $this->getOrderDetailInfoKey($stationId, $orderId);
         $field              = defined('REDIS_ORDER_DETAIL_INFO_OF_TOTAL_DETAIL') ? REDIS_ORDER_DETAIL_INFO_OF_TOTAL_DETAIL : 'totalDetail';
-        if($this->redis->hexists($orderDetailInfoKey, $field)){
-            $result         = $this->redis->hget($orderDetailInfoKey, $field);
+        if($redis->hexists($orderDetailInfoKey, $field)){
+            $result         = $redis->hget($orderDetailInfoKey, $field);
             return json_decode($result);
         }
 
@@ -82,8 +88,8 @@ class ORDER{
         $result = $query->rows;
 
         if($result){
-            $this->redis->hset($orderDetailInfoKey, $field, json_encode($result));
-            $this->redis->expire($orderDetailInfoKey, $this->orderTime);
+            $redis->hset($orderDetailInfoKey, $field, json_encode($result));
+            $redis->expire($orderDetailInfoKey, $this->orderTime);
             return $result;
         }
 
@@ -123,10 +129,11 @@ class ORDER{
         $stationId = isset($data['stationId'])        ? (int)$data['stationId']        : 1;
         if(!$orderId){ return false; }
 
+        $redis              = $this->newRedis();
         $orderDetailInfoKey = $this->getOrderDetailInfoKey($stationId, $orderId);
         $field              = defined('REDIS_ORDER_DETAIL_INFO_OF_PRODUCT') ? REDIS_ORDER_DETAIL_INFO_OF_PRODUCT : 'product';
-        if($this->redis->hexists($orderDetailInfoKey, $field)){
-            $result         = $this->redis->hget($orderDetailInfoKey, $field);
+        if($redis->hexists($orderDetailInfoKey, $field)){
+            $result         = $redis->hget($orderDetailInfoKey, $field);
             return json_decode($result);
         }
 
@@ -139,8 +146,8 @@ class ORDER{
         $result = $query->rows;
 
         if($result){
-            $this->redis->hset($orderDetailInfoKey, $field, json_encode($result));
-            $this->redis->expire($orderDetailInfoKey, $this->orderTime);
+            $redis->hset($orderDetailInfoKey, $field, json_encode($result));
+            $redis->expire($orderDetailInfoKey, $this->orderTime);
             return $result;
         }
 
