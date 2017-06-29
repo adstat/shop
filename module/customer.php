@@ -230,6 +230,64 @@ class CUSTOMER{
         return false;
     }
 
+    
+    // 生成 customer_id 缓存
+    function generateCustomerIdCache(array $data)
+    {
+        global $db;
+        $uid        = !empty($data['uid'])        ? $db->escape($data['uid']) : false;
+        $station_id = !empty($data['station_id']) ? (int)$data['station_id']  : false;
+
+        if (!$uid || !$station_id) { return false; }
+
+        $sql = "SELECT customer_id FROM oc_customer WHERE uid = '{$uid}'";
+        $query = $db->query($sql);
+        $result = $query->row;
+
+        if (!empty($result['customer_id'])) {
+            $generate_key = $this->getGenerateKey($uid, $station_id);
+
+            $this->redis->setex($generate_key, $this->orderTime, base64_encode($result['customer_id']));
+            return base64_encode($result['customer_id']);
+        }
+
+        return false;
+    }
+
+    // 获取 customer_id 缓存
+    function getCustomerIdCacheByUid(array $data)
+    {
+        $uid        = !empty($data['uid'])        ? $data['uid']             : false;
+        $station_id = !empty($data['station_id']) ? (int)$data['station_id'] : false;
+
+        if (!$uid || !$station_id) { return false; }
+
+        $generate_key = $this->getGenerateKey($uid, $station_id);
+
+        if ($this->redis->exists($generate_key)) {
+            $customer_id = $this->redis->get($generate_key);
+        } else {
+            $customer_id = $this->generateCustomerIdCache(array('uid' => $uid, 'station_id' => $station_id));
+        }
+
+        return base64_decode($customer_id);
+    }
+
+
+    private function getGenerateKey($uid = '', $station_id = 0)
+    {
+        $uid        = !empty($uid)        ? $uid             : false;
+        $station_id = !empty($station_id) ? (int)$station_id : false;
+        if(!$uid  || !$station_id){ return false; }
+
+        $generate_key = defined('GENERATE_KEY') ? GENERATE_KEY : 'xsj_customer_id_key';
+        $uid          = md5($uid . $generate_key);
+        $generate_key = "customer:" . $station_id . ':' . $uid;
+
+        return $generate_key;
+    }
+
+
     function getCustomerIdByUid($uid=false){
         global $db;
 

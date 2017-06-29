@@ -3185,6 +3185,32 @@ $services['soa.submitcheck'] = array(
             )
         );
 
+        $services['soa.generateCustomerIdCache'] = array(
+            'function' => 'soaFunctions::generateCustomerIdCache',
+            'docstring'=> 'generateCustomerIdCache($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getCustomerIdCacheByUid'] = array(
+            'function' => 'soaFunctions::getCustomerIdCacheByUid',
+            'docstring'=> 'getCustomerIdCacheByUid($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
         return $services;
     }
 }
@@ -5340,6 +5366,23 @@ class soaFunctions{
         return $product->newGetProducts(json_decode($data, true));
     }
 
+    function generateCustomerIdCache($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $customer;
+        return $customer->generateCustomerIdCache(json_decode($data, true));
+    }
+
+    function getCustomerIdCacheByUid($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $customer;
+        return $customer->getCustomerIdCacheByUid(json_decode($data, true));
+    }
 }
 
 
