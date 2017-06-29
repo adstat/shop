@@ -139,7 +139,7 @@ class ModelCatalogActivity extends Model {
 	}
 
     public function getActivityRelatedProducts($actId){
-        $sql = "select AP.product_id, Ap.sort_order, PD.name, ST.name station_name, P.status, P.price, P.class from oc_x_activity_product AP
+        $sql = "select AP.product_id, AP.sort_order, PD.name, ST.name station_name, P.status, P.price, P.class from oc_x_activity_product AP
         inner join oc_product P on AP.product_id = P.product_id
         left join oc_x_station ST on P.station_id = ST.station_id
         left join oc_product_description PD on P.product_id = PD.product_id and PD.language_id = 2
