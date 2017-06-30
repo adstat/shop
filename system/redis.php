@@ -28,6 +28,10 @@ class MyRedis {
             $this->redis->$func($options['host'], $options['port'], $options['timeout']);
     }
 
+    public function selectdb($dbindex){
+        return $this->redis->select($dbindex);
+    }
+
     public function hgetall($tableName){
         return $this->redis->hgetall($tableName);
     }

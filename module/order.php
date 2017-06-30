@@ -591,6 +591,16 @@ class ORDER{
                 where B.order_id = '".$order_id."'";
         $bool = $bool && $dbm->query($sql);
 
+        //减少inventory
+        foreach($data['products'] as $product){
+            $sql = "UPDATE `oc_product_inventory`
+                      SET inventory = inventory - ".(int)$product['qty']. "
+                      WHERE product_id = {$product['product_id']}
+                      AND warehouse_id = {$warehouse_id}
+                      AND station_id = {$data['station_id']}" ;
+            $bool = $bool && $dbm->query($sql);
+        }
+
         //添加赠品记录
 //        if( isset($data['validPromotionGifts']) && sizeof($data['validPromotionGifts']) ){
 //            $sql = "INSERT INTO `oc_x_promotion_activity` (`promotion_id`, `title`, `product_id`, `price`, `special_price`, `quantity`, `order_id`, `customer_id`, `date_added`, `status`) VALUES";
