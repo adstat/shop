@@ -3211,6 +3211,19 @@ $services['soa.submitcheck'] = array(
             )
         );
 
+        $services['soa.getCustomerData'] = array(
+            'function' => 'soaFunctions::getCustomerData',
+            'docstring'=> 'getCustomerData($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
         return $services;
     }
 }
@@ -5382,6 +5395,15 @@ class soaFunctions{
 
         global $customer;
         return $customer->getCustomerIdCacheByUid(json_decode($data, true));
+    }
+
+    function getCustomerData($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $customer;
+        return $customer->getCustomerData(json_decode($data, true));
     }
 }
 

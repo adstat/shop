@@ -198,6 +198,29 @@ class CUSTOMER{
         return $customer_info;
     }
 
+    // 获取用户信息
+    public function getCustomerData(array $data)
+    {
+        global $db;
+
+        $customer_id = !empty($data['customer_id']) ? (int)$data['customer_id'] : 0;
+        if($customer_id <= 0){ return array(); }
+
+        $sql = "SELECT customer_id, milk_ordered, is_agent
+                    FROM oc_customer
+                    WHERE status = 1
+                    AND customer_id = {$customer_id}";
+
+        $query  = $db->query($sql);
+        $result = $query->row;
+        if($result && sizeof($result)){
+            return $result;
+        }
+
+        return array();
+    }
+
+
     function getCustomerInfoByUid($uid=false, $station_id=1, $language_id=2, $origin_id=1){
         return $this->getCustomerInfo(false, $station_id, $language_id, $origin_id, $uid);
     }
