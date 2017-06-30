@@ -370,9 +370,7 @@ class PRODUCT{
                 IF(p.instock=1, if(pi.inventory IS NULL OR pi.inventory < 0, 0, pi.inventory-p.safestock), 999) stock
                 FROM oc_product p
                 LEFT JOIN oc_product_inventory pi ON p.product_id = pi.product_id
-                LEFT JOIN oc_product_to_warehouse pw ON (pw.product_id = p.product_id AND pw.status = 1)
                 WHERE p.product_id = {$productId}
-                AND pw.warehouse_id = {$warehouseId}
                 AND pi.warehouse_id = {$warehouseId}";
 
         $query  = $db->query($sql);
@@ -656,7 +654,7 @@ class PRODUCT{
                         LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
                         LEFT JOIN oc_product_inventory pi ON (p.product_id = pi.product_id AND pi.warehouse_id = {$warehouseId})
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
-			left join oc_product_reward r on p.product_id = r.product_id
+			            left join oc_product_reward r on p.product_id = r.product_id
                         WHERE c.status = 1
                         AND p.station_id = '".$station_id."'
                         AND pw.warehouse_id = {$warehouseId}
@@ -692,7 +690,7 @@ class PRODUCT{
                         LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id)
                         LEFT JOIN oc_product_inventory pi ON (p.product_id = pi.product_id AND pi.warehouse_id = {$warehouseId})
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
-			left join oc_product_reward r on p.product_id = r.product_id
+			            left join oc_product_reward r on p.product_id = r.product_id
                         WHERE p.station_id = '".$station_id."'
                         AND p.product_id in (".implode(',',$products).")
                         AND pw.warehouse_id = {$warehouseId}
@@ -736,7 +734,7 @@ class PRODUCT{
                         LEFT JOIN oc_product_description pd ON p.product_id = pd.product_id and pd.language_id = 2
                         LEFT JOIN oc_product_inventory pi ON (p.product_id = pi.product_id AND pi.warehouse_id = {$warehouseId})
                         LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
-			left join oc_product_reward r on p.product_id = r.product_id
+			            left join oc_product_reward r on p.product_id = r.product_id
                         WHERE
                         p.station_id = '".$station_id."'
                         and ap.act_id = '".$activity_id."'
@@ -1007,7 +1005,7 @@ class PRODUCT{
                 p.shipping, p.status,ps.is_promo, ps.promo_title, ps.promo_limit,p.sale_start_quantity,p.sale_jump_quantity
                 FROM oc_product p
                 LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
-		left join oc_product_reward r on p.product_id = r.product_id
+		        left join oc_product_reward r on p.product_id = r.product_id
                 LEFT JOIN oc_weight_class_description wcd ON (p.weight_class_id = wcd.weight_class_id)
                 LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end AND ps.warehouse_id = {$warehouse_id} AND area_id = 0)
                 LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id AND pd.language_id = {$language_id})

@@ -5,6 +5,7 @@ require_once(DIR_SYSTEM . '/redis.php');
 require_once('customer.php');
 require_once('order.php');
 require_once('common.php');
+require_once('product.php');
 
 class INVENTORY {
 
@@ -38,6 +39,7 @@ class INVENTORY {
     function deCodeProductBatch($products) {
         //Expect format: json_decode('{"products":{"150612001002003450":1,"150612001028001480":2}}', 2) => array()
         //Output: $product_info
+        global $log;
 
         $product_ids = array();
         $sub_total = 0;
@@ -1789,7 +1791,7 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
 
     public function newGetProductInventory($data = array()){
-        global $db;
+        global $db, $product;
 
         $customer_id    = !empty($data['customer_id'])          ? (int)$data['customer_id']             : 0;
         $station_id     = !empty($data['station_id'])           ? (int)$data['station_id']              : 0;
@@ -1800,26 +1802,20 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
             return array('status' => 'ERROR', 'message' => 'No warehouse id', 'data' => array());
         }
 
-        $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock,
-                if(P.instock=1, IF(PI.inventory IS NULL OR PI.inventory < 0, 0, PI.inventory-P.safestock), 999) inventory
+        $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock
                 FROM oc_product P
-                LEFT JOIN oc_product_inventory PI ON P.product_id = PI.product_id
                 LEFT JOIN oc_product_to_warehouse PW ON P.product_id = PW.product_id
                 WHERE PW.warehouse_id = {$warehouse_id}
-                AND PI.warehouse_id = {$warehouse_id}
                 GROUP BY P.product_id";
 
         $query  = $db->query($sql);
         $result = $query->rows;
 
         if (sizeof($product_ids)) {
-            $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock,
-                    IF(P.instock=1, IF(PI.inventory IS NULL OR PI.inventory < 0, 0, PI.inventory-P.safestock), 999) inventory
+            $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock
                     FROM oc_product P
-                    LEFT JOIN oc_product_inventory PI ON P.product_id = PI.product_id
                     LEFT JOIN oc_product_to_warehouse PW ON P.product_id = PW.product_id
                     WHERE P.product_id IN (". implode(',', $product_ids) .")
-                    AND PI.warehouse_id = {$warehouse_id}
                     AND PW.warehouse_id = {$warehouse_id}
                     GROUP BY P.product_id";
             $query  = $db->query($sql);
@@ -1859,16 +1855,13 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
 
         $redis     = $this->newRedis();
-        $stockTime = defined('REDIS_STOCK_CACHE_TIME') ? REDIS_STOCK_CACHE_TIME : 600;
         foreach($result as &$val){
             // 库存缓存 [ 存在->获取缓存 不存在->设置缓存 ]
-            if( isset($val['inventory']) ){
-                $stockKey = $this->getStockKey($warehouse_id, $val['product_id']);
-                if( $redis->exists($stockKey) ){
-                    $val['inventory'] = $redis->get($stockKey);
-                } else {
-                    $redis->setex($stockKey, $stockTime, $val['inventory']);
-                }
+            $stockKey = $this->getStockKey($warehouse_id, $val['product_id']);
+            if( $redis->exists($stockKey) ){
+                $val['inventory'] = $redis->get($stockKey);
+            } else {
+                $val['inventory'] = $product->getProductStock($warehouse_id, $val['product_id']);
             }
         }
 
