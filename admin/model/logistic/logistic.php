@@ -563,7 +563,7 @@ LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE $date AND (SELECT COUNT(1)AS 
 
     }
     public function getsumnums($logistic_driver_id,$deliver_date,$line_id){
-        $sql = " select sum(A.frame_count),sum(A.frame_meat_count),sum(A.incubator_count),sum(A.incubator_mi_count),sum(A.foam_count),sum(A.foam_ice_count),sum(A.frame_mi_count),sum(A.frame_ice_count),sum(A.box_count) from oc_order_inv A INNER JOIN  oc_x_logistic_allot_order lao ON A.order_id = lao.order_id inner join oc_x_logistic_allot la on lao.logistic_allot_id= la.logistic_allot_id  inner join oc_order o on o.order_id=lao.order_id inner join oc_x_bd bd on o.bd_id=bd.bd_id where  la.deliver_date = '". $deliver_date  ."'";
+        $sql = " select sum(A.frame_count),sum(A.frame_meat_count),sum(A.incubator_count),sum(A.incubator_mi_count),sum(A.foam_count),sum(A.foam_ice_count),sum(A.frame_mi_count),sum(A.frame_ice_count),sum(A.box_count) from oc_order_inv A INNER JOIN  oc_x_logistic_allot_order lao ON A.order_id = lao.order_id inner join oc_x_logistic_allot la on lao.logistic_allot_id= la.logistic_allot_id   where  la.deliver_date = '". $deliver_date  ."'";
         if($logistic_driver_id){
             $sql .= " and la.logistic_driver_id = '". $logistic_driver_id ."'";
         }
