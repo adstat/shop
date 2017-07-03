@@ -1092,12 +1092,13 @@ GROUP BY
 
 		$bool = $bool && $this->db->query($sql);
 
-		$sql = "INSERT INTO `oc_x_stock_move_item` (`inventory_move_id`, `station_id`, `product_id`, `quantity`,`price`,`weight`)
-                    select A.inventory_move_id, A.station_id,C.product_id, C.quantity quantity, C.price ,0 weight
+		$sql = "INSERT INTO `oc_x_stock_move_item` (`inventory_move_id`, `station_id`, `product_id`, `quantity`,`price`,`weight`,`box_quantity`)
+                    select A.inventory_move_id, A.station_id,C.product_id, C.quantity quantity, C.price ,0 weight, if(D.repack = 0,1,D.inv_size)
                     from oc_x_stock_move A
                     left join oc_order B on A.order_id = B.order_id
                     left join oc_order_product C on B.order_id = C.order_id
-                    where A.order_id = '" . $order_id . "' and A.inventory_type_id = ".INVENTORY_TYPE_ORDER_STOCK_RETURN."";
+                    left join oc_product D on D.product_id = C.product_id
+                    where A.order_id = '" . $order_id . "' and A.inventory_type_id = '".INVENTORY_TYPE_ORDER_STOCK_RETURN."'";
 
 		$bool = $bool && $this->db->query($sql);
 
@@ -1140,6 +1141,8 @@ GROUP BY
 			) B on B.product_id = pi.product_id
 			and B.station_id = pi.station_id and B.warehouse_id = pi.warehouse_id
 			set pi.inventory = pi.inventory+B.quantity";
+
+		$this->db->query($sql);
 
 		return $bool;
 	}

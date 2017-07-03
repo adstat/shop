@@ -231,7 +231,11 @@
                         $lock = true;
                     }
 
-                    if( !in_array($order['order_deliver_status_id'],unserialize(ALLOW_M_DELIVER)) && !in_array($order['order_payment_status_id'],unserialize(ALLOW_M_PAYMENT)) ){
+                    //if( !in_array($order['order_deliver_status_id'],unserialize(ALLOW_M_DELIVER)) && !in_array($order['order_payment_status_id'],unserialize(ALLOW_M_PAYMENT)) ){
+                    //    $lock = true;
+                    //}
+
+                    if($order['order_deliver_status_id'] > 1){
                         $lock = true;
                     }
 
@@ -295,7 +299,7 @@
                         <?php if($updateCustInfo){ ?>
                         <br>
                         修改为：<select order_id="<?php echo $order['order_id'];?>" class="order_bd_change">
-                            <?php foreach($bds as $bdk=>$bdv){?>
+                            <?php foreach($bds as $bdk=>$bdv){ ?>
 
                             <?php $order_bd_sel = $bdv['bd_id'] == $order['bd_id'] ? "selected=selected" : "";?>
 
