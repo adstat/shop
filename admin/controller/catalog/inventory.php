@@ -39,7 +39,7 @@ class ControllerCatalogInventory extends Controller
         $data['start_date']     = date('Y-m-d', time());
         $data['end_date']       = date('Y-m-d', time());
         $data['time_interval'] = is_null($this->config->get('config_inventory_query_time_interval')) ? 15 : $this->config->get('config_inventory_query_time_interval');
-
+        $data['filter_warehouse_id_global'] = $this->warehouse->getWarehouseIdGlobal();
 
         $this->response->setOutput($this->load->view('catalog/inventory.tpl', $data));
     }
@@ -280,6 +280,7 @@ class ControllerCatalogInventory extends Controller
             $comment = $this->request->post['comment'];
             $inventory_type = $this->request->post['inventory_type'];
             $warehouse_id = $this->request->post['global_warehouse_id'];
+
             // 写入数据库
             $time = time()+8*3600;
             $date = date("Y-m-d", $time);
@@ -288,7 +289,19 @@ class ControllerCatalogInventory extends Controller
             $user_name = $this->user->getUserName();
 
             $this->db->query("START TRANSACTION");
-            $this->db->query("INSERT INTO oc_x_inventory_move (`station_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`) VALUES('1', '{$date}', '{$time}', '1', '" . $inventory_type . "', '{$date_added}', '{$user_id}', '{$user_name}', '{$comment}')");
+            $bool = true;
+            //获取需要插入的station_id
+            $sql = "select station_id from oc_x_warehouse where warehouse_id = '".$warehouse_id."'";
+            $query = $this->db->query($sql);
+            if($query->num_rows){
+                $station_id = $query->row['station_id'];
+            }else{
+                $bool = false;
+            }
+
+            $sql = "INSERT INTO oc_x_inventory_move (`station_id`,`warehouse_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`) VALUES('1', '{$warehouse_id}','{$date}', '{$time}', '1', '" . $inventory_type . "', '{$date_added}', '{$user_id}', '{$user_name}', '{$comment}')";
+//            var_dump($sql);die;
+            $bool = $bool && $this->db->query("INSERT INTO oc_x_inventory_move (`station_id`,`warehouse_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`) VALUES('1', '{$warehouse_id}','{$date}', '{$time}', '1', '" . $inventory_type . "', '{$date_added}', '{$user_id}', '{$user_name}', '{$comment}')");
             $inventory_move_id = $this->db->getLastId();
             $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `warehouse_id`, `product_id`, `quantity`) VALUES';
 
@@ -304,8 +317,22 @@ class ControllerCatalogInventory extends Controller
             }
 
             //$this->db->query("INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`) VALUES('{$inventory_move_id}', '1', '{$product['product_id']}', '{$product['quantity']}')");
-            $this->db->query($sql);
-            $this->db->query('COMMIT');
+            $bool = $bool && $this->db->query($sql);
+
+            //调整库存的时候，需要更新oc_product_inventory表中的inventory
+            $sql = "update oc_product_inventory oi
+                right join oc_x_inventory_move_item A on A.station_id = oi.station_id and A.warehouse_id = oi.warehouse_id and A.product_id = oi.product_id
+                left join oc_x_inventory_move B on A.inventory_move_id = B.inventory_move_id
+                set oi.inventory = oi.inventory+A.quantity
+                where B.inventory_move_id = '".(int)$inventory_move_id ."'";
+
+            $bool = $bool && $this->db->query($sql);
+
+            if($bool){
+                $this->db->query('COMMIT');
+            }else{
+                $this->db->query('ROLLBACK');
+            }
 
             $this->session->data['success'] = '调整成功!';
             $this->response->redirect($this->url->link('catalog/inventory', 'token=' . $this->session->data['token'], 'SSL'));

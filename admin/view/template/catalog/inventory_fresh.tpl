@@ -170,6 +170,10 @@ $('#option a:first').tab('show');
             alert('不能为空!');
             return false;
         }
+        if(!<?php echo $filter_warehouse_id_global  ?>){
+            alert('必须选择仓库！');
+            return false;
+        }
 
         if(window.confirm('确认调整这些商品的库存么？')){
             $('#form-product-adjust').submit();

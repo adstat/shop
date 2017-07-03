@@ -78,6 +78,7 @@
                                 </tr>
                                 </tfoot>
                             </table>
+                            <input type="hidden" name="global_warehouse_id" value="<?php echo $filter_warehouse_id_global; ?>" />
                         </form>
                     </div>
                 </div>
@@ -267,6 +268,11 @@
         });
         if(!valid){
             alert('不能为空!');
+            return false;
+        }
+
+        if(!<?php echo $filter_warehouse_id_global  ?>){
+            alert('必须选择仓库！');
             return false;
         }
 
