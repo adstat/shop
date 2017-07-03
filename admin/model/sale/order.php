@@ -303,7 +303,7 @@ class ModelSaleOrder extends Model {
 			$sql .= " AND o.warehouse_id = '" . (int)$data['filter_warehouse_id_global'] . "'";
 		}
 
-        $sql .= " AND o.shipping_code IN ('D2D','PSPOT') ";
+        $sql .= " AND o.shipping_code IN ('D2D','PSPOT') GROUP BY o.order_id ";
 
 		$sort_data = array(
 			'o.order_id',
