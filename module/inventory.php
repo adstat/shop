@@ -1826,7 +1826,6 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
             }
 
             $redis  = $this->newRedis();
-            $result = array();
             foreach($product_ids as $key => $product_id){
                 $result[$key]['product_id']             = $product_id;
                 $result[$key]['customer_ordered_today'] = 0;

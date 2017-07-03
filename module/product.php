@@ -1036,6 +1036,100 @@ class PRODUCT{
         return array();
     }
 
+    // 获取购物车商品详情 [新]
+    function newGetCartProducts($data = array()){
+        global $db;
+
+        $customer_id    = !empty($data['customer_id'])          ? (int)$data['customer_id']             : 0;
+        $station_id     = !empty($data['station_id'])           ? (int)$data['station_id']              : 0;
+        $language_id    = !empty($data['language_id'])          ? (int)$data['language_id']             : 2;
+        $warehouse_id   = !empty($data['data']['warehouse_id']) ? (int)$data['data']['warehouse_id']    : 0;
+        $area_id        = !empty($data['data']['area_id'])      ? (int)$data['data']['area_id']         : 0;
+        $product_ids    = !empty($data['data']['product_ids'])  ? $data['data']['product_ids']          : array();
+
+        if($warehouse_id <= 0) { return array(); }
+        if(empty($product_ids)){ return array(); }
+
+        $productIds = implode(',', $product_ids);
+
+        $sql = "SELECT
+                p.product_id, if(isnull(pw.name) or pw.name='', pd.name, pw.name) name, p.sku,p.weight_inv_flag, if(r.points is null, 0, r.points) reward_points,
+                p.is_gift, if(isnull(pw.price) or pw.price<0, p.price, pw.price) price, if(isnull(ps.price),p.price,ps.price) special_price,
+                round(p.weight,0) unit_amount,wcd.title unit_title,
+                p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
+                LEAST(if(isnull(p.maximum),".REDIS_CART_ITEM_QTY_LIMIT.",p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
+                p.shipping, p.status,ps.is_promo, ps.promo_title, ps.promo_limit,p.sale_start_quantity,p.sale_jump_quantity
+                FROM oc_product p
+                LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
+		        left join oc_product_reward r on p.product_id = r.product_id
+                LEFT JOIN oc_weight_class_description wcd ON (p.weight_class_id = wcd.weight_class_id)
+                LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end AND ps.warehouse_id = {$warehouse_id} AND area_id = 0)
+                LEFT JOIN oc_product_description pd ON (p.product_id = pd.product_id AND pd.language_id = {$language_id})
+                WHERE pw.warehouse_id = {$warehouse_id}
+                AND p.station_id = {$station_id}
+                AND p.product_id in ({$productIds})";
+
+        $query = $db->query($sql);
+        $results = $query->rows;
+
+        if($results && sizeof($results)){
+            $special_data = $this->getAreaProductSpecial($area_id, $warehouse_id, $product_ids);
+            if(sizeof($special_data)){
+                foreach($results as &$val){
+                    if(array_key_exists($val['product_id'], $special_data)){
+                        !empty($special_data[$val['product_id']]['special_price']) && $val['special_price'] = $special_data[$val['product_id']]['special_price'];
+                        !empty($special_data[$val['product_id']]['is_promo'])      && $val['is_promo']      = $special_data[$val['product_id']]['is_promo'];
+                        !empty($special_data[$val['product_id']]['promo_title'])   && $val['promo_title']   = $special_data[$val['product_id']]['promo_title'];
+                        !empty($special_data[$val['product_id']]['promo_limit'])   && $val['promo_limit']   = $special_data[$val['product_id']]['promo_limit'];
+                        !empty($special_data[$val['product_id']]['maximum'])       && $val['maximum']       = $special_data[$val['product_id']]['maximum'];
+                    }
+                }
+            }
+        }
+
+
+        $result = array();
+        $sql = "SELECT A.product_id,
+                ABS(SUM(IF(A.status = 1, A.quantity, 0))) customer_ordered_today,
+                ABS(SUM(IF(A.status = 0, A.quantity, 0))) customer_ordered_tmr
+                FROM oc_x_inventory_move_item A
+                WHERE A.status = 1
+                AND A.customer_id = {$customer_id}
+                AND A.warehouse_id = {$warehouse_id}
+                AND A.station_id = {$station_id}
+                AND A.product_id IN (". implode(',', $product_ids) .")
+                GROUP BY A.product_id";
+        $query          = $db->query($sql);
+        $move_result    = $query->rows;
+        $customer_order = array();
+        if(!empty($move_result)){
+            foreach($move_result as $val){
+                $customer_order[$val['product_id']]['today'] = $val['customer_ordered_today'];
+                $customer_order[$val['product_id']]['tmr']   = $val['customer_ordered_tmr'];
+            }
+        }
+
+        $redis  = $this->newRedis();
+        foreach($product_ids as $key => $product_id){
+            $result[$key]['product_id']             = $product_id;
+            $result[$key]['customer_ordered_today'] = 0;
+            $result[$key]['customer_ordered_tmr']   = 0;
+            if(!empty($customer_order[$product_id])) {
+                $result[$key]['customer_ordered_today'] = $customer_order[$product_id]['today'];
+                $result[$key]['customer_ordered_tmr']   = $customer_order[$product_id]['tmr'];
+            }
+
+            $stockKey = $this->getStockKey($warehouse_id, $product_id);
+            if( $redis->exists($stockKey) ){
+                $result[$key]['inventory'] = $redis->get($stockKey);
+            } else {
+                $result[$key]['inventory'] = $this->getProductStock($warehouse_id, $product_id);
+            }
+        }
+
+        return array($results, $result);
+    }
+
     function getStationProduct($id, $station_id=1, $language_id=2, $origin_id=1){
         global $db;
 

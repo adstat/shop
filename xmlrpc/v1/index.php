@@ -3224,6 +3224,19 @@ $services['soa.submitcheck'] = array(
             )
         );
 
+        $services['soa.newGetCartProducts'] = array(
+            'function' => 'soaFunctions::newGetCartProducts',
+            'docstring'=> 'newGetCartProducts($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
         return $services;
     }
 }
@@ -5404,6 +5417,15 @@ class soaFunctions{
 
         global $customer;
         return $customer->getCustomerData(json_decode($data, true));
+    }
+
+    function newGetCartProducts($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $product;
+        return $product->newGetCartProducts(json_decode($data, true));
     }
 }
 
