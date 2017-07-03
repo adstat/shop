@@ -1802,37 +1802,21 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
             return array('status' => 'ERROR', 'message' => 'No warehouse id', 'data' => array());
         }
 
-        $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock
-                FROM oc_product P
-                LEFT JOIN oc_product_to_warehouse PW ON P.product_id = PW.product_id
-                WHERE PW.warehouse_id = {$warehouse_id}
-                GROUP BY P.product_id";
-
-        $query  = $db->query($sql);
-        $result = $query->rows;
-
+        $result = array();
         if (sizeof($product_ids)) {
-            $sql = "SELECT P.product_id, P.minimum, P.maximum, P.safestock
-                    FROM oc_product P
-                    LEFT JOIN oc_product_to_warehouse PW ON P.product_id = PW.product_id
-                    WHERE P.product_id IN (". implode(',', $product_ids) .")
-                    AND PW.warehouse_id = {$warehouse_id}
-                    GROUP BY P.product_id";
-            $query  = $db->query($sql);
-            $result = $query->rows;
-
             $sql = "SELECT
                     A.product_id,
-                    ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 1, A.quantity, 0))) customer_ordered_today,
-                    ABS(SUM(IF(A.customer_id = {$customer_id} AND A.status = 0, A.quantity, 0))) customer_ordered_tmr
+                    ABS(SUM(IF(A.status = 1, A.quantity, 0))) customer_ordered_today,
+                    ABS(SUM(IF(A.status = 0, A.quantity, 0))) customer_ordered_tmr
                     FROM oc_x_inventory_move_item A
                     WHERE A.status = 1
+                    AND A.customer_id = {$customer_id}
+                    AND A.warehouse_id = {$warehouse_id}
                     AND A.station_id = {$station_id}
                     AND A.product_id IN (". implode(',', $product_ids) .")
                     GROUP BY A.product_id";
-            $query  = $db->query($sql);
-            $move_result = $query->rows;
-
+            $query          = $db->query($sql);
+            $move_result    = $query->rows;
             $customer_order = array();
             if(!empty($move_result)){
                 foreach($move_result as $val){
@@ -1841,27 +1825,23 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
                 }
             }
 
-            if(!empty($result)){
-                foreach($result as $key => $value){
-                    $result[$key]['customer_ordered_today'] = 0;
-                    $result[$key]['customer_ordered_tmr']   = 0;
-                    if(!empty($customer_order[$value['product_id']])){
-                        $result[$key]['customer_ordered_today'] = $customer_order[$value['product_id']]['today'];
-                        $result[$key]['customer_ordered_tmr']   = $customer_order[$value['product_id']]['tmr'];
-                    }
+            $redis  = $this->newRedis();
+            $result = array();
+            foreach($product_ids as $key => $product_id){
+                $result[$key]['product_id']             = $product_id;
+                $result[$key]['customer_ordered_today'] = 0;
+                $result[$key]['customer_ordered_tmr']   = 0;
+                if(!empty($customer_order[$product_id])) {
+                    $result[$key]['customer_ordered_today'] = $customer_order[$product_id]['today'];
+                    $result[$key]['customer_ordered_tmr']   = $customer_order[$product_id]['tmr'];
                 }
-            }
-        }
 
-
-        $redis     = $this->newRedis();
-        foreach($result as &$val){
-            // 库存缓存 [ 存在->获取缓存 不存在->设置缓存 ]
-            $stockKey = $this->getStockKey($warehouse_id, $val['product_id']);
-            if( $redis->exists($stockKey) ){
-                $val['inventory'] = $redis->get($stockKey);
-            } else {
-                $val['inventory'] = $product->getProductStock($warehouse_id, $val['product_id']);
+                $stockKey = $this->getStockKey($warehouse_id, $product_id);
+                if( $redis->exists($stockKey) ){
+                    $result[$key]['inventory'] = $redis->get($stockKey);
+                } else {
+                    $result[$key]['inventory'] = $product->getProductStock($warehouse_id, $product_id);
+                }
             }
         }
 
