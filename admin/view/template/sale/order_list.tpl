@@ -319,10 +319,34 @@
                       <?php echo $order['status']; ?>
                       <?php if( in_array($order['order_status_id'],unserialize(ALLOW_CANCEL)) && !$lock && $updateOrderStatus ){ ?>
                           <br />
+                          <!-- 1.如果订单状态为分拣中，则需要确定是否通知仓库停止分拣
+                               2.如果仓库确认之后，关于退款需判断客户是否含已支付，有微信支付wxpy，如果客户有要求，财务退金额，系统退余额
+                               才可以完成取消动作，如果全为余额支付，系统直接退余额之后就可改变订单状态为已取消
+                               3.未支付的订单可以直接由系统改为已取消状态-->
                           <?php if($order['order_status_id'] == 1){ ?>
                             <button class="change_status" style="color:#117700" onclick="javascript:processOrder('orderStatus',<?=$order['order_id']; ?>, 2);return false;">确认订单</button>
                           <?php } ?>
-                            <button class="change_status" style="color:#ff2222" onclick="javascript:processOrder('orderStatus',<?=$order['order_id']; ?>, 3);return false;">取消定单</button>
+
+                          <!--<?php if($order['wxpay_paid'] >= 0 && ($order['order_payment_status_id'] == 2 || $order['order_payment_status_id'] == 3)){ ?>
+                          <select name="wx_return_confirm" id="order_select<?php echo $order['order_id']; ?>">
+                              <option value="0">财务未退微信支付</option>
+                              <option value="1">财务已退微信支付</option>
+                          </select>
+                          <?php } ?>-->
+                        <?php if($order['order_deliver_status_id'] == 1){ ?>
+
+                          <?php if($order['order_status_id'] == 5){ ?>
+                          <button class="change_status" style="color:#ff2222" onclick="javascript:processOrder('orderStatus',<?=$order['order_id']; ?>, 5);return false;">取消分拣中的订单</button>
+                          <?php } ?>
+                          <?php if($order['order_status_id'] == 6){ ?>
+                          <button class="change_status" style="color:#ff2222" onclick="javascript:processOrder('orderStatus',<?=$order['order_id']; ?>, 6);return false;">取消已拣完的订单</button>
+                          <?php } ?>
+                          <?php if($order['order_status_id'] == 2){ ?>
+                          <button class="change_status" style="color:#ff2222" onclick="javascript:processOrder('orderStatus',<?=$order['order_id']; ?>, 3);return false;">取消定单</button>
+                          <?php } ?>
+
+                        <?php } ?>
+
                       <?php } ?>
                   </td>
                   <td class="text-left">
@@ -508,6 +532,10 @@ function processOrder(method,order_id,status_id,msg){
             }
             else if(status_id == 3){
                 bool = confirm('取消订单['+order_id+']，订单取消后无法再修改?');
+            }else if(status_id == 5){
+                bool = confirm('确认取消正在分拣的订单['+order_id+']？,该订单将会被取消！');
+            }else if(status_id == 6){
+                bool = confirm('确认取消已拣完的订单['+order_id+']？，该订单将会被取消！');
             }
             break;
         case 'deliver':

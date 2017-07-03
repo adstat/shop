@@ -59,7 +59,7 @@ class ControllerCatalogProductSkubarcode extends Controller {
                 $url .= '&page=' . $this->request->get['page'];
             }
 
-            $this->response->redirect($this->url->link('catalog/product_sku_list', 'token=' . $this->session->data['token'] . $url, 'SSL'));
+            $this->response->redirect($this->url->link('catalog/product_skubarcode', 'token=' . $this->session->data['token'] . $url, 'SSL'));
         }
 
         $this->getForm();
