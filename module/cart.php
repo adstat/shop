@@ -202,7 +202,8 @@ class CART{
 
         //return $result; //Return INT, true or false
 
-        return $this->countCartItem($key);
+        //return $this->countCartItem($key);
+        return $this->cart->hgetall($key);
     }
 }
 
