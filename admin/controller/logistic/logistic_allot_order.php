@@ -61,10 +61,11 @@ class ControllerLogisticLogisticAllotOrder extends Controller
         $classify = $this->request->get['classify'];
         $deliver_slot_id = $this->request->get['deliver_slot_id'];
         $logistic_index = $this->request->get['logistic_index'];
+        $warehouse_id_global = $this->request->get['warehouse_id_global'];
         $this->load->model('logistic/logistic');
         $this->load->model('station/station');
 
-        $data = $this->model_logistic_logistic->getAllotOrder($date,$station_id,$order_status_id,$classify,$deliver_slot_id,$logistic_index);
+        $data = $this->model_logistic_logistic->getAllotOrder($date,$station_id,$order_status_id,$classify,$deliver_slot_id,$logistic_index,$warehouse_id_global);
 
         if(!empty($data)){
             foreach($data as &$value){
@@ -109,6 +110,8 @@ class ControllerLogisticLogisticAllotOrder extends Controller
         $station_id = isset($this->request->post['station_id']) ? $this->request->post['station_id'] : false;
         $deliver_slot_id = isset($this->request->post['deliver_slot_id']) ? $this->request->post['deliver_slot_id'] : false;
 
+        $warehouse_id_global = isset($this->request->post['warehouse_id_global']) ? $this->request->post['warehouse_id_global'] : false;
+
         if(!$date || !$station_id || !$deliver_slot_id){
             echo json_encode(array('error'=>'未指定仓库，配送日期或时间段'), JSON_UNESCAPED_UNICODE);
         }
@@ -116,7 +119,7 @@ class ControllerLogisticLogisticAllotOrder extends Controller
         $this->load->model('logistic/logistic');
         $data = array();
 
-        $data = $this->model_logistic_logistic->updateLogisticIndex($orderLogisticIndex, $date, $station_id, $deliver_slot_id );
+        $data = $this->model_logistic_logistic->updateLogisticIndex($orderLogisticIndex, $date, $station_id, $deliver_slot_id ,$warehouse_id_global );
 
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
     }
@@ -132,6 +135,9 @@ class ControllerLogisticLogisticAllotOrder extends Controller
         $order_ids =  (isset($this->request->post['order_ids']) && is_array($this->request->post['order_ids'])) ? $this->request->post['order_ids'] : array();
 
         $logistic_deliveryman_id =  isset($this->request->post['logistic_deliveryman_id']) ? $this->request->post['logistic_deliveryman_id'] : false;
+
+        $warehouse_id_global =  isset($this->request->post['warehouse_id_global']) ? $this->request->post['warehouse_id_global'] : false;
+
 
         if(!$station_id || !$deliver_date || !$deliver_slot_id || !$logistic_line_id || !$logistic_driver_id || !$logistic_van_id || !sizeof($order_ids)){
             exit('false');
@@ -182,7 +188,8 @@ class ControllerLogisticLogisticAllotOrder extends Controller
                 'logistic_deliveryman_id' => $logistic_deliveryman_id ? $logistic_deliveryman_id : 0,
                 'logistic_deliveryman_title' => $logistic_deliveryman_id ? $deliveryman_data['logistic_deliveryman_title'] : 0,
                 'logistic_deliveryman_phone' => $logistic_deliveryman_id ? $deliveryman_data['logistic_deliveryman_phone'] : 0,
-                'added_by' => $this->user->getId()
+                'added_by' => $this->user->getId(),
+                'warehouse_id' => $warehouse_id_global ,
             );
 
             $logistic_allot_id = $this->model_logistic_logistic->add($targetTable, $rowData);

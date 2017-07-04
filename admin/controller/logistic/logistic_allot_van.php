@@ -46,11 +46,12 @@ class ControllerLogisticLogisticAllotVan extends Controller
         $search_date = $this->request->post['search_date'];
         $area_id = isset($this->request->post['area_id']) ? $this->request->post['area_id'] : false;
         $station_id = isset($this->request->post['station_id'])? $this->request->post['station_id']:false;
+        $warehouse_id_global = isset($this->request->post['warehouse_id_global'])? $this->request->post['warehouse_id_global']:false;
         if($area_id == 'false'){ $area_id = false; }
 
         $this->load->model('logistic/logisticvan');
         $this->load->model('logistic/logistic');
-        $json = $this->model_logistic_logisticvan->getOrdersByAreaByDate($classify,$area_id,$search_date,$station_id);
+        $json = $this->model_logistic_logisticvan->getOrdersByAreaByDate($classify,$area_id,$search_date,$station_id,$warehouse_id_global);
 
        foreach($json as &$value){
            $order = $this->model_logistic_logistic->getOrderInv($value['order_id']);
@@ -167,6 +168,8 @@ class ControllerLogisticLogisticAllotVan extends Controller
         $logistic_van_id =  isset($this->request->post['logistic_van_id']) ? $this->request->post['logistic_van_id'] : false;
         $order_ids =  (isset($this->request->post['order_ids']) && is_array($this->request->post['order_ids'])) ? $this->request->post['order_ids'] : array();
         $logistic_deliveryman_id =  isset($this->request->post['logistic_deliveryman_id']) ? $this->request->post['logistic_deliveryman_id'] : false;;
+
+        $warehouse_id_global =  isset($this->request->post['warehouse_id_global']) ? $this->request->post['warehouse_id_global'] : false;;
         if(!$station_id || !$deliver_date || !$deliver_slot_id || !$logistic_line_id || !$logistic_driver_id || !$logistic_van_id || !count($order_ids)){
             exit('false');
         }
@@ -203,7 +206,8 @@ class ControllerLogisticLogisticAllotVan extends Controller
                 'logistic_deliveryman_id' => $logistic_deliveryman_id ? $logistic_deliveryman_id : 0,
                 'logistic_deliveryman_title' => $logistic_deliveryman_id ? $deliveryman_data['logistic_deliveryman_title'] : 0,
                 'logistic_deliveryman_phone' => $logistic_deliveryman_id ? $deliveryman_data['logistic_deliveryman_phone'] : 0,
-                'added_by' => $this->user->getId()
+                'added_by' => $this->user->getId(),
+                'warehouse_id' => $warehouse_id_global,
             );
     //    }
 

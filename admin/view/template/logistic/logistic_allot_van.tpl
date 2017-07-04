@@ -379,7 +379,10 @@
             var area_id = $('#map_area_id').val();
             var search_date = $('#search_date').val() ;
             var order_id = $('#map_order_id').val() == '' ? false : parseInt($('#map_order_id').val());
-            getOrdersByAreaByDate(classify,area_id,search_date,order_id,station_id);
+            var warehouse_id_global = $("#warehouse_id_global").val();
+
+
+            getOrdersByAreaByDate(classify,area_id,search_date,order_id,station_id,warehouse_id_global);
 
             $('#map_all_orders').html(global.addressList.length);
             bdGEO();
@@ -387,6 +390,7 @@
 
         function applyOrderToDriver(){
            // var formData = new FormData($( "#vue_form" ).get(0));
+            var warehouse_id_global = $("#warehouse_id_global").val();
             $.ajax({
                 type: 'POST',
                 async: false,
@@ -401,6 +405,7 @@
                     logistic_driver_id:$('#map_apply_area_driver').val(),
                     logistic_van_id:$('#map_apply_area_car').val(),
                     logistic_deliveryman_id:$('#map_apply_area_deliverman').val(),
+                    warehouse_id_global : warehouse_id_global,
                 },
                 success: function(data){
                     if(data == 1){
@@ -432,7 +437,12 @@
         }
 
 
-        function getOrdersByAreaByDate(classify,area_id,search_date,order_id,station_id){
+        function getOrdersByAreaByDate(classify,area_id,search_date,order_id,station_id,warehouse_id_global){
+            if(warehouse_id_global == 0){
+                alert('请先选择所在仓库');
+                return false;
+            }
+
             $.ajax({
                 type: 'POST',
                 async: false,
@@ -443,7 +453,8 @@
                     area_id : area_id,
                     search_date : search_date,
                     station_id:station_id,
-                    order_id : order_id
+                    order_id : order_id,
+                    warehouse_id_global : warehouse_id_global,
                 },
                 success: function(data){
                     global.addressList = $.parseJSON(data);

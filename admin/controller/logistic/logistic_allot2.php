@@ -60,6 +60,7 @@ class ControllerLogisticLogisticAllot2 extends Controller
         !empty($this->request->get['station_id']) && $where['station_id'] = $this->request->get['station_id'];
         !empty($this->request->get['deliver_slot_id']) && $where['deliver_slot_id'] = $this->request->get['deliver_slot_id'];
         $assign_status_id = isset($this->request->get['assign_status_id'])?$this->request->get['assign_status_id']:1;
+        $warehouse_id_global = isset($this->request->get['warehouse_id_global'])?$this->request->get['warehouse_id_global']: false;
 
         $deliver_date = isset($this->request->get['date']) ? $this->request->get['date'] : false;
         $station_id = isset($this->request->get['station_id']) ? $this->request->get['station_id'] : STATION_FAST_MOVE;
@@ -71,7 +72,7 @@ class ControllerLogisticLogisticAllot2 extends Controller
 //        }
 
         if($assign_status_id == 2){
-            $data = $this->model_logistic_logistic->getUnTable($where);
+            $data = $this->model_logistic_logistic->getUnTable($where,$warehouse_id_global);
             foreach ($data as &$value) {
               //  $value['sortIndex'] = $orderSortingIndexList[$value['order_id']];
                 $order = $this->model_logistic_logistic->getOrderInv($value['order_id']);
@@ -112,7 +113,7 @@ class ControllerLogisticLogisticAllot2 extends Controller
 
 
         if($assign_status_id ==1){
-            $data = $this->model_logistic_logistic->getAllotInfo($where);
+            $data = $this->model_logistic_logistic->getAllotInfo($where,$warehouse_id_global);
             foreach ($data as &$value) {
               //  $value['sortIndex'] = $orderSortingIndexList[$value['order_id']];
                 $order = $this->model_logistic_logistic->getOrderInv($value['order_id']);
@@ -204,8 +205,8 @@ class ControllerLogisticLogisticAllot2 extends Controller
         $this->load->model('logistic/logistic');
         $this->load->model('station/station');
         $logistic_allot_id = $this->request->get['logistic_allot_id'];
-
         $data = $this->model_logistic_logistic->getlogistics($logistic_allot_id);
+
         foreach ($data as &$value) {
             $order = $this->model_logistic_logistic->getOrderInv($value['order_id']);
             $invComment = '';
@@ -259,6 +260,9 @@ class ControllerLogisticLogisticAllot2 extends Controller
             $value['num'] = $num;
             $value['invComment'] = $invComment;
         }
+
+
+
         $this->response->setOutput($this->load->view('logistic/logistic_print.tpl', $data));
 
     }

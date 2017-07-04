@@ -109,11 +109,10 @@
                         </div>
                     </div>
 
-
                     <!--  </form>  -->
                     <div style="float: right; margin-right: 15px; margin-top: 23px">
                         <label> </label>
-                        <button type="button"  class="btn btn-primary"  onclick="javascript:getLogisticAllotId();javascript:getAllotInfo()" >查找</button>
+                        <button type="button"  class="btn btn-primary"  onclick="javascript:getLogisticAllotId();javascript:getAllotInfo();" >查找</button>
                         <button  onclick="javascript:logistic_print();" title="订单配送表" class="btn btn-info"><i class="fa fa-truck"></i></button>
                     </div>
                 </div>
@@ -170,13 +169,8 @@
         pickTime: false
     });
     $('input[name^=\'selected\']').on('change', function() {
-
         $('#button-shipping').prop('disabled', false);
-
-
         var selected = $('input[name^=\'selected\']:checked');
-
-
 
 
     });
@@ -191,6 +185,10 @@
         var driver_id = $('#input_logistic_list').val();
         var assign_status_id = $('#assign_status_id').val();
         var assign_id =  $("#assign_status_id").val();
+        var warehouse_id_global = $("#warehouse_id_global").val();
+        if(warehouse_id_global == 0){
+            return false;
+        }
         if(assign_id == 1 ){
             $("#untable").hide();
             $("#table").show();
@@ -217,6 +215,7 @@
                 station_id:station_id,
                 deliver_slot_id:deliver_slot_id,
                 assign_status_id:assign_status_id,
+                warehouse_id_global :warehouse_id_global,
             },
             success:function(data) {
                 if (assign_id == 1) {
@@ -240,6 +239,7 @@
                         html += "</tr>";
                     });
                     $('#table_info').html(html);
+                  //  getReturnInfo();
                 }
                 if (assign_id == 2) {
                     var html = '';
@@ -267,6 +267,8 @@
 
     }
 
+
+
 </script>
 
 <script>
@@ -275,6 +277,13 @@
         var driver_id = $('#input_logistic_list').val();
         var date = $('#search_date').val();
         var station_id = $('#input-station_id').val();
+        var warehouse_id_global = $("#warehouse_id_global").val();
+
+        if(warehouse_id_global == 0){
+            alert('查询打印前请先选择仓库');
+            return false;
+        }
+
         if( line_id !='' &&  driver_id !=''){
             $.ajax({
                 type: 'POST',

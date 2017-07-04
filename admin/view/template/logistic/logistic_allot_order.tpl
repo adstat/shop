@@ -311,6 +311,7 @@
             },
             methods:{
                 search:function(){
+
                     var _self = this;
                     var date = $('#search_date').val();
                     var classify = $('#search_classify').val();
@@ -318,6 +319,13 @@
                     var deliver_slot_id = $('#slot').val();
                     var logistic_index = $('#logistic_index').val();
                     var order_status_id = $('#input-order-status-id').val();
+                    var warehouse_id_global = $("#warehouse_id_global").val();
+
+                    if(warehouse_id_global == 0){
+                        alert( '分车之前请先选好仓库');
+                        return false;
+                    }
+
                     this.classify = classify;
                     $.ajax({
                         type: 'GET',
@@ -330,6 +338,7 @@
                             deliver_slot_id:deliver_slot_id,
                             logistic_index:logistic_index,
                             order_status_id :order_status_id,
+                            warehouse_id_global:warehouse_id_global,
                         },
                         success:function(data) {
                             console.log("SEARCH: "+data);
@@ -377,6 +386,7 @@
                 },
                 add:function(e){
                     var that = $(e.target).parents('tr');
+
                     if(that.children().first().data('classify_type')==1){
                         alert('此订单已分配');
                         return false;
@@ -441,6 +451,7 @@
                     var station_id = $('#input-station_id').val();
                     var date = $('#search_date').val();
                     var deliver_slot_id = $('#slot').val();
+                    var warehouse_id_global = $("#warehouse_id_global").val();
 
                     if(line && driver && van){
                         $.ajax({
@@ -456,7 +467,8 @@
                                 logistic_line_id:this.l_selected,
                                 logistic_driver_id:this.d_selected,
                                 logistic_van_id:this.v_selected,
-                                order_ids:vue.order_ids
+                                order_ids:vue.order_ids,
+                                warehouse_id_global : warehouse_id_global,
                             },
                             success:function(data){
                                 console.log("Allot result:"+data);
@@ -534,6 +546,8 @@
         }
         console.log(orderLogisticIndex);
 
+        var warehouse_id_global = $("#warehouse_id_global").val();
+
         $('#logistic_index').css('background-color','#ffcc00');
         $.ajax({
             type: 'post',
@@ -544,7 +558,8 @@
                 orderLogisticIndex: orderLogisticIndex,
                 date: $('#search_date').val(),
                 station_id: $('#input-station_id').val(),
-                deliver_slot_id: $('#slot').val()
+                deliver_slot_id: $('#slot').val(),
+                warehouse_id_global : warehouse_id_global ,
             },
             success:function(data){
                 console.log(data);
@@ -578,6 +593,10 @@
             var logistic_driver_id = $('#InputDriver').val();
             var deliver_date = $('#search_date').val();
             var line_id = $('#InputLine').val();
+            var warehouse_id_global = $("#warehouse_id_global").val();
+            if(warehouse_id_global == 0){
+                return false;
+            }
             $.ajax({
                 type: 'post',
                 async : false,
@@ -588,6 +607,7 @@
                     logistic_driver_id: logistic_driver_id,
                     deliver_date: deliver_date,
                     line_id :line_id,
+                    warehouse_id_global : warehouse_id_global,
 
                 },
                 success:function(data){

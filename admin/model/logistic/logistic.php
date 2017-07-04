@@ -183,7 +183,7 @@ FROM
         return $this->db->query($sql)->rows;
     }
 
-    public function getAllotOrder($date, $station_id,$order_status_id, $classify,$deliver_slot_id, $logistic_index=0)
+    public function getAllotOrder($date, $station_id,$order_status_id, $classify,$deliver_slot_id, $logistic_index=0,$warehouse_id_global)
     {
 
         if ($classify == 1) {
@@ -209,6 +209,8 @@ FROM
             if($logistic_index){
                 $sql .=' and lo.logistic_index='.$logistic_index;
             }
+
+            $sql .= " and o.warehouse_id = '" . $warehouse_id_global ."' ";
 
             $sql .= " order by o.order_status_id ,o.shipping_address_1 asc";
 
@@ -243,6 +245,8 @@ FROM
             if($logistic_index){
                 $sql .=' and lo.logistic_index='.$logistic_index;
             }
+
+            $sql .= " and o.warehouse_id = '" . $warehouse_id_global ."' ";
 
             $sql .= " order by o.order_status_id ,o.shipping_address_1 asc";
 
@@ -284,6 +288,8 @@ FROM
                 $sql .=' and lo.logistic_index='.$logistic_index;
             }
 
+            $sql .= " and o.warehouse_id = '" . $warehouse_id_global ."' ";
+
             $sql .= " order by o.order_status_id ,o.shipping_address_1 asc";
 
             $classify2 = $this->db->query($sql)->rows;
@@ -318,6 +324,8 @@ FROM
             if($logistic_index){
                 $sql .=' and lo.logistic_index='.$logistic_index;
             }
+
+            $sql .= " and o.warehouse_id = '" . $warehouse_id_global ."' ";
 
             $sql .= " order by o.order_status_id , o.shipping_address_1 asc";
 
@@ -397,7 +405,7 @@ FROM
         return $this->db->getLastId();
     }
 
-    public function updateLogisticIndex($orderLogisticIndex, $date, $station_id, $deliver_slot_id ){
+    public function updateLogisticIndex($orderLogisticIndex, $date, $station_id, $deliver_slot_id ,$warehouse_id_global ){
 
         if(sizeof($orderLogisticIndex)){
             foreach($orderLogisticIndex as $key=>$val){
@@ -410,7 +418,7 @@ FROM
                     if($result['num'] > 0){
                         $this->db->query("update oc_x_logistic_order_index set logistic_index = '".$val."' where order_id = '".$key."' ");
                     }else{
-                        $this->db->query("insert into oc_x_logistic_order_index (`order_id`,`station_id`,`deliver_date`,`logistic_index`) VALUES ('".$key."','".$station_id."',NOW(),'".$val."')");
+                        $this->db->query("insert into oc_x_logistic_order_index (`order_id`,`station_id`,`deliver_date`,`logistic_index` , `warehouse_id`) VALUES ('".$key."','".$station_id."',NOW(),'".$val."' , '". $warehouse_id_global ."')");
                     }
 
                 }
@@ -446,12 +454,12 @@ FROM
         return $this->db->query($sql)->rows;
     }
 
-    public function getAllotInfo($where = [])
+    public function getAllotInfo($where = [],$warehouse_id_global)
     {
 
         if (empty($where)) {
             $sql =
-                'select lao.order_id, la.deliver_date , la.logistic_line_title , la.logistic_driver_title, la.logistic_driver_phone , la.logistic_van_title, la.logistic_deliveryman_title, la.logistic_deliveryman_phone ,lao.logistic_allot_order_id, lao.logistic_allot_id  , o.shipping_address_1 , o.shipping_city , o.station_id  , o.shipping_firstname , o.shipping_phone , o.comment  , bd.bd_name  , bd.phone , o.total ,la.logistic_allot_idfrom oc_x_logistic_allot_order lao inner join oc_x_logistic_allot la on lao.logistic_allot_id= la.logistic_allot_id  inner join oc_order o on o.order_id=lao.order_id inner join oc_x_bd bd on o.bd_id=bd.bd_id  order by la.date_added ';
+                "select lao.order_id, la.deliver_date , la.logistic_line_title , la.logistic_driver_title, la.logistic_driver_phone , la.logistic_van_title, la.logistic_deliveryman_title, la.logistic_deliveryman_phone ,lao.logistic_allot_order_id, lao.logistic_allot_id  , o.shipping_address_1 , o.shipping_city , o.station_id  , o.shipping_firstname , o.shipping_phone , o.comment  , bd.bd_name  , bd.phone , o.total ,la.logistic_allot_idfrom oc_x_logistic_allot_order lao inner join oc_x_logistic_allot la on lao.logistic_allot_id= la.logistic_allot_id  inner join oc_order o on o.order_id=lao.order_id inner join oc_x_bd bd on o.bd_id=bd.bd_id and o.warehouse_id = '". $warehouse_id_global."' order by la.date_added ";
         } else {
 
             $whereCond = "where 1=1 and  o.order_status_id != 3 ";
@@ -462,6 +470,7 @@ FROM
             $whereCond .= isset($where['station_id']) ? " and la.station_id='".$where['station_id']."'" : "";
             $whereCond .= isset($where['deliver_slot_id']) ? " and la.deliver_slot_id='".$where['deliver_slot_id']."'" : "";
             $whereCond .= isset($where['deliver_date']) ? " and la.deliver_date='".$where['deliver_date']."'" : "";
+            $whereCond .=  " and o.warehouse_id='".$warehouse_id_global."'" ;
 
             $sql =
                 'select lao.order_id order_id, la.deliver_date , la.logistic_line_title , la.logistic_driver_title, la.logistic_driver_phone , la.logistic_van_title, la.logistic_deliveryman_title, la.logistic_deliveryman_phone  ,lao.logistic_allot_order_id, lao.logistic_allot_id , o.shipping_address_1 , o.shipping_city , o.station_id , o.shipping_firstname , o.shipping_phone , o.comment , bd.bd_name  , bd.phone  , o.total,os.name AS status_name,o.order_status_id,la.logistic_allot_id
@@ -538,11 +547,12 @@ FROM
     }
 
 
-    public function getUnTable($where = []){
+    public function getUnTable($where = [],$warehouse_id_global){
 
         if(empty($where)){
 
-            $sql = "SELECT  O.order_id ,O.shipping_address_1 , O.shipping_city , O.station_id , O.shipping_firstname , O.shipping_phone , O.comment , BD.bd_name  , BD.phone  , O.total ,O.deliver_date FROM oc_order O LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE (SELECT COUNT(1)AS  num FROM oc_x_logistic_allot_order B  WHERE O.order_status_id !=3 AND O.order_id = B.order_id) = 0 ";
+            $sql = "SELECT  O.order_id ,O.shipping_address_1 , O.shipping_city , O.station_id , O.shipping_firstname , O.shipping_phone , O.comment , BD.bd_name  , BD.phone  , O.total ,O.deliver_date FROM oc_order O LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE (SELECT COUNT(1)AS  num FROM oc_x_logistic_allot_order B  WHERE O.order_status_id !=3 AND O.order_id = B.order_id) = 0 AND  O.warehouse_id = '". $warehouse_id_global."'";
+
 
         }else{
 
@@ -551,11 +561,13 @@ FROM
 
             $whereCond .= isset($where['station_id']) ? " and O.station_id='".$where['station_id']."'" : "";
          ;
+            $whereCond .=  " and o.warehouse_id='".$warehouse_id_global."'" ;
+            ;
        $date= isset($where['deliver_date']) ? "  DATE(O.deliver_date)='".$where['deliver_date']."'" : "";
 
 
             $sql = "SELECT  O.order_id ,O.shipping_address_1 , O.shipping_city , O.station_id , O.order_status_id,O.shipping_firstname , O.shipping_phone , O.comment , BD.bd_name  , BD.phone  , O.total ,O.deliver_date ,os.name AS status_name ,O.order_status_id FROM oc_order O left JOIN oc_order_status os ON O.order_status_id = os.order_status_id
-LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE $date AND (SELECT COUNT(1)AS  num FROM oc_x_logistic_allot_order B  WHERE  O.order_id = B.order_id  ) = 0   $whereCond  and O.order_status_id !=3";
+LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE $date AND (SELECT COUNT(1)AS  num FROM oc_x_logistic_allot_order B  WHERE  O.order_id = B.order_id  ) = 0   $whereCond  and O.order_status_id !=3 ";
 
         }
 
@@ -590,9 +602,11 @@ LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE $date AND (SELECT COUNT(1)AS 
                 left JOIN oc_order_status os ON o.order_status_id = os.order_status_id
                 left join oc_x_bd bd on o.bd_id=bd.bd_id  WHERE o.order_status_id !=3 AND lao.logistic_allot_id = '".$logistic_allot_id ."'
                ";
-        $sql .="order by lao.logistic_allot_id , la.date_added";
+        $sql .=" order by lao.logistic_allot_id , la.date_added";
         return $this->db->query($sql)->rows;
     }
+
+
 
     public function getLogisticSumNum($logistic_allot_id){
         $sql =
