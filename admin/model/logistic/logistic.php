@@ -196,7 +196,7 @@ FROM
                 LEFT JOIN  oc_x_area  xa  ON  oc.area_id = xa.area_id
                 left join oc_order_extend oe on o.order_id = oe.order_id
                 LEFT JOIN  oc_order_status os ON  o.order_status_id = os.order_status_id
-                left join oc_x_logistic_allot_order lao on lao.order_id = o.order_id where o.order_status_id !=3 and  lao.order_id is null  and o.order_deliver_status_id = 1 and o.station_id=' .
+                left join oc_x_logistic_allot_order lao on lao.order_id = o.order_id where o.order_status_id !=3 and  lao.order_id is null  and o.order_deliver_status_id IN (1,2) and o.station_id=' .
                 $station_id . '  and o.deliver_date > "2016-01-01" and o.deliver_date =\'' . $date . '\'';
 
             if(!empty($deliver_slot_id)){
@@ -216,7 +216,10 @@ FROM
 
             $classify2 = $this->db->query($sql)->rows;
             foreach ($classify2 as &$value) {
-                if(!$value['allotted_order_id'] and ($value['order_deliver_status_id'] ==1)){
+                if(!$value['allotted_order_id'] and ($value['order_deliver_status_id'] ==1)  ){
+                    $value['classify_type'] = 3;
+                }
+                if(!$value['allotted_order_id'] and ($value['order_deliver_status_id'] ==2)  ){
                     $value['classify_type'] = 3;
                 }
             }
@@ -340,7 +343,7 @@ FROM
                 if($value['allotted_order_id'] and $value['order_deliver_status_id'] ==11){
                     $value['classify_type'] = 2;
                 }
-                if(!$value['allotted_order_id'] and $value['order_deliver_status_id'] ==1){
+                if(!$value['allotted_order_id'] and ($value['order_deliver_status_id'] == 1 or $value['order_deliver_status_id'] ==2 )){
                     $value['classify_type'] = 3;
                 }
             }
@@ -561,7 +564,7 @@ FROM
 
             $whereCond .= isset($where['station_id']) ? " and O.station_id='".$where['station_id']."'" : "";
          ;
-            $whereCond .=  " and o.warehouse_id='".$warehouse_id_global."'" ;
+            $whereCond .=  " and O.warehouse_id='".$warehouse_id_global."'" ;
             ;
        $date= isset($where['deliver_date']) ? "  DATE(O.deliver_date)='".$where['deliver_date']."'" : "";
 
