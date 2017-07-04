@@ -748,7 +748,7 @@ class PRODUCT{
             //Get Agent Product
             if($keyword == SEARCH_PROMO_PROD && $agent_id){
                 $sql = "SELECT
-                        p.product_id, concat(p.product_id,'#',if(isnull(pw.name)) or pw.name='', pd.name, pw.name) name, if(isnull(pw.abstract) or pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
+                        p.product_id, concat(p.product_id,'#',if(isnull(pw.name) or pw.name='', pd.name, pw.name)) name, if(isnull(pw.abstract) or pw.abstract='', pd.abstract, pw.abstract) abstract, p.sku, p.image, p.oss, p.sort_order product_order,
                         p.is_gift, round(if(isnull(pw.price) or pw.price<0, p.price, pw.price),2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price,
                         p.retail_price,left(pd.description, 20) short_desc, p.cashback, p.inv_size, p.instock, p.is_selected, p.is_soon_to_expire,
 
