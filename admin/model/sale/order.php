@@ -957,10 +957,6 @@ GROUP BY
 		return $this->db->query($sql);
 	}
 
-	public function cancelOrderTranceAction(){
-
-	}
-
 	public function orderStatusAllowes($status_id,$order_id,$currentStatus){
 		$sql = "update oc_order set order_status_id = '{$status_id}' where order_id = '{$order_id}'";
 		$bool = true;
@@ -993,6 +989,15 @@ GROUP BY
                     where A.order_id = '" . $order_id . "' and A.inventory_type_id = '" . INVENTORY_TYPE_ORDER_CANCEL . "'
                     ";
 			$bool = $bool && $this->db->query($sql);
+
+			//现在需处理已支付的订单，如果订单为已支付，则需要退余额操作
+			$sql = "select order_payment_status_id from oc_order where order_id = ".(int)$order_id;
+
+			$query = $this->db->query($sql);
+
+			if($query->row['order_payment_status_id'] == 2){
+				$this->addTransaction($order_id,$status_id);
+			}
 		}
 
 		return $bool;
