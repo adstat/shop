@@ -914,7 +914,7 @@ class CUSTOMER{
         $station_id = isset($data['station_id']) ? (int)$data['station_id'] : 1;
 
         $sql = "SELECT A.orderid, A.order_id, A.orderstamp, A.shipping_method, A.shipping_code,
-            round(A.total,2) total, round(A.credit_paid,2) credit_paid, round(A.sub_total+A.shipping_fee+A.discount_total+A.balance_container_deposit,2) order_total,
+            round(A.total,2) total, round(A.credit_paid,2) credit_paid, round(A.sub_total+A.shipping_fee+A.discount_total+A.balance_container_deposit+A.point_paid,2) order_total,
             round(A.balance_container_deposit,2) balance_container_deposit, if(sum(T.value)<0, 0, round(sum(T.value),2) ) due,
             A.deliver_date, A.shipping_name, left(A.date_added,10) order_date, A.sub_total, A.shipping_fee, A.shipping_address_1,
             A.order_status_id, A.order_payment_status_id, A.order_deliver_status_id, B.name order_status, C.name order_payment_status, D.name order_deliver_status,
@@ -984,7 +984,7 @@ class CUSTOMER{
         }
 
         $sql = "SELECT A.orderid, A.order_id, A.orderstamp, A.shipping_method, A.shipping_code,
-            round(A.total,2) total, round(A.credit_paid,2) credit_paid, round(A.sub_total+A.shipping_fee+A.discount_total+A.balance_container_deposit,2) order_total,
+            round(A.total,2) total, round(A.credit_paid,2) credit_paid, round(A.sub_total+A.shipping_fee+A.discount_total+A.balance_container_deposit+A.point_paid,2) order_total,
             round(A.balance_container_deposit,2) balance_container_deposit, if(sum(T.value)<0, 0, round(sum(T.value),2) ) due,
             A.deliver_date, A.shipping_name, left(A.date_added,10) order_date, A.sub_total, A.shipping_fee, A.shipping_address_1,
             A.order_status_id, A.order_payment_status_id, A.order_deliver_status_id, B.name order_status, C.name order_payment_status, D.name order_deliver_status,
