@@ -33,7 +33,7 @@
                         <?php if ($customer_id) { ?>
                         <li><a href="#tab-history" data-toggle="tab">历史记录</a></li>
                         <li><a href="#tab-transaction" data-toggle="tab"><?php echo $tab_transaction; ?></a></li>
-                        <li><a href="#tab-reward" data-toggle="tab"><?php echo $tab_reward; ?></a></li>
+                        <li><a href="#tab-reward" data-toggle="tab">账户积分</a></li>
                         <li><a href="#tab-container" data-toggle="tab">未还周转框</a></li>
 
                         <li><a href="#tab-order" data-toggle="tab"><?php echo $tab_order; ?></a></li>
