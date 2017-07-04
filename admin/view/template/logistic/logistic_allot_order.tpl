@@ -367,7 +367,7 @@
                     var date = $('#search_date').val();
                     var station_id = $('#input-station_id').val();
                     var deliver_slot_id = $('#slot').val();
-
+                    var warehouse_id_global = $("#warehouse_id_global").val();
                     $.ajax({
                         url:'index.php?route=logistic/logistic_allot/getAllotInfo&token=<?= $_SESSION['token']?>',
                         data:{
@@ -376,7 +376,8 @@
                             van_id:this.v_selected,
                             date:date,
                             station_id:station_id,
-                            deliver_slot_id:deliver_slot_id
+                            deliver_slot_id:deliver_slot_id,
+                            warehouse_id_global : warehouse_id_global,
                         },
                         success:function(data){
                             console.log(data);
