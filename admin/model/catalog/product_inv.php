@@ -3,7 +3,7 @@ class ModelCatalogProductInv extends Model {
     public function addProduct($data) {
         $this->event->trigger('pre.admin.product.add', $data);
 
-        $this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', inv_class_sort = '" . $this->db->escape($data['inv_class_sort']) . "', storage_mode = '" . $this->db->escape($data['storage_mode']) . "', maximum = '" . (int)$data['maximum'] . "', customer_total_limit = '" . (int)$data['customer_total_limit'] . "', wxpay_only = '" . (int)$data['wxpay_only'] . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', issupportstore = '" . (int)$data['issupportstore'] . "', price = '" . (float)$data['price'] . "', shelf_life = '" . $this->db->escape($data['shelf_life']) . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW()");
+        $this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', inv_class_sort = '" . $this->db->escape($data['inv_class_sort']) . "', storage_mode = '" . $this->db->escape($data['storage_mode']) . "', maximum = '" . (int)$data['maximum'] . "', customer_total_limit = '" . (int)$data['customer_total_limit'] . "', wxpay_only = '" . (int)$data['wxpay_only'] . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', issupportstore = '" . (int)$data['issupportstore'] . "', price = '" . (float)$data['price'] . "', shelf_life = '" . $this->db->escape($data['shelf_life']) . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW()");
 
         $product_id = $this->db->getLastId();
 
@@ -251,10 +251,10 @@ class ModelCatalogProductInv extends Model {
     }
 
     public function editProduct($product_id, $data) {
+// print_r($data); die;
         //$this->event->trigger('pre.admin.product.edit', $data);
         $sql = "UPDATE " . DB_PREFIX . "product
-            SET sku = '" . $this->db->escape($data['sku']) . "',
-            repack = '" . (int)$this->db->escape($data['repack']) . "',
+            SET repack = '" . (int)$this->db->escape($data['repack']) . "',
             inv_class_sort = '" . $this->db->escape($data['inv_class_sort']) . "',
             date_modified = NOW(),
             weight_range_least = '" . $this->db->escape($data['weight_range_least']) . "',
@@ -269,14 +269,14 @@ class ModelCatalogProductInv extends Model {
         $this->db->query($sql);
 
         $sql_p = "INSERT INTO oc_product_history (`product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
-			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
+			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
 			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
 			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
 			`date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
 			`issupportstore`,`is_sku`,`related_product_id`,`class`,`factor`,`inv_class`,`inv_class_sort`,`produce_group_id`,`purchase_preset`,`supplier_id`,`weight_type`,`fix_discount`,`weightloss_rate`,
 			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,`user_id_modify`,`date_modify`)
 			select `product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
-			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
+			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
 			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
 			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
 `date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
@@ -284,6 +284,17 @@ class ModelCatalogProductInv extends Model {
 			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,'". $this->user->getId() ."',now() from oc_product where product_id = '". $product_id ."'";
 
         $this->db->query($sql_p);
+
+        //修改仓库中商品的barcode
+        if(isset($data['warehouse_info'])){
+            foreach($data['warehouse_info'] as $key => $value){
+                $barcode_list = serialize(explode(',',$value['barcode_list']));
+                $sql_b = "update oc_product_to_warehouse set sku_barcode = '".$value['sku_barcode']."',
+                          barcode_list = '".$barcode_list."' where product_id = '".(int)$product_id."'
+                          and warehouse_id = '".$key."'";
+                $this->db->query($sql_b);
+            }
+        }
 
     }
 
@@ -926,8 +937,8 @@ class ModelCatalogProductInv extends Model {
             $sql_q = "select count(sku_barcode_id) total from oc_product_sku_barcode where sku_barcode = '".$data['sku_barcode']."' and product_id <> ".$product_id;
 
             $serach = $this->db->query($sql_q)->row['total'];
-
-            if($serach){
+//var_dump($serach);die;
+            if(!$serach){
                 $sql = "insert into oc_product_sku_barcode
                   set product_id = '".$product_id."',
                   sku_barcode = '".$this->db->escape($data['sku_barcode'])."'
@@ -966,7 +977,7 @@ class ModelCatalogProductInv extends Model {
 
         $serach = $this->db->query($sql_q)->row['total'];
 
-        if($serach){
+        if(!$serach){
             $sql = "update oc_product_sku_barcode set
                 sku_barcode = '".$this->db->escape($data['sku'])."',
                 box = '".(int)$data['box']."',

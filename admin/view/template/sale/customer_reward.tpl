@@ -14,8 +14,8 @@
       <tr>
         <td class="text-left"><?php echo $column_date_added; ?></td>
         <td class="text-left"><?php echo $column_description; ?></td>
-        <td class="text-left">积分类型</td>
-        <td class="text-center">积分订单</td>
+        <td class="text-left">绉垎绫诲瀷</td>
+        <td class="text-center">绉垎璁㈠崟</td>
         <td class="text-right"><?php echo $column_points; ?></td>
       </tr>
     </thead>

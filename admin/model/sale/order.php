@@ -303,7 +303,7 @@ class ModelSaleOrder extends Model {
 			$sql .= " AND o.warehouse_id = '" . (int)$data['filter_warehouse_id_global'] . "'";
 		}
 
-        $sql .= " AND o.shipping_code IN ('D2D','PSPOT') ";
+        $sql .= " AND o.shipping_code IN ('D2D','PSPOT') GROUP BY o.order_id ";
 
 		$sort_data = array(
 			'o.order_id',
@@ -712,6 +712,14 @@ AND xsm.inventory_type_id = 12";
         return $query->rows;
     }
 
+	public function getOrderPaymentStatusId($order_id){
+		$sql = "SELECT order_payment_status_id id from oc_order WHERE order_id = '". (int)$order_id ."'";
+
+		$query = $this->db->query($sql);
+
+		return $query->row['id'];
+	}
+
     public function NOUSE_getOrderPaymentStatues() {
         $query = $this->db->query("SELECT order_payment_status_id,name FROM " . DB_PREFIX . "order_payment_status WHERE language_id = '" . (int) $this->config->get('config_language_id') . "' order by order_payment_status_id asc");
 
@@ -913,4 +921,311 @@ GROUP BY
 
         return $return;
     }
+
+	/*分离order控制层中的业务代码到模型*/
+	//获取订单状态
+	public function getOrderStatus(){
+		$sql = "SELECT order_status_id, `name` status_name FROM oc_order_status WHERE language_id = 2";
+		$query = $this->db->query($sql);
+		$orderStatusRaw = $query->rows;
+
+		$orderStatus = array();
+		foreach ($orderStatusRaw as $val) {
+			$orderStatus[$val['order_status_id']] = $val['status_name'];
+		}
+
+		return $orderStatus;
+	}
+
+	public function getCurrentOrderStatus($order_id){
+		$sql = "SELECT o.order_id, o.order_status_id FROM oc_order o WHERE o.order_id = '" . $order_id . "'";
+		$query = $this->db->query($sql);
+		$currentStatus = $query->row;
+
+		return $currentStatus;
+	}
+
+	public function updateOrderStatus($status_id,$order_id){
+		$sql = "update oc_order set order_status_id = '{$status_id}' where order_id = '{$order_id}'";
+
+		return $this->db->query($sql);
+	}
+
+	public function cancelCouponUsed($order_id){
+		$sql = "update oc_coupon_history set status = '0' where order_id = '".$order_id."'";
+
+		return $this->db->query($sql);
+	}
+
+	public function orderStatusAllowes($status_id,$order_id,$currentStatus){
+		$sql = "update oc_order set order_status_id = '{$status_id}' where order_id = '{$order_id}'";
+		$bool = true;
+		$bool = $bool && $this->db->query($sql);
+
+
+		// 取消订单，执行库存操作
+		if ($status_id == CANCELLED_ORDER_STATUS && $currentStatus['order_status_id'] !== CANCELLED_ORDER_STATUS) {
+			//TODO退余额退款操作
+
+			//取消使用优惠券记录
+			$sql = "update oc_coupon_history set status = '0' where order_id = '".$order_id."'";
+			$bool = true;
+			$bool = $bool && $this->db->query($sql);
+
+			//查找是否已有库存扣减记录，如有添加库存增加记录
+			$sql = "INSERT INTO `oc_x_inventory_move` (`station_id`, `date`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `status`)
+                    select A.station_id, current_date() date, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, " . INVENTORY_TYPE_ORDER_CANCEL . " inventory_type_id, now() date_added, 1 status
+                    from oc_order A
+                    inner join oc_x_inventory_move B on A.order_id = B.order_id and inventory_type_id = '" . INVENTORY_TYPE_ORDERED . "'
+                    where A.order_id = '" . $order_id . "'";
+			$bool = $bool && $this->db->query($sql);
+			//$inventory_move_id = $dbm->getLastId();
+			//按照添加的，后天订单设置状态为0, 不参与实时库存计算
+			$sql = "INSERT INTO `oc_x_inventory_move_item` (`inventory_move_id`, `station_id`, `order_id`, `customer_id`, `product_id`, `quantity`, `status`)
+                    select A.inventory_move_id, A.station_id, B.order_id, B.customer_id, C.product_id, C.quantity quantity, if(B.deliver_date = date_add(date(B.date_added), interval 1 day), 1, 0) status
+                    from oc_x_inventory_move A
+                    left join oc_order B on A.order_id = B.order_id
+                    left join oc_order_product C on B.order_id = C.order_id
+                    where A.order_id = '" . $order_id . "' and A.inventory_type_id = '" . INVENTORY_TYPE_ORDER_CANCEL . "'
+                    ";
+			$bool = $bool && $this->db->query($sql);
+
+			//现在需处理已支付的订单，如果订单为已支付，则需要退余额操作
+			$sql = "select order_payment_status_id from oc_order where order_id = ".(int)$order_id;
+
+			$query = $this->db->query($sql);
+
+			if($query->row['order_payment_status_id'] == 2){
+				$this->addTransaction($order_id,$status_id);
+			}
+		}
+
+		return $bool;
+	}
+
+	public function addMsg($status_id,$order_id){
+		$sql = "
+                    INSERT INTO `oc_msg` (`merchant_id`, `customer_id`, `phone`, `order_id`, `msg_param_1`, `msg_param_2`, `isp_template_id`, `msg_type`, `msg_status_id`,`msg_status_name`,`sent`, `status`, `date_added`)
+                    SELECT 0, o.customer_id, o.shipping_phone, " . $order_id . ", '" . $order_id . "', st.contact_phone, mt.isp_template_id, mt.msg_type, o.order_status_id, os.name, 0, 1, NOW()
+                    FROM oc_order o
+                    LEFT JOIN oc_order_status os ON o.order_status_id = os.order_status_id AND os.language_id = 2
+                    LEFT JOIN oc_x_station st ON o.station_id = st.station_id
+                    LEFT JOIN oc_msg_template mt ON os.msg_template_id = mt.msg_template_id
+                    LEFT JOIN oc_customer c ON o.customer_id = c.customer_id
+                    WHERE
+                    o.order_id = '" . $order_id . "' AND o.order_status_id = '" . $status_id . "'
+                    AND os.msg = 1 AND c.accept_order_message = 1
+                    ";
+		$this->db->query($sql);
+	}
+
+	//处理余额,如若用户没有要求退现，则全部退到余额里，否则分开处理本单余额支付和微信支付的钱
+	private function addTransaction($order_id,$status_id){
+
+		$sql = "select abs(sum(if(ot.code = 'credit_paid', ot.value, 0))) credit_paid, abs(sum(if(ot.code = 'wxpay' ,ot.value, 0))) wxpay_paid
+			from oc_order_total ot
+			where ot.order_id = '".(int) $order_id ."'
+			group by ot.order_id";
+
+		$results = $this->db->query($sql)->rows;
+
+		$wxpay_paid = isset($results[0]['wxpay_paid']) ? $results[0]['wxpay_paid'] : 0;
+
+		$credit_paid = isset($results[0]['credit_paid']) ? $results[0]['credit_paid'] : 0;
+
+		$sql = "select customer_id from oc_order where order_id = '".(int) $order_id ."'";
+
+		$results = $this->db->query($sql)->row;
+
+		$customer_id = $results['customer_id'];
+
+		switch($status_id){
+			case 5:
+				$description = '取消分拣中的订单['.$order_id.']';
+				break;
+			case 6:
+				$description = '取消已拣完的订单['.$order_id.']';
+				break;
+			default :
+				$description = '取消订单';
+				break;
+		}
+
+		$this->db->query('START TRANSACTION');
+
+		$bool = 1;
+
+
+		$amount = $credit_paid + $wxpay_paid;
+
+		//全部退还到余额，此时还需检查该订单是否发生过分拣缺货，并且已退还该客户余额的操作
+		$sql = "select return_id,return_credits from oc_return where order_id = '".(int)$order_id."' and  return_reasono_id = 1 and return_status_id = 2 and credits_returned = 1";
+		$query = $this->db->query($sql);
+		if($query->num_rows){
+			$amount = $amount - $query->row['return_credits'];
+		}
+
+		$sql = "INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
+			VALUES ('".(int) $customer_id ."','".(int) $order_id."','4','". $description ."','".$amount."',now(),'".(int) $this->user->getId() ."')";
+
+		$bool = $bool && $this->db->query($sql);
+
+		if($bool){
+			$this->db->query('COMMIT');
+		}
+		else{
+			$this->db->query("ROLLBACK");
+		}
+
+		return $bool;
+
+	}
+
+	//处理仓库库存,返还分拣出库的商品库存
+	private function dealStockinventory($order_id){
+		//已拣完的订单被取消被视作整单退，不做退货表，
+		//如果分拣过程中出现出库缺货，则作废该条退货数据，
+		//在该订单为已支付的情况下，扣除之前返还给客户的余额
+
+		$bool =true;
+		//查找是否已有库存扣减记录，如有添加库存增加退库记录
+		$sql = "INSERT INTO `oc_x_stock_move` (`station_id`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`)
+                    select A.station_id, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, " . INVENTORY_TYPE_ORDER_STOCK_RETURN . " inventory_type_id, now() date_added
+                    from oc_order A
+                    inner join oc_x_stock_move B on A.order_id = B.order_id and inventory_type_id = '" . INVENTORY_TYPE_ORDER_STOCK_OUT . "'
+                    where A.order_id = '" . $order_id . "'";
+
+		$bool = $bool && $this->db->query($sql);
+
+		$sql = "INSERT INTO `oc_x_stock_move_item` (`inventory_move_id`, `station_id`, `product_id`, `quantity`,`price`,`weight`,`box_quantity`)
+                    select A.inventory_move_id, A.station_id,C.product_id, C.quantity quantity, C.price ,0 weight, if(D.repack = 0,1,D.inv_size)
+                    from oc_x_stock_move A
+                    left join oc_order B on A.order_id = B.order_id
+                    left join oc_order_product C on B.order_id = C.order_id
+                    left join oc_product D on D.product_id = C.product_id
+                    where A.order_id = '" . $order_id . "' and A.inventory_type_id = '".INVENTORY_TYPE_ORDER_STOCK_RETURN."'";
+
+		$bool = $bool && $this->db->query($sql);
+
+		return $bool;
+	}
+
+	//处理可售库存
+	private function dealSaleinvFllows($order_id){
+		//取消使用优惠券记录
+		$sql = "update oc_coupon_history set status = '0' where order_id = '".$order_id."'";
+		$bool = true;
+		$bool = $bool && $this->db->query($sql);
+
+		//查找是否已有库存扣减记录，如有添加库存增加记录
+		$sql = "INSERT INTO `oc_x_inventory_move` (`station_id`, `date`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `status`,`warehouse_id`)
+                    select A.station_id, current_date() date, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, " . INVENTORY_TYPE_ORDER_CANCEL . " inventory_type_id, now() date_added, 1 status,A.warehouse_id
+                    from oc_order A
+                    inner join oc_x_inventory_move B on A.order_id = B.order_id and inventory_type_id = '" . INVENTORY_TYPE_ORDERED . "'
+                    where A.order_id = '" . $order_id . "'";
+		$bool = $bool && $this->db->query($sql);
+		//$inventory_move_id = $dbm->getLastId();
+		//按照添加的，后天订单设置状态为0, 不参与实时库存计算
+		$sql = "INSERT INTO `oc_x_inventory_move_item` (`inventory_move_id`, `station_id`, `order_id`, `customer_id`, `product_id`, `quantity`, `status`,`warehouse_id`)
+                    select A.inventory_move_id, A.station_id, B.order_id, B.customer_id, C.product_id, C.quantity quantity, if(B.deliver_date = date_add(date(B.date_added), interval 1 day), 1, 0) status,A.warehouse_id
+                    from oc_x_inventory_move A
+                    left join oc_order B on A.order_id = B.order_id
+                    left join oc_order_product C on B.order_id = C.order_id
+                    where A.order_id = '" . $order_id . "' and A.inventory_type_id = '" . INVENTORY_TYPE_ORDER_CANCEL . "'
+                    ";
+		$bool = $bool && $this->db->query($sql);
+
+		//当可售库存被返还的时候,多仓系统需要对oc_product_inventory表进行更新
+		$sql = "update oc_product_inventory pi
+			right join (
+				select B.station_id,B.warehouse_id,B.product_id,B.quantity,A.inventory_type_id
+				from oc_x_inventory_move_item B
+				left join oc_x_inventory_move A on A.inventory_move_id = B.inventory_move_id
+				where A.order_id = '".$order_id."' and A.inventory_type_id = '".INVENTORY_TYPE_ORDER_CANCEL."'
+				group by A.inventory_move_id,B.product_id
+			) B on B.product_id = pi.product_id
+			and B.station_id = pi.station_id and B.warehouse_id = pi.warehouse_id
+			set pi.inventory = pi.inventory+B.quantity";
+
+		$this->db->query($sql);
+
+		return $bool;
+	}
+
+	public function cancelOrderDistr($status_id,$order_id,$currentStatus){
+		//判断该订单是否已支付，没有支付的话，直接取消
+		$payment_status = $this->model_sale_order->getOrderPaymentStatusId($order_id);
+
+		if($currentStatus['order_status_id'] !== CANCELLED_ORDER_STATUS){
+			if($payment_status == 1){
+				$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
+				$bool = true;
+				$bool = $bool && $this->db->query($sql);
+				//更改订单状态为取消状态，则执行退库操作
+				if($bool){
+
+					//返还可售库存
+					$bool = $bool && $this->dealSaleinvFllows($order_id);
+
+					if($status_id == 6){
+						$bool = $bool && $this->dealStockinventory($order_id);
+					}
+
+					return $bool;
+				}else{
+
+					return false;//取消未支付的订单失败
+
+				}
+			}elseif($payment_status == 2){
+				/*没有微信退现金，则全部退余额，分拣中的订单不允许出库，
+				 *先返回可售库存，再退余额给用户，执行成功之后才可以把订单状态改为已取消
+				 * 取消的订单不做退货处理，返还可售库存即可
+				*/
+				$bool = true;
+				$sql = "update oc_order set order_status_id =  ". CANCELLED_ORDER_STATUS ." where order_id = '".(int) $order_id."'";
+
+				$bool = $bool &&  $this->db->query($sql);
+
+				$bool = $bool && $this->dealSaleinvFllows($order_id);
+
+				if($status_id ==6){
+					$bool = $bool && $this->dealStockinventory($order_id);
+				}
+
+				/*
+					退余额到客户账户
+					需要扣减之前出库缺货的金额
+				*/
+
+				$bool = $bool && $this->addTransaction($order_id,$status_id);
+
+				//已拣完的订单需要生成退货数据，暂时交由仓库处理
+
+				return $bool;
+
+			}
+
+		}
+
+	}
+
+	public function getOrderToCanceDeliverStatus($order_id){
+		$sql = "select order_deliver_status_id from oc_order where order_id =".(int) $order_id;
+		$query = $this->db->query($sql);
+		return $query->row['order_deliver_status_id'];
+	}
+
+	public function getOrderIsAlloted($order_id){
+		$sql = "select order_id from oc_x_logistic_allot_order where order_id =".(int) $order_id;
+
+		$query = $this->db->query($sql);
+
+		if($query->num_rows){
+			return true;
+		}
+
+		return false;
+	}
+
 }
