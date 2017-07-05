@@ -1059,16 +1059,34 @@ GROUP BY
 		$amount = $credit_paid + $wxpay_paid;
 
 		//全部退还到余额，此时还需检查该订单是否发生过分拣缺货，并且已退还该客户余额的操作
-		$sql = "select return_id,return_credits from oc_return where order_id = '".(int)$order_id."' and  return_reasono_id = 1 and return_status_id = 2 and credits_returned = 1";
+//		$sql = "select return_id,return_credits from oc_return where order_id = '".(int)$order_id."' and  return_reasono_id = 1 and return_status_id = 2 and credits_returned = 1";
+		$sql = "select amount from oc_customer_transaction where order_id = '".(int)$order_id."' and customer_id = '".(int)$customer_id."' and  customer_transaction_type_id = 9";
 		$query = $this->db->query($sql);
 		if($query->num_rows){
-			$amount = $amount - $query->row['return_credits'];
+
+			$amount_b = $query->row['amount'];
+			$sql ="INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
+			VALUES ('".(int) $customer_id ."','".(int) $order_id."','14','扣除该订单分拣缺货返还给用户的积分','".$amount_b."',now(),'".(int) $this->user->getId() ."')";
+
+			$bool = $bool && $this->db->query($sql);
 		}
 
 		$sql = "INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
 			VALUES ('".(int) $customer_id ."','".(int) $order_id."','4','". $description ."','".$amount."',now(),'".(int) $this->user->getId() ."')";
 
 		$bool = $bool && $this->db->query($sql);
+
+		//检查客户是否使用了积分支付，如果使用了，则需要返还积分
+		$sql = "select customer_id, order_id, abs(points) points from oc_customer_reward where order_id = '".(int)$order_id."' and reward_id = 6";
+
+		$query = $this->db->query($sql);
+
+		if($query->num_rows){
+			$points = $query->row['points'];
+			$sql = "INSERT INTO oc_customer_reward (`customer_id`,`order_id`,`description`,`points`,`date_added`,`reward_id`,`add_by`)
+				VALUES ('".(int) $customer_id."','".(int) $order_id."','取消订单返还积分','".$points."',now(),7,'".(int) $this->user->getId() ."')";
+			$this->db->query($sql);
+		}
 
 		if($bool){
 			$this->db->query('COMMIT');
