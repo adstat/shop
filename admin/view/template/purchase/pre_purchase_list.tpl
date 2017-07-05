@@ -404,7 +404,7 @@ $('.button-invoice-set').on('click',function(){
                 }
                 $("#handle_invoice_" + order_id).hide();
                 $("#invoice_provided_" + order_id).show();
-                $('#invoice_provided_show' + order_id).show();
+                $('#invoice_provided_show_' + order_id).show();
                 alert(jsonData.return_msg);
             }
         });
