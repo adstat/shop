@@ -183,7 +183,7 @@
                 <td class="text-right"><?php if ($sort == 'o.date_deliver') { ?>
                   <a href="<?php echo $sort_date_deliver; ?>" class="<?php echo strtolower($order); ?>">实际到货日期</a>
                   <?php } else { ?>
-                  <a href="<?php echo $sort_date_deliver; ?>">实际到货日期</a>
+                  <a href="<?php echo $sort_date_deliver; ?>">到货日期</a>
                   <?php } ?></td>  
                 
                   
@@ -292,14 +292,16 @@
                       
                   </td>
                   <td class="text-center">
-                      <?php
-                        if( $order['invoice_flag'] == 1 ) {
-                            echo '<span style="background-color: #33CC33; color: #ffffff; padding:3px;">是</span>';
-                        }
-                        else{
-                            echo '<span style="background-color: #cc0000; color: #FFFF00; padding:3px;">否</span>';
-                        }
-                      ?>
+                      <?php if( $order['invoice_flag'] == 1 ) { ?>
+                      <span style="background-color: #33CC33; color: #ffffff; padding:3px;">是</span>
+                      <?php if($order['invoice_provided'] == 0 && $order['status'] != 3 && in_array($user_group_id,array(1,26))){ ?>
+                      <span id="handle_invoice_<?php echo $order['purchase_order_id'];?>">
+                        <button order_id="<?php echo $order['purchase_order_id'];?>"  data-loading-text="加载中..." class="btn btn-primary button-invoice-set" id="button-invoice-<?php echo $order['purchase_order_id'];?>"><i class="fa fa-plus-circle"></i> 已提供发票</button>
+                      </span>
+                      <?php } ?>
+                      <?php }else{ ?>
+                      <span style="background-color: #cc0000; color: #FFFF00; padding:3px;">否</span>;
+                      <?php } ?>
                   </td>
                   <td class="text-left">
                       计划到货日期:<br><?php echo $order['date_deliver_plan']; ?><br>
@@ -373,6 +375,35 @@ $('.order_bd_change').on('change', function() {
     processOrder('order_bd',$(this).attr("order_id"),$(this).val());
 });
 
+
+$('.button-invoice-set').on('click',function(){
+    var order_id = $(this).attr("order_id");
+    if(confirm("确认操作？")){
+        $.ajax({
+            url: 'index.php?route=purchase/pre_purchase/update_invoice&token=<?php echo $token; ?>',
+            type: 'post',
+            data: {order_id : order_id},
+            dataType: 'json',
+            beforeSend: function() {
+                $("#button-invoice-" + order_id).button('loading');
+            },
+            complete: function() {
+                $("#button-invoice-" + order_id).button('reset');
+            },
+            success:function(json){
+                var jsonData = json;
+
+                if(jsonData.success == 0){
+                    alert("不能重复确认支付,请刷新页面");
+                    return false;
+                }
+                $("#handle_invoice_" + order_id).hide();
+
+                alert(jsonData.return_msg);
+            }
+        });
+    }
+});
 
 
 $('.button-sub-checkout').on('click', function() {
