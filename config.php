@@ -70,6 +70,12 @@ define('REDIS_ORDER_DETAIL_INFO_OF_PRODUCT','product');
 define('REDIS_ORDER_DETAIL_INFO_OF_TOTAL_DETAIL','totalDetail');
 define('REDIS_MY_ACCOUNT_KEY_PREFIX','myAccount');
 define('REDIS_MY_ACCOUNT_CACHE_TIME', 3600);
+define('REDIS_CUSTOMER_COUPON_HISTORY_PREFIX', 'customerCouponHistory');
+define('REDIS_CUSTOMER_COUPON_PREFIX', 'customerCoupon');
+define('REDIS_COUPON_CACHE_TIME', 1800);
+
+
+define('GENERATE_KEY', 'xsj_customer_id_key');
 
 define('PADDING_ORDER_STATUS',1);
 define('CONFIRMED_ORDER_STATUS',2);

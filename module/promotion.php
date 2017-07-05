@@ -1,10 +1,30 @@
 <?php
 require_once(DIR_SYSTEM.'/db.php');
 require_once(DIR_SYSTEM.'/log.php');
+require_once(DIR_SYSTEM.'/redis.php');
 require_once('product.php');
 
 class PROMOTION{
     private $db;
+
+    private function newRedis()
+    {
+        $redis = new MyRedis();
+        $redis->selectdb(1);
+        return $redis;
+    }
+
+    function getCustomerCouponHistoryKey($warehouse_id, $customer_id){
+        $keyPrefix = defined('REDIS_CUSTOMER_COUPON_HISTORY_PREFIX') ? REDIS_CUSTOMER_COUPON_HISTORY_PREFIX : 'customerCouponHistory';
+        $key       = $keyPrefix .':'. $warehouse_id .':'. $customer_id; //customerCouponHistory : warehouse : customer
+        return $key;
+    }
+
+    function getCustomerCouponKey($warehouse_id, $customer_id){
+        $keyPrefix = defined('REDIS_CUSTOMER_COUPON_PREFIX') ? REDIS_CUSTOMER_COUPON_PREFIX : 'customerCoupon';
+        $key       = $keyPrefix .':'. $warehouse_id .':'. $customer_id; //customerCoupon : warehouse : customer
+        return $key;
+    }
 
     private function checkAgentCustomer($customer_id){
         global $db;
@@ -271,63 +291,92 @@ class PROMOTION{
         global $db;
         global $product;
 
-        $station_id   = isset($data['station_id']) ? (int)$data['station_id']                       : 0;
-        $customer_id  = isset($data['customer_id']) ? (int)$data['customer_id']                     : 0;
-        $cartItems    = isset($data['data']['cartItems']) ? $data['data']['cartItems']              : array();
+        $station_id   = isset($data['station_id'])            ? (int)$data['station_id']            : 0;
+        $customer_id  = isset($data['customer_id'])           ? (int)$data['customer_id']           : 0;
+        $cartItems    = isset($data['data']['cartItems'])     ? $data['data']['cartItems']          : array();
         $warehouse_id = !empty($data['data']['warehouse_id']) ? (int)$data['data']['warehouse_id']  : 0;
         $area_id      = !empty($data['data']['area_id'])      ? (int)$data['data']['area_id']       : 0;
 
+        //CheckAgentUser
+        if($customer_id <= 0 || $this->checkAgentCustomer($customer_id)){
+            return array(
+                'return_code' => 'SUCCESS', 'return_msg' => 'OK', 'return_data' => array( 'coupons' => array() )
+            );
+        }
 
         // 获取用户使用优惠券记录
-        // TODO 可缓存预先载入
-        $sql = "select H.coupon_id, O.customer_id, if(count(O.order_id) is null, 0, count(O.order_id)) use_count from oc_coupon_history H
-                    left join oc_order O on H.order_id = O.order_id
-                    where H.customer_id = '".$customer_id."'
-                    and O.order_status_id not in ('".CANCELLED_ORDER_STATUS."')
-                    and O.station_id = '".$station_id."'
-                    group by H.coupon_id";
-        $query = $db->query($sql);
-        $customerCouponHistory = array();
-        if($query->num_rows){
-            $result = $query->rows;
-            foreach($result as $m){
-                $customerCouponHistory[$m['coupon_id']] = $m;
+        $redis      = $this->newRedis();
+        $cache_time = defined(REDIS_COUPON_CACHE_TIME) ? REDIS_COUPON_CACHE_TIME : 1800;
+        // 获取缓存
+        $history_key = $this->getCustomerCouponHistoryKey($warehouse_id, $customer_id);
+        //if($redis->exists($history_key)){
+        if(false){
+            $results               = $redis->get($history_key);
+            $customerCouponHistory = unserialize($results);
+        }
+        else{
+            $sql = "select H.coupon_id, O.customer_id, if(count(O.order_id) is null, 0, count(O.order_id)) use_count
+                        from oc_coupon_history H
+                        left join oc_order O on H.order_id = O.order_id
+                        where H.customer_id = '".$customer_id."'
+                        and O.station_id = '".$station_id."'
+                        and O.warehouse_id = {$warehouse_id}
+                        and O.order_status_id not in ('".CANCELLED_ORDER_STATUS."')
+                        group by H.coupon_id";
+            $query   = $db->query($sql);
+            $results = $query->rows;
+            $customerCouponHistory = array();
+
+            if(sizeof($results)){
+                foreach($results as $m){
+                    $customerCouponHistory[$m['coupon_id']] = $m;
+                }
             }
+            // 设置缓存
+            $redis->setex($history_key, $cache_time, serialize($customerCouponHistory));
         }
 
         // 获取优惠券与用户的绑定关系
-        // TODO 可缓存预先载入
-        // TODO 后台更新缓存
-        $customer_sql = "select
-                    C.coupon_id, C.name coupon_name, C.type, C.discount, C.total, C.online_payment,
-                    CC.times times,  CC.date_end date_end, datediff(CC.date_end, current_date()) overdue_days
-                    from oc_coupon C
-                    left join oc_coupon_customer CC on C.coupon_id = CC.coupon_id
-                    LEFT JOIN oc_coupon_to_warehouse CW ON C.coupon_id = CW.coupon_id
-                    where C.status = 1
-                    and C.station_id = '".$station_id."'
-                    and CC.status = 1 and current_date() between CC.date_start and CC.date_end
-                    and CC.customer_id = '".$customer_id."'";
-
-        $coupon_sql = "select
-                    C.coupon_id, C.name coupon_name, C.type, C.discount, C.total, C.online_payment,
-                    C.times times, C.date_end date_end, datediff(C.date_end, current_date()) overdue_days
-                    from oc_coupon C
-                    LEFT JOIN oc_coupon_to_warehouse CW ON C.coupon_id = CW.coupon_id
-                    where C.status = 1
-                    and C.station_id = '".$station_id."'
-                    and C.customer_limited = 0
-                    and current_date() between C.date_start and C.date_end";
-
-        if(!empty($warehouse_id)){
-            $where         = " AND CW.warehouse_id = ".$warehouse_id;
-            $customer_sql .= $where;
-            $coupon_sql   .= $where;
+        $coupon_key = $this->getCustomerCouponKey($warehouse_id, $customer_id);
+        //if( $redis->exists($coupon_key) ){
+        if(false){
+            $result = $redis->get($coupon_key);
+            $result = unserialize($result);
         }
-        $sql = $customer_sql . ' union ' . $coupon_sql;
+        else{
+            $customer_sql = "select
+                        C.coupon_id, C.name coupon_name, C.type, C.discount, C.total, C.online_payment,
+                        CC.times times,  CC.date_end date_end, datediff(CC.date_end, current_date()) overdue_days
+                        from oc_coupon C
+                        left join oc_coupon_customer CC on C.coupon_id = CC.coupon_id
+                        LEFT JOIN oc_coupon_to_warehouse CW ON C.coupon_id = CW.coupon_id
+                        where C.status = 1
+                        and C.station_id = '".$station_id."'
+                        and CC.status = 1 and current_date() between CC.date_start and CC.date_end
+                        and CC.customer_id = '".$customer_id."'";
 
-        $query = $db->query($sql);
-        $result = $query->rows;
+            $coupon_sql = "select
+                        C.coupon_id, C.name coupon_name, C.type, C.discount, C.total, C.online_payment,
+                        C.times times, C.date_end date_end, datediff(C.date_end, current_date()) overdue_days
+                        from oc_coupon C
+                        LEFT JOIN oc_coupon_to_warehouse CW ON C.coupon_id = CW.coupon_id
+                        where C.status = 1
+                        and C.station_id = '".$station_id."'
+                        and C.customer_limited = 0
+                        and current_date() between C.date_start and C.date_end";
+
+            if(!empty($warehouse_id)){
+                $where         = " AND CW.warehouse_id = ".$warehouse_id;
+                $customer_sql .= $where;
+                $coupon_sql   .= $where;
+            }
+            $sql    = $customer_sql . ' union ' . $coupon_sql;
+            $query  = $db->query($sql);
+            $result = $query->rows;
+
+            // 缓存
+            $redis->setex($coupon_key, $cache_time, serialize($result));
+        }
 
         $coupons = array();
         $validCouponId = array(0);
@@ -362,11 +411,15 @@ class PROMOTION{
         }
 
         $sql = "SELECT
-                p.product_id,round(p.price,2) price, round(if(isnull(ps.price),p.price,ps.price),2) special_price
+                p.product_id,
+                round(if(isnull(pw.price) OR pw.price<0, p.price, pw.price),2) price,
+                round(if(isnull(ps.price),p.price,ps.price),2) special_price
                 FROM oc_product p
-                LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end)
-                WHERE p.station_id = '".$station_id."'
-                AND p.product_id in (".implode(',',$cartProductIds).")
+                LEFT JOIN oc_product_to_warehouse pw ON p.product_id = pw.product_id
+                LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end AND ps.warehouse_id = {$warehouse_id} AND ps.area_id = 0)
+                WHERE
+                pw.warehouse_id = {$warehouse_id}
+                AND p.product_id in (".implode(',', $cartProductIds).")
                 GROUP BY p.product_id";
         $query = $db->query($sql);
 
@@ -403,13 +456,18 @@ class PROMOTION{
         //$sql = "select coupon_id, category_id, product_id from oc_coupon_category_deprecated where coupon_id in (".implode(',',$validCouponId).")";
         $sql = "
             select X.coupon_id, X.category_id, X.product_id from (
-            select coupon_id, category_id, product_id from oc_coupon_category_deprecated where coupon_id in (".implode(',',$validCouponId).")
-            union
-            select A.coupon_id,  A.category_id,  B.product_id from oc_coupon_banned_category A left join oc_product_to_category B on A.category_id = B.category_id
-            where A.coupon_id in (".implode(',',$validCouponId).") and B.product_id > 0
+                select coupon_id, category_id, product_id
+                    from oc_coupon_category_deprecated
+                    where coupon_id in (".implode(',',$validCouponId).")
+                union
+                select A.coupon_id,  A.category_id,  B.product_id
+                    from oc_coupon_banned_category A
+                    left join oc_product_to_category B on A.category_id = B.category_id
+                    where A.coupon_id in (".implode(',',$validCouponId).") and B.product_id > 0
             ) X
-            group by X.product_id
-        ";
+            LEFT JOIN oc_product_to_warehouse pw ON pw.product_id = X.product_id
+            WHERE pw.warehouse_id = {$warehouse_id}
+            group by X.product_id";
 
         $query = $db->query($sql);
         if($query->num_rows){
@@ -422,10 +480,16 @@ class PROMOTION{
         }
 
         // 获取当前有效优惠券指定的商品，以及指定品类的商品
-        $sql = "select coupon_id, product_id from oc_coupon_product where coupon_id in (".implode(',',$validCouponId).")
+        $sql = "select coupon_id, cp.product_id
+                    from oc_coupon_product cp
+                    LEFT JOIN oc_product_to_warehouse pw ON pw.product_id = cp.product_id
+                    WHERE pw.warehouse_id = {$warehouse_id} AND coupon_id in (".implode(',', $validCouponId).")
                 union
-                select coupon_id, product_id from oc_coupon_category A left join oc_product_to_category B on A.category_id = B.category_id
-where A.coupon_id in (".implode(',',$validCouponId).") and B.product_id > 0";
+                select coupon_id, B.product_id
+                    from oc_coupon_category A
+                    left join oc_product_to_category B on A.category_id = B.category_id
+                    LEFT JOIN oc_product_to_warehouse pw ON pw.product_id = B.product_id
+                    where pw.warehouse_id = {$warehouse_id} AND A.coupon_id in (".implode(',', $validCouponId).") and B.product_id > 0";
         $query = $db->query($sql);
         $boundProductList = array();
 
@@ -491,12 +555,6 @@ where A.coupon_id in (".implode(',',$validCouponId).") and B.product_id > 0";
 //                $coupons[$m['coupon_id']]['couponBindProductsValid'] = 0;
 //            }
 //        }
-
-
-        //CheckAgentUser
-        if($this->checkAgentCustomer($customer_id)){
-            $coupons = array();
-        }
 
         return array(
             'return_code' => 'SUCCESS',
