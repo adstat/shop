@@ -553,7 +553,7 @@ class ControllerCatalogActivity extends Controller {
 
 		$data['layouts'] = $this->model_design_layout->getLayouts();
 
-		//Ѱ�����е�ƽ̨�Լ�ƽ̨��Ӧ�Ĳֿ�
+		//寻找所有的平台以及平台对应的仓库
 		$this->load->model('station/station');
 		$data['station_list']   = $this->model_station_station->getStationList();
 		$data['warehouse_list'] = $this->model_station_station->getWarehouseAndStation();
