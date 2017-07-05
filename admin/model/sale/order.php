@@ -995,9 +995,9 @@ GROUP BY
 
 			$query = $this->db->query($sql);
 
-			if($query->row['order_payment_status_id'] == 2){
-				$this->addTransaction($order_id,$status_id);
-			}
+//			if($query->row['order_payment_status_id'] == 2){
+			$this->addTransaction($order_id,$status_id);
+//			}
 		}
 
 		return $bool;
@@ -1172,57 +1172,80 @@ GROUP BY
 
 	public function cancelOrderDistr($status_id,$order_id,$currentStatus){
 		//判断该订单是否已支付，没有支付的话，直接取消
-		$payment_status = $this->model_sale_order->getOrderPaymentStatusId($order_id);
-
+//		$payment_status = $this->model_sale_order->getOrderPaymentStatusId($order_id);
+		//无论是否为已支付，直切去order_total表里返还相应余额，积分，微信支付
 		if($currentStatus['order_status_id'] !== CANCELLED_ORDER_STATUS){
-			if($payment_status == 1){
-				$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
-				$bool = true;
-				$bool = $bool && $this->db->query($sql);
-				//更改订单状态为取消状态，则执行退库操作
-				if($bool){
 
-					//返还可售库存
-					$bool = $bool && $this->dealSaleinvFllows($order_id);
+			$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
+			$bool = true;
+			$bool = $bool && $this->db->query($sql);
+			//更改订单状态为取消状态，则执行退库操作
+			if($bool){
 
-					if($status_id == 6){
-						$bool = $bool && $this->dealStockinventory($order_id);
-					}
-
-					return $bool;
-				}else{
-
-					return false;//取消未支付的订单失败
-
-				}
-			}elseif($payment_status == 2){
-				/*没有微信退现金，则全部退余额，分拣中的订单不允许出库，
-				 *先返回可售库存，再退余额给用户，执行成功之后才可以把订单状态改为已取消
-				 * 取消的订单不做退货处理，返还可售库存即可
-				*/
-				$bool = true;
-				$sql = "update oc_order set order_status_id =  ". CANCELLED_ORDER_STATUS ." where order_id = '".(int) $order_id."'";
-
-				$bool = $bool &&  $this->db->query($sql);
-
+				//返还可售库存
 				$bool = $bool && $this->dealSaleinvFllows($order_id);
 
-				if($status_id ==6){
+				if($status_id == 6){
 					$bool = $bool && $this->dealStockinventory($order_id);
 				}
 
-				/*
-					退余额到客户账户
-					需要扣减之前出库缺货的金额
-				*/
-
 				$bool = $bool && $this->addTransaction($order_id,$status_id);
 
-				//已拣完的订单需要生成退货数据，暂时交由仓库处理
-
 				return $bool;
+			}else{
+
+				return false;//取消未支付的订单失败
 
 			}
+
+//			if($payment_status == 1){
+//				$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
+//				$bool = true;
+//				$bool = $bool && $this->db->query($sql);
+//				//更改订单状态为取消状态，则执行退库操作
+//				if($bool){
+//
+//					//返还可售库存
+//					$bool = $bool && $this->dealSaleinvFllows($order_id);
+//
+//					if($status_id == 6){
+//						$bool = $bool && $this->dealStockinventory($order_id);
+//					}
+//
+//					return $bool;
+//				}else{
+//
+//					return false;//取消未支付的订单失败
+//
+//				}
+//			}elseif($payment_status == 2){
+//				/*没有微信退现金，则全部退余额，分拣中的订单不允许出库，
+//				 *先返回可售库存，再退余额给用户，执行成功之后才可以把订单状态改为已取消
+//				 * 取消的订单不做退货处理，返还可售库存即可
+//				*/
+//				$bool = true;
+//				$sql = "update oc_order set order_status_id =  ". CANCELLED_ORDER_STATUS ." where order_id = '".(int) $order_id."'";
+//
+//				$bool = $bool &&  $this->db->query($sql);
+//
+//				$bool = $bool && $this->dealSaleinvFllows($order_id);
+//
+//				if($status_id ==6){
+//					$bool = $bool && $this->dealStockinventory($order_id);
+//				}
+//
+//				/*
+//					退余额到客户账户
+//					需要扣减之前出库缺货的金额
+//				*/
+//
+//				$bool = $bool && $this->addTransaction($order_id,$status_id);
+//
+//				//已拣完的订单需要生成退货数据，暂时交由仓库处理
+//
+//				return $bool;
+//
+//			}
 
 		}
 
