@@ -296,7 +296,7 @@
                       <span style="background-color: #33CC33; color: #ffffff; padding:3px;">是</span>
                       <?php if($order['invoice_provided'] == 0 && $order['status'] != 3 && in_array($user_group_id,array(1,26))){ ?>
                       <span id="handle_invoice_<?php echo $order['purchase_order_id'];?>">
-                        <button order_id="<?php echo $order['purchase_order_id'];?>"  data-loading-text="加载中..." class="btn btn-primary button-invoice-set" id="button-invoice-<?php echo $order['purchase_order_id'];?>"><i class="fa fa-plus-circle"></i> 已提供发票</button>
+                        <button type="button" order_id="<?php echo $order['purchase_order_id'];?>"  data-loading-text="加载中..." class="btn btn-primary button-invoice-set" id="button-invoice-<?php echo $order['purchase_order_id'];?>"><i class="fa fa-plus-circle"></i> 已提供发票</button>
                       </span>
                       <?php } ?>
                       <?php }else{ ?>
@@ -403,6 +403,8 @@ $('.button-invoice-set').on('click',function(){
             }
         });
     }
+
+    return false;
 });
 
 
