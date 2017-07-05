@@ -1071,10 +1071,11 @@ GROUP BY
 			$bool = $bool && $this->db->query($sql);
 		}
 
-		$sql = "INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
+		if($amount>0){
+			$sql = "INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
 			VALUES ('".(int) $customer_id ."','".(int) $order_id."','4','". $description ."','".$amount."',now(),'".(int) $this->user->getId() ."')";
 
-		$bool = $bool && $this->db->query($sql);
+			$bool = $bool && $this->db->query($sql);
 
 		//检查客户是否使用了积分支付，如果使用了，则需要返还积分
 		$sql = "select customer_id, order_id, abs(points) points from oc_customer_reward where order_id = '".(int)$order_id."' and reward_id = 6";
