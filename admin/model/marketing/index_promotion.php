@@ -179,6 +179,7 @@ class ModelMarketingIndexPromotion extends Model {
 				values('".$product['product_id']."','".$warehouse_id."','".$area_id."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
 				$this->db->query($insert);
 				//插入特价历史记录
+				$product_special_id = $this->db->getLastId();
 
 				$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,`user_id_modify`,`date_modify`)
 						select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,'". $this->user->getId() ."',now() from oc_product_special where product_special_id = '".$product_special_id ."'";
@@ -194,6 +195,7 @@ class ModelMarketingIndexPromotion extends Model {
 					$this->db->query($insert);
 
 					//插入特价历史记录
+					$product_special_id = $this->db->getLastId();
 
 					$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,`user_id_modify`,`date_modify`)
 						select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,'". $this->user->getId() ."',now() from oc_product_special where product_special_id = '".$product_special_id ."'";
