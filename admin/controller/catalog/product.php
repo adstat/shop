@@ -996,6 +996,12 @@ class ControllerCatalogProduct extends Controller {
 			$data['error_warning'] = '';
 		}
 
+		if (isset($this->error['price'])) {
+			$data['error_price'] = $this->error['price'];
+		} else {
+			$data['error_price'] = '';
+		}
+
 		if (isset($this->error['name'])) {
 			$data['error_name'] = $this->error['name'];
 		} else {
@@ -1347,6 +1353,12 @@ class ControllerCatalogProduct extends Controller {
 			$data['error_warning'] = '';
 		}
 
+		if(isset($this->error['price'])){
+			$data['error_price'] = $this->error['price'];
+		}else{
+			$data['error_price'] = '';
+		}
+//var_dump($data['error_price']);die;
 		if (isset($this->error['name'])) {
 			$data['error_name'] = $this->error['name'];
 		} else {
@@ -1736,6 +1748,12 @@ class ControllerCatalogProduct extends Controller {
 			$data['error_warning'] = '';
 		}
 
+		if(isset($this->error['price'])){
+			$data['error_price'] = $this->error['price'];
+		}else{
+			$data['error_price'] = '';
+		}
+//var_dump($data['error_price']);die;
 		if (isset($this->error['name'])) {
 			$data['error_name'] = $this->error['name'];
 		} else {
@@ -2462,6 +2480,14 @@ class ControllerCatalogProduct extends Controller {
 			$this->error['warning'] = $this->language->get('error_warning');
 		}
 
+		if(isset($this->request->post['warehouse_info'])){
+			foreach($this->request->post['warehouse_info'] as $key => $value){
+				if(!($value['price'] > 0)){
+					$this->error['price'][$key] = '价格不可为零，也不可为空！';
+				}
+			}
+		}
+//echo '<pre>';var_dump($this->error);die;
 		return !$this->error;
 	}
 

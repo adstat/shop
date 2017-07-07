@@ -435,6 +435,7 @@ class ModelCatalogProduct extends Model {
 	public function editProduct($product_id, $data,$user_id,$filter_warehouse_id_global) {
 		$filter_warehouse_id_global = (int)$filter_warehouse_id_global;
 //		echo '<pre>';var_dump($filter_warehouse_id_global);print_r($data);die;
+
 		$this->event->trigger('pre.admin.product.edit', $data);
 
 		$sql = "select sku_id from " . DB_PREFIX . "product where product_id = " . $product_id;;
@@ -731,90 +732,105 @@ class ModelCatalogProduct extends Model {
 //			$this->db->query($sql_w);
 //		}
 
-		//先判断有没有全局仓库被选中，若被选中，则只保存相应的仓库
-		if($filter_warehouse_id_global){
-
-			if(isset($data['warehouse_info'])){
-				if(array_key_exists($filter_warehouse_id_global,$data['warehouse_info'])){
-//					$this->db->query("delete from oc_product_to_warehouse where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'");
-
-					$sql = "select warehouse_id from oc_product_to_warehouse where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'";
-
-					$query = $this->db->query($sql)->rows;
-
-					if(isset($data['warehouse_info'][$filter_warehouse_id_global]['status'])){
-						$status = $data['warehouse_info'][$filter_warehouse_id_global]['status'];
-					}else{
-						$status = 0;
-					}
-
-					if(!sizeof($query)){
-					$insert = "INSERT INTO oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',
-						price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
-						warehouse_id = '".(int) $filter_warehouse_id_global."',
-						product_id = '".(int) $product_id."',
-						status = '".(int)$status."',
-						station_id = '".(int)$data['station_id']."'
-						";
-					}else{
-						$insert = "UPDATE oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',
-							price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
+		if(isset($data['warehouse_info'])){
+			foreach($data['warehouse_info'] as $key => $value){
+				if(isset($value['status'])){
+					$status = $value['status'];
+				}else{
+					$status = 0;
+				}
+				$insert = "UPDATE oc_product_to_warehouse set abstract = '". $this->db->escape($value['abstract']) ."',
+							price = '".$value['price']."',
 						    status = '".(int)$status."',station_id = '".(int)$data['station_id']."'
-						    where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'";
-					}
-					$this->db->query($insert);
-				}
-			}
-		}else{
-			if(isset($data['warehouse_all_set'])){
-				//保存商品属性到所有仓库中
-				if(isset($data['warehouse_info_all'])){
-					$station_id = isset($data['station_id']) ? $data['station_id'] : 0;
-					$warehouselist = array();
-					$product_warehouselist = array();
-					if($station_id){
-						$sql = "select warehouse_id,title from oc_x_warehouse where status = 1 and  station_id =" . $station_id;
-						$query = $this->db->query($sql)->rows;
-						foreach($query as $value){
-							$warehouselist[] = $value['warehouse_id'];
-						}
-						//查询商品在仓库的分布情况，有就更新，没有就新增
-						$sql = "select warehouse_id from oc_product_to_warehouse where product_id =" .(int) $product_id;
-						$query = $this->db->query($sql)->rows;
-						foreach($query as $value){
-							$product_warehouselist[$value['warehouse_id']] = $value;
-						}
-
-						foreach($warehouselist as $value){
-							if(isset($data['warehouse_info_all']['status'])){
-								$status = $data['warehouse_info_all']['status'];
-							}else{
-								$status = 0;
-							}
-							if(array_key_exists($value,$product_warehouselist)){
-								$sql = "update oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',
-										price = '".$data['warehouse_info_all']['price']."',
-										status = '".(int)$status."'
-										where warehouse_id = '".(int) $value."' and product_id = '".(int)$product_id."'";
-								$this->db->query($sql);
-							}else{
-								$sql = "INSERT INTO oc_product_to_warehouse set
-											abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',
-											price = '".$data['warehouse_info_all']['price']."',
-											warehouse_id = '".(int)$value."',
-											product_id = '".(int)$product_id."',
-											station_id = '".(int)$station_id."',
-											status = '".(int)$status."'
-											";
-								$this->db->query($sql);
-							}
-
-						}
-
-					}
-				}
+						    where product_id = '".(int) $product_id."' and warehouse_id = '".$key."'";
+				$this->db->query($insert);
 			}
 		}
+
+		//先判断有没有全局仓库被选中，若被选中，则只保存相应的仓库
+//		if($filter_warehouse_id_global){
+//
+//			if(isset($data['warehouse_info'])){
+//				if(array_key_exists($filter_warehouse_id_global,$data['warehouse_info'])){
+////					$this->db->query("delete from oc_product_to_warehouse where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'");
+//
+//					$sql = "select warehouse_id from oc_product_to_warehouse where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'";
+//
+//					$query = $this->db->query($sql)->rows;
+//
+//					if(isset($data['warehouse_info'][$filter_warehouse_id_global]['status'])){
+//						$status = $data['warehouse_info'][$filter_warehouse_id_global]['status'];
+//					}else{
+//						$status = 0;
+//					}
+//
+//					if(!sizeof($query)){
+//					$insert = "INSERT INTO oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',
+//						price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
+//						warehouse_id = '".(int) $filter_warehouse_id_global."',
+//						product_id = '".(int) $product_id."',
+//						status = '".(int)$status."',
+//						station_id = '".(int)$data['station_id']."'
+//						";
+//					}else{
+//						$insert = "UPDATE oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info'][$filter_warehouse_id_global]['abstract']) ."',
+//							price = '".$data['warehouse_info'][$filter_warehouse_id_global]['price']."',
+//						    status = '".(int)$status."',station_id = '".(int)$data['station_id']."'
+//						    where product_id = '".(int) $product_id."' and warehouse_id = '".$filter_warehouse_id_global."'";
+//					}
+//					$this->db->query($insert);
+//				}
+//			}
+//		}else{
+//			if(isset($data['warehouse_all_set'])){
+//				//保存商品属性到所有仓库中
+//				if(isset($data['warehouse_info_all'])){
+//					$station_id = isset($data['station_id']) ? $data['station_id'] : 0;
+//					$warehouselist = array();
+//					$product_warehouselist = array();
+//					if($station_id){
+//						$sql = "select warehouse_id,title from oc_x_warehouse where status = 1 and  station_id =" . $station_id;
+//						$query = $this->db->query($sql)->rows;
+//						foreach($query as $value){
+//							$warehouselist[] = $value['warehouse_id'];
+//						}
+//						//查询商品在仓库的分布情况，有就更新，没有就新增
+//						$sql = "select warehouse_id from oc_product_to_warehouse where product_id =" .(int) $product_id;
+//						$query = $this->db->query($sql)->rows;
+//						foreach($query as $value){
+//							$product_warehouselist[$value['warehouse_id']] = $value;
+//						}
+//
+//						foreach($warehouselist as $value){
+//							if(isset($data['warehouse_info_all']['status'])){
+//								$status = $data['warehouse_info_all']['status'];
+//							}else{
+//								$status = 0;
+//							}
+//							if(array_key_exists($value,$product_warehouselist)){
+//								$sql = "update oc_product_to_warehouse set abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',
+//										price = '".$data['warehouse_info_all']['price']."',
+//										status = '".(int)$status."'
+//										where warehouse_id = '".(int) $value."' and product_id = '".(int)$product_id."'";
+//								$this->db->query($sql);
+//							}else{
+//								$sql = "INSERT INTO oc_product_to_warehouse set
+//											abstract = '". $this->db->escape($data['warehouse_info_all']['abstract']) ."',
+//											price = '".$data['warehouse_info_all']['price']."',
+//											warehouse_id = '".(int)$value."',
+//											product_id = '".(int)$product_id."',
+//											station_id = '".(int)$station_id."',
+//											status = '".(int)$status."'
+//											";
+//								$this->db->query($sql);
+//							}
+//
+//						}
+//
+//					}
+//				}
+//			}
+//		}
 //		var_dump($sql_w);die;
 		/*$this->db->query("DELETE FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
 

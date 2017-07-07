@@ -911,7 +911,7 @@
                             <!--<td>积分</td>-->
                             <td style="display:none">安全库存</td>
                             <td style="display:none">每天限量</td>
-                            <td>是否覆盖</td>
+                            <td>是否启用</td>
                             <td style="display:none">分拣条码</td>
                             <td>货位</td>
                             <td>可售库存</td>
@@ -924,10 +924,15 @@
                         <tr id="warehosue-row<?php echo $warehouse_row; ?>">
                             <td class="text-center"><?php echo $warehouse['title']; ?></td>
                             <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][abstract]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['abstract'] : '分仓摘要'; ?>"/></td>
-                            <td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][price]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['w_price'] : '仓库价格'; ?>"/></td>
+                            <td class="text-center">
+                                <input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][price]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['w_price'] : ''; ?>"  class="form-control"/>
+                                <?php if (isset($error_price[$warehouse['warehouse_id']])) { ?>
+                                <div class="text-danger"><?php echo $error_price[$warehouse['warehouse_id']]; ?></div>
+                                <?php } ?>
+                            </td>
                             <!--<td class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][points]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['points'] : '仓库价格'; ?>"/></td>-->
-                            <td style="display:none" class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][safe_stock]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['safe_stock'] : '安全库存'; ?>"/></td>
-                            <td style="display:none" class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][daily_limit]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['daily_limit'] : '安全库存'; ?>"/></td>
+                            <td style="display:none" class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][safe_stock]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['safe_stock'] : ''; ?>"/></td>
+                            <td style="display:none" class="text-center"><input type="text" name="warehouse_info[<?php echo $warehouse_row; ?>][daily_limit]" value="<?php echo array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['daily_limit'] : ''; ?>"/></td>
                             <td class="text-center">
                                 <input type="checkbox" name="warehouse_info[<?php echo $warehouse_row; ?>][status]" <?php if(array_key_exists($warehouse['warehouse_id'],$warehousePrices) ? $warehousePrices[$warehouse['warehouse_id']]['status'] : 0){ ?> checked="checked" <?php } ?> value="1"/>
                             </td>
@@ -942,7 +947,7 @@
                   </div>
                   <hr style=" height:2px;border:none;border-top:2px dotted #185598;" />
 
-                  <div id="all-warehouse-set" <?php if($filter_warehouse_id_global) { ?> style="display:none" <?php } ?>>
+                  <div id="all-warehouse-set" style="display:none" <?php if($filter_warehouse_id_global) { ?> style="display:none" <?php } ?>>
                       <div class="table-responsive">
                           <table>
                               <tr>
