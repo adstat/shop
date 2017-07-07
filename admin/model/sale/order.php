@@ -995,9 +995,9 @@ GROUP BY
 
 			$query = $this->db->query($sql);
 
-			if($query->row['order_payment_status_id'] == 2){
-				$this->addTransaction($order_id,$status_id);
-			}
+//			if($query->row['order_payment_status_id'] == 2){
+			$this->addTransaction($order_id,$status_id);
+//			}
 		}
 
 		return $bool;
@@ -1059,16 +1059,36 @@ GROUP BY
 		$amount = $credit_paid + $wxpay_paid;
 
 		//全部退还到余额，此时还需检查该订单是否发生过分拣缺货，并且已退还该客户余额的操作
-		$sql = "select return_id,return_credits from oc_return where order_id = '".(int)$order_id."' and  return_reasono_id = 1 and return_status_id = 2 and credits_returned = 1";
+//		$sql = "select return_id,return_credits from oc_return where order_id = '".(int)$order_id."' and  return_reasono_id = 1 and return_status_id = 2 and credits_returned = 1";
+		$sql = "select amount from oc_customer_transaction where order_id = '".(int)$order_id."' and customer_id = '".(int)$customer_id."' and  customer_transaction_type_id = 9";
 		$query = $this->db->query($sql);
 		if($query->num_rows){
-			$amount = $amount - $query->row['return_credits'];
+
+			$amount_b = $query->row['amount'];
+			$sql ="INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
+			VALUES ('".(int) $customer_id ."','".(int) $order_id."','14','扣除该订单分拣缺货返还给用户的积分','".$amount_b."',now(),'".(int) $this->user->getId() ."')";
+
+			$bool = $bool && $this->db->query($sql);
 		}
 
-		$sql = "INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
+		if($amount>0){
+			$sql = "INSERT INTO oc_customer_transaction (`customer_id`,`order_id`,`customer_transaction_type_id`,`description`,`amount`,`date_added`,`added_by`)
 			VALUES ('".(int) $customer_id ."','".(int) $order_id."','4','". $description ."','".$amount."',now(),'".(int) $this->user->getId() ."')";
 
-		$bool = $bool && $this->db->query($sql);
+			$bool = $bool && $this->db->query($sql);
+		}
+
+		//检查客户是否使用了积分支付，如果使用了，则需要返还积分
+		$sql = "select customer_id, order_id, abs(points) points from oc_customer_reward where order_id = '".(int)$order_id."' and reward_id = 6";
+
+		$query = $this->db->query($sql);
+
+		if($query->num_rows){
+			$points = $query->row['points'];
+			$sql = "INSERT INTO oc_customer_reward (`customer_id`,`order_id`,`description`,`points`,`date_added`,`reward_id`,`add_by`)
+				VALUES ('".(int) $customer_id."','".(int) $order_id."','取消订单返还积分','".$points."',now(),7,'".(int) $this->user->getId() ."')";
+			$this->db->query($sql);
+		}
 
 		if($bool){
 			$this->db->query('COMMIT');
@@ -1154,57 +1174,80 @@ GROUP BY
 
 	public function cancelOrderDistr($status_id,$order_id,$currentStatus){
 		//判断该订单是否已支付，没有支付的话，直接取消
-		$payment_status = $this->model_sale_order->getOrderPaymentStatusId($order_id);
-
+//		$payment_status = $this->model_sale_order->getOrderPaymentStatusId($order_id);
+		//无论是否为已支付，直切去order_total表里返还相应余额，积分，微信支付
 		if($currentStatus['order_status_id'] !== CANCELLED_ORDER_STATUS){
-			if($payment_status == 1){
-				$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
-				$bool = true;
-				$bool = $bool && $this->db->query($sql);
-				//更改订单状态为取消状态，则执行退库操作
-				if($bool){
 
-					//返还可售库存
-					$bool = $bool && $this->dealSaleinvFllows($order_id);
+			$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
+			$bool = true;
+			$bool = $bool && $this->db->query($sql);
+			//更改订单状态为取消状态，则执行退库操作
+			if($bool){
 
-					if($status_id == 6){
-						$bool = $bool && $this->dealStockinventory($order_id);
-					}
-
-					return $bool;
-				}else{
-
-					return false;//取消未支付的订单失败
-
-				}
-			}elseif($payment_status == 2){
-				/*没有微信退现金，则全部退余额，分拣中的订单不允许出库，
-				 *先返回可售库存，再退余额给用户，执行成功之后才可以把订单状态改为已取消
-				 * 取消的订单不做退货处理，返还可售库存即可
-				*/
-				$bool = true;
-				$sql = "update oc_order set order_status_id =  ". CANCELLED_ORDER_STATUS ." where order_id = '".(int) $order_id."'";
-
-				$bool = $bool &&  $this->db->query($sql);
-
+				//返还可售库存
 				$bool = $bool && $this->dealSaleinvFllows($order_id);
 
-				if($status_id ==6){
+				if($status_id == 6){
 					$bool = $bool && $this->dealStockinventory($order_id);
 				}
 
-				/*
-					退余额到客户账户
-					需要扣减之前出库缺货的金额
-				*/
-
 				$bool = $bool && $this->addTransaction($order_id,$status_id);
 
-				//已拣完的订单需要生成退货数据，暂时交由仓库处理
-
 				return $bool;
+			}else{
+
+				return false;//取消未支付的订单失败
 
 			}
+
+//			if($payment_status == 1){
+//				$sql = "update oc_order set order_status_id = ". CANCELLED_ORDER_STATUS ." where order_id = '{$order_id}'";
+//				$bool = true;
+//				$bool = $bool && $this->db->query($sql);
+//				//更改订单状态为取消状态，则执行退库操作
+//				if($bool){
+//
+//					//返还可售库存
+//					$bool = $bool && $this->dealSaleinvFllows($order_id);
+//
+//					if($status_id == 6){
+//						$bool = $bool && $this->dealStockinventory($order_id);
+//					}
+//
+//					return $bool;
+//				}else{
+//
+//					return false;//取消未支付的订单失败
+//
+//				}
+//			}elseif($payment_status == 2){
+//				/*没有微信退现金，则全部退余额，分拣中的订单不允许出库，
+//				 *先返回可售库存，再退余额给用户，执行成功之后才可以把订单状态改为已取消
+//				 * 取消的订单不做退货处理，返还可售库存即可
+//				*/
+//				$bool = true;
+//				$sql = "update oc_order set order_status_id =  ". CANCELLED_ORDER_STATUS ." where order_id = '".(int) $order_id."'";
+//
+//				$bool = $bool &&  $this->db->query($sql);
+//
+//				$bool = $bool && $this->dealSaleinvFllows($order_id);
+//
+//				if($status_id ==6){
+//					$bool = $bool && $this->dealStockinventory($order_id);
+//				}
+//
+//				/*
+//					退余额到客户账户
+//					需要扣减之前出库缺货的金额
+//				*/
+//
+//				$bool = $bool && $this->addTransaction($order_id,$status_id);
+//
+//				//已拣完的订单需要生成退货数据，暂时交由仓库处理
+//
+//				return $bool;
+//
+//			}
 
 		}
 

@@ -597,19 +597,19 @@ class ModelCatalogProduct extends Model {
             }
         }
 
-		$this->db->query("DELETE FROM " . DB_PREFIX . "product_special WHERE product_id = '" . (int)$product_id . "'");
-
-		if (isset($data['product_special'])) {
-			foreach ($data['product_special'] as $product_special) {
-				$this->db->query("INSERT INTO " . DB_PREFIX . "product_special SET product_id = '" . (int)$product_id . "', maximum='".(int)$product_special['maximum']."', promo_title='".$product_special['promo_title']."',customer_group_id = '" . (int)$product_special['customer_group_id'] . "', priority = '" . (int)$product_special['priority'] . "', price = '" . (float)$product_special['price'] . "', date_start = '" . $this->db->escape($product_special['date_start']) . "', date_end = '" . $this->db->escape($product_special['date_end']) . "'");
-			}
-		}
+//		$this->db->query("DELETE FROM " . DB_PREFIX . "product_special WHERE product_id = '" . (int)$product_id . "'");
+//
+//		if (isset($data['product_special'])) {
+//			foreach ($data['product_special'] as $product_special) {
+//				$this->db->query("INSERT INTO " . DB_PREFIX . "product_special SET product_id = '" . (int)$product_id . "', maximum='".(int)$product_special['maximum']."', promo_title='".$product_special['promo_title']."',customer_group_id = '" . (int)$product_special['customer_group_id'] . "', priority = '" . (int)$product_special['priority'] . "', price = '" . (float)$product_special['price'] . "', date_start = '" . $this->db->escape($product_special['date_start']) . "', date_end = '" . $this->db->escape($product_special['date_end']) . "'");
+//			}
+//		}
 
 		//将本次特价的修改保存到特价历史记录表里面
-		$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`user_id_modify`,`date_modify`)
-			select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,'". $user_id ."',now() from oc_product_special where product_id = '".$product_id ."'";
-
-		$query_s = $this->db->query($sql_s);
+//		$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`user_id_modify`,`date_modify`)
+//			select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,'". $user_id ."',now() from oc_product_special where product_id = '".$product_id ."'";
+//
+//		$query_s = $this->db->query($sql_s);
 
 		$this->db->query("DELETE FROM " . DB_PREFIX . "product_image WHERE product_id = '" . (int)$product_id . "'");
 
