@@ -203,7 +203,7 @@
                 <td class="text-center"><div product_id="[<?php echo $key;?>" name="products[<?php echo $key;?>][purchase_quantity_old]"><?php echo $value['pre_purchase_product']['pre_purchase_quantity_old'];?></div></td>
                 <td class="text-left"><input product_id="[<?php echo $key;?>" name="products[<?php echo $key;?>][supplier_quantity]" value="<?php echo $value['pre_purchase_product']['supplier_quantity'] > 0 ? $value['pre_purchase_product']['supplier_quantity'] : 0;?>" placeholder="请输入供应商采购数量" class="form-control int supplier_quantity" onChange="updateQuantity($(this).parent().parent().attr('id'));" type="text"></td>
                 <td class="text-left"><input product_id="[<?php echo $key;?>" name="products[<?php echo $key;?>][quantity]" value="<?php echo $value['pre_purchase_product']['pre_purchase_quantity'] > 0 ? $value['pre_purchase_product']['pre_purchase_quantity'] : 0;?>" placeholder="请输入采购数量" class="form-control int product_quantity" type="text"></td>
-                <td class="text-left"><input product_id="[<?php echo $key;?>" name="products[<?php echo $key;?>][price]" value="<?php echo $value['pre_purchase_product']['price'];?>" placeholder="请输入采购价格" class="form-control int price" type="text" readonly></td>
+                <td class="text-left"><input product_id="[<?php echo $key;?>" name="products[<?php echo $key;?>][price]" value="<?php echo $value['pre_purchase_product']['price'];?>" placeholder="请输入采购价格" class="form-control int price" type="text"></td>
                 <td class="text-left"><input product_id="[<?php echo $key;?>" name="products[<?php echo $key;?>][real_cost]" value="<?php echo $value['pre_purchase_product']['real_cost'];?>" placeholder="请输入真实成本" class="form-control int real_cost" type="text"></td>
                 <td class="text-left"><div class="supplier_unit_size"><?php echo $value['pre_purchase_product']['supplier_unit_size'];?></div></td>
                 <td class="text-left"><div class="inv_size"><?php echo $value['pre_purchase_product']['inv_size'];?></div></td>
@@ -347,7 +347,7 @@ function addAdjust() {
     html += '  <td class="text-left"></td>';
     html += '  <td class="text-left"><input product_id="'+adjust_row+'" type="text" name="products[' + adjust_row + '][supplier_quantity]" value="" title="供应商采购数量" placeholder="供应商采购数量" class="form-control int supplier_quantity" onChange="updateQuantity($(this).parent().parent().attr(\'id\'));" /></td>';
     html += '  <td class="text-left"><input product_id="'+adjust_row+'" type="text" name="products[' + adjust_row + '][quantity]" value="" title="按供应商规格计算后采购数量" placeholder="按供应商规格计算后采购数量" class="form-control int product_quantity" /></td>';
-    html += '  <td class="text-left"><input product_id="'+adjust_row+'" type="text" name="products[' + adjust_row + '][price]" value="" placeholder="采购价格" class="form-control int purchase_price price" readonly/></td>';
+    html += '  <td class="text-left"><input product_id="'+adjust_row+'" type="text" name="products[' + adjust_row + '][price]" value="" placeholder="采购价格" class="form-control int purchase_price price" /></td>';
     html += '  <td class="text-left"><input product_id="'+adjust_row+'" type="text" name="products[' + adjust_row + '][real_cost]" value="" placeholder="真实成本" class="form-control int real_cost cost" /></td>';
     html += '  <td class="text-left"><div class="supplier_unit_size"></div></td>';
     html += '  <td class="text-left"><div class="inv_size"></div></td>';
