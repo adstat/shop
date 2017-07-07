@@ -253,7 +253,7 @@
                   <td><?php echo $product['weight_inv_flag'] ? '是': ''; ?></td>
                   <td><?php echo $product['repack'] ? '是': ''; ?></td>
                   <td><?php echo $product['is_gift'] ? '是': ''; ?></td>
-                  <td><?php echo $product['instock'] ? '是': ''; ?></td>
+                  <td><?php echo $product['instock'] ? '': '是'; ?></td>
                   <td class="text-left"<?php if($product['status_id']==0){ ?> style=" border: 1px dashed; background-color: #FF2222;" <?php } ?> ><?php echo $product['status']; ?></td>
                   <td class="text-right"><a href="<?php echo $product['edit']; ?>" data-toggle="tooltip" title="<?php echo $button_edit; ?>" class="btn btn-primary"><i class="fa fa-pencil"></i></a></td>
                 </tr>

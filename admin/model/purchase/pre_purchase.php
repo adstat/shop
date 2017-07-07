@@ -617,6 +617,30 @@ AND xsm.purchase_order_id = " . $order_id . "
         return $query->rows;
     }
 
+    public function editOrderInvoiceStatus($order_id){
+        $sql = "select purchase_order_id, status, checkout_status from oc_x_pre_purchase_order where purchase_order_id = " . $order_id;
+        $query = $this->db->query($sql);
+        $order_info = $query->row;
+
+        //取消订单不比再修改
+        if($order_info['status'] == 3){
+            return false;
+        }
+
+        //增加操作历史记录
+        $user_id = $this->user->getId();
+        $historySql = "
+            INSERT INTO `oc_x_pre_purchase_order_history` (`purchase_order_id`, `status`, `invoice_provided`, `date_added`, `added_by`)
+            select purchase_order_id, status, 1, now(), '".$user_id."' from oc_x_pre_purchase_order where purchase_order_id = '".(int)$order_id."'
+        ";
+        $this->db->query($historySql);
+
+        $this->db->query("UPDATE `" . DB_PREFIX . "x_pre_purchase_order` SET invoice_provided = 1,checkout_time = NOW(),checkout_user_id = " . $user_id . " WHERE purchase_order_id = '" . (int)$order_id . "'");
+
+        return true;
+
+    }
+
     public function editOrderCheckoutStatus($order_id, $checkout_ope) {
         $sql = "select purchase_order_id, status, checkout_status from oc_x_pre_purchase_order where purchase_order_id = " . $order_id;
         $query = $this->db->query($sql);
@@ -1335,7 +1359,7 @@ order by fl.container_move_id desc
             left join oc_x_pre_purchase_order_product p on p.purchase_order_id = o.purchase_order_id
             left join oc_product op on op.product_id = p.product_id
             left join oc_weight_class_description wcd on wcd.weight_class_id = op.weight_class_id
-            left join oc_x_sku s on s.sku_id = p.sku_id
+            left join oc_x_sku s on s.sku_id = op.sku_id
             left join oc_x_supplier sp on s.supplier_id = sp.supplier_id
             where o.purchase_order_id = '".(int)$order_id."'";
 

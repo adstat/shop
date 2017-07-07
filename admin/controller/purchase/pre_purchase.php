@@ -454,7 +454,26 @@ class ControllerPurchasePrePurchase extends Controller {
         $this->getForm2($data);
     }
 
-    
+
+    public function update_invoice() {
+        $json = array();
+        $this->load->model('purchase/pre_purchase');
+        $order_id = $_POST['order_id'];
+
+        $return = $this->model_purchase_pre_purchase->editOrderInvoiceStatus($order_id);
+        if(!$return){
+            $json['return_msg'] = "修改失败，请检查订单状态";
+            $json['success']  = "修改失败";
+        }
+        else{
+            $json['return_msg'] = "修改成功";
+            $json['success'] = "修改成功";
+        }
+
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
     public function update_checkout_status() {
 		$json = array();
 
@@ -898,6 +917,7 @@ class ControllerPurchasePrePurchase extends Controller {
                 'checkout_type_id' => $result['checkout_type_id'],
                 'order_type' => $result['order_type'],
                 'invoice_flag' => $result['invoice_flag'],
+                'invoice_provided' => $result['invoice_provided'],
                 'warehouse' => !empty($warehouse_data[$result['warehouse_id']]) ? $warehouse_data[$result['warehouse_id']]['title']  : '',
                 
                 'view' => $this->url->link('purchase/pre_purchase/info', 'token=' . $this->session->data['token'] . '&purchase_order_id=' . $result['purchase_order_id'] . $url, 'SSL'),
