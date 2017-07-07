@@ -251,11 +251,10 @@ class ModelCatalogProductInv extends Model {
     }
 
     public function editProduct($product_id, $data) {
-// print_r($data); die;
         //$this->event->trigger('pre.admin.product.edit', $data);
         $sql = "UPDATE " . DB_PREFIX . "product
-            SET repack = '" . (int)$this->db->escape($data['repack']) . "',
-            sku = '".$this->db->escape($data['sku'])."',
+            SET sku = '" . $this->db->escape($data['sku']) . "',
+            repack = '" . (int)$this->db->escape($data['repack']) . "',
             inv_class_sort = '" . $this->db->escape($data['inv_class_sort']) . "',
             date_modified = NOW(),
             weight_range_least = '" . $this->db->escape($data['weight_range_least']) . "',
@@ -269,15 +268,15 @@ class ModelCatalogProductInv extends Model {
 
         $this->db->query($sql);
 
-        $sql_p = "INSERT INTO oc_product_history (`product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`sku`,`status`,
-			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
+        $sql_p = "INSERT INTO oc_product_history (`product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
+			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
 			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
 			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
 			`date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
 			`issupportstore`,`is_sku`,`related_product_id`,`class`,`factor`,`inv_class`,`inv_class_sort`,`produce_group_id`,`purchase_preset`,`supplier_id`,`weight_type`,`fix_discount`,`weightloss_rate`,
 			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,`user_id_modify`,`date_modify`)
-			select `product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`sku`,`status`,
-			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
+			select `product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
+			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
 			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
 			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
 `date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
