@@ -84,9 +84,10 @@ class ControllerLogisticLogisticAllot2 extends Controller
                         $num += $val['quantity'];
                     }
                     $num = '未拣:共' . $num . '件';
+                    $value['invComment'] = '';
                 } else {
                     $invComment = $order['inv_comment'];
-
+                    $value['invComment'] = $invComment;
                     $num = '';
                     if (!empty($order['frame_count']) || !empty($order['frame_meat_count'])) {
                         $num .= '框:' . ((int)$order['frame_count'] + (int)$order['frame_meat_count']);
@@ -106,7 +107,7 @@ class ControllerLogisticLogisticAllot2 extends Controller
                 }
                 $value['station_name'] = $this->model_station_station->getStationNameById($value['station_id']);
                 $value['num'] = $num;
-                $value['invComment'] = $invComment;
+
             }
 
         }

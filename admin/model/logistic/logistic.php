@@ -473,6 +473,7 @@ FROM
             $whereCond .= isset($where['station_id']) ? " and la.station_id='".$where['station_id']."'" : "";
             $whereCond .= isset($where['deliver_slot_id']) ? " and la.deliver_slot_id='".$where['deliver_slot_id']."'" : "";
             $whereCond .= isset($where['deliver_date']) ? " and la.deliver_date='".$where['deliver_date']."'" : "";
+
             $whereCond .=  " and o.warehouse_id='".$warehouse_id_global."'" ;
 
             $sql =
@@ -496,8 +497,10 @@ FROM
         $sql = "select count(order_id) cont from oc_x_logistic_allot_order where logistic_allot_id = '".$logistic_allot_id."'";
         $checkData = $this->db->query($sql)->row;
 
+
         //无订单则删除分派记录
         if($checkData['cont'] == 0){
+
             $sql = 'delete from oc_x_logistic_allot where logistic_allot_id=' . $logistic_allot_id;
             $this->db->query($sql);
         }
@@ -563,9 +566,9 @@ FROM
             $whereCond = isset($where['order_id']) ? " and O.order_id='".$where['order_id']."'" : "";
 
             $whereCond .= isset($where['station_id']) ? " and O.station_id='".$where['station_id']."'" : "";
-         ;
-            $whereCond .=  " and O.warehouse_id='".$warehouse_id_global."'" ;
-            ;
+
+            $whereCond .=  " and O.warehouse_id = '".$warehouse_id_global."'" ;
+
        $date= isset($where['deliver_date']) ? "  DATE(O.deliver_date)='".$where['deliver_date']."'" : "";
 
 
@@ -573,7 +576,7 @@ FROM
 LEFT JOIN  oc_x_bd BD ON O.bd_id = BD.bd_id  WHERE $date AND (SELECT COUNT(1)AS  num FROM oc_x_logistic_allot_order B  WHERE  O.order_id = B.order_id  ) = 0   $whereCond  and O.order_status_id !=3 ";
 
         }
-
+       
         return $this->db->query($sql)->rows;
 
     }

@@ -22,9 +22,8 @@ class ModelDesignBanner extends Model {
 		//对oc_x_banner_to_warehouse表进行新增
 		if(isset($data['station_warehouse']['warehouse'])){
 			foreach($data['station_warehouse']['warehouse'] as $key => $value){
-				$this->db->query("DELETE FROM " . DB_PREFIX . "banner_to_warehouse where banner_id = '".(int)$banner_id."' and warehouse_id = '".(int)$key."'");
+//				$this->db->query("DELETE FROM " . DB_PREFIX . "banner_to_warehouse where banner_id = '".(int)$banner_id."' and warehouse_id = '".(int)$key."'");
 				$sql = "INSERT INTO " . DB_PREFIX . "banner_to_warehouse set banner_id = '".(int)$banner_id ."', station_id = '".(int)$value."',warehouse_id = '".(int)$key."'";
-				echo '<hr>';
 				$this->db->query($sql);
 			}
 		}
@@ -56,10 +55,9 @@ class ModelDesignBanner extends Model {
 
 		//对oc_x_banner_to_warehouse表进行修改
 		if(isset($data['station_warehouse']['warehouse'])){
+			$this->db->query("DELETE FROM " . DB_PREFIX . "banner_to_warehouse where banner_id = '".(int)$banner_id."'");
 			foreach($data['station_warehouse']['warehouse'] as $key => $value){
-				$this->db->query("DELETE FROM " . DB_PREFIX . "banner_to_warehouse where banner_id = '".(int)$banner_id."' and warehouse_id = '".(int)$key."'");
 				$sql = "INSERT INTO " . DB_PREFIX . "banner_to_warehouse set banner_id = '".(int)$banner_id ."', station_id = '".(int)$value."',warehouse_id = '".(int)$key."'";
-				echo '<hr>';
 				$this->db->query($sql);
 			}
 		}
