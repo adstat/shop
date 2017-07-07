@@ -1739,6 +1739,10 @@ class ControllerPurchasePrePurchase extends Controller {
 
         $data['action_select'] = $this->url->link('purchase/pre_purchase/add', 'token=' . $this->session->data['token'] , 'SSL');
         $data['action_adjust'] = $this->url->link('purchase/pre_purchase/add', 'token=' . $this->session->data['token'] , 'SSL');
+
+        $this->load->model('station/station');
+
+        $data['warehouses'] = $this->model_station_station->getWarehouseAndStation();
         
        //load station
         $data['order_stations'] = array(1=>"生鲜",2=>"快销");
