@@ -67,7 +67,7 @@ class PRODUCT{
                     p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
                     c.category_id, c.parent_id, c.sort_order category_order, cd.name category_name, c.promo_order,
                     if(p.instock=1, if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
-                    if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) = 0, 0 , 1) stock_order
+                    if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) <= 0, 0 , 1) stock_order
                     FROM oc_product_to_category pc
                     RIGHT JOIN oc_category c ON (pc.category_id = c.category_id)
                     RIGHT JOIN oc_category_description cd ON (c.category_id = cd.category_id)
@@ -173,7 +173,7 @@ class PRODUCT{
                     p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
                     c.category_id, c.parent_id, c.sort_order category_order, cd.name category_name, c.promo_order,
                     if(p.instock=1, if(pi.inventory is null or pi.inventory < 0, 0, pi.inventory-p.safestock), 999) stock,
-                    if( if(pi.inventory is null , 0, pi.inventory-p.safestock)=0, 0, 1) stock_order,
+                    if( if(pi.inventory is null , 0, pi.inventory-p.safestock)<=0, 0, 1) stock_order,
                     p.sale_start_quantity,p.sale_jump_quantity
                     FROM oc_product_to_category pc
                     RIGHT JOIN oc_category c ON (pc.category_id = c.category_id)
@@ -465,7 +465,7 @@ class PRODUCT{
                         c.category_id, c.parent_id, c.sort_order category_order, cd.name category_name, c.promo_order,
                         ps.priority index_promo_priority,
                         if(p.instock=1, if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
-                        if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) = 0, 0 , 1) stock_order,
+                        if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) <= 0, 0 , 1) stock_order,
                         p.sale_start_quantity,p.sale_jump_quantity
                         FROM oc_product_to_category pc
                         RIGHT JOIN oc_category c ON (pc.category_id = c.category_id)
@@ -541,7 +541,7 @@ class PRODUCT{
                         LEAST(if(isnull(p.maximum),999,p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
                         p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
                         if(p.instock=1, if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
-                        if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) = 0, 0 , 1) stock_order,
+                        if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) <= 0, 0 , 1) stock_order,
                         p.sale_start_quantity,p.sale_jump_quantity
 
                         FROM oc_x_activity_product ap
@@ -572,7 +572,7 @@ class PRODUCT{
                         LEAST(if(isnull(p.maximum),999,p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
                         p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
                         if(p.instock=1, if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
-                        if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) = 0, 0 , 1) stock_order,
+                        if( (if(sum(A.quantity) is null, 0,sum(A.quantity))-p.safestock) <= 0, 0 , 1) stock_order,
                         p.sale_start_quantity,p.sale_jump_quantity
 
                         FROM oc_product p
@@ -640,7 +640,7 @@ class PRODUCT{
                         c.category_id, c.parent_id, c.sort_order category_order, cd.name category_name, c.promo_order,
                         ps.priority index_promo_priority,
                         if(p.instock=1, if(pi.inventory is null or pi.inventory < 0, 0, pi.inventory-p.safestock), 999) stock,
-                        if( if(pi.inventory is null , 0, pi.inventory-p.safestock)=0, 0, 1) stock_order,
+                        if( if(pi.inventory is null , 0, pi.inventory-p.safestock)<=0, 0, 1) stock_order,
                         p.sale_start_quantity,p.sale_jump_quantity
                         FROM oc_product_to_category pc
                         RIGHT JOIN oc_category c ON (pc.category_id = c.category_id)
@@ -723,7 +723,7 @@ class PRODUCT{
                         LEAST(if(isnull(p.maximum),999,p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
                         p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
                         if(p.instock=1, if(pi.inventory is null or pi.inventory < 0, 0, pi.inventory-p.safestock), 999) stock,
-                        if( if(pi.inventory is null , 0, pi.inventory-p.safestock)=0, 0, 1) stock_order,
+                        if( if(pi.inventory is null , 0, pi.inventory-p.safestock)<=0, 0, 1) stock_order,
                         p.sale_start_quantity,p.sale_jump_quantity
 
                         FROM oc_x_activity_product ap
@@ -759,7 +759,7 @@ class PRODUCT{
                         LEAST(if(isnull(p.maximum),999,p.maximum),if(isnull(ps.maximum),p.maximum,ps.maximum)) maximum,
                         p.date_available, p.wxpay_only, ps.is_promo, ps.promo_title, ps.promo_limit, ps.showup,
                         if(p.instock=1, if(pi.inventory is null or pi.inventory < 0, 0, pi.inventory-p.safestock), 999) stock,
-                        if( if(pi.inventory is null , 0, pi.inventory-p.safestock)=0, 0, 1) stock_order,
+                        if( if(pi.inventory is null , 0, pi.inventory-p.safestock)<=0, 0, 1) stock_order,
                         p.sale_start_quantity,p.sale_jump_quantity
 
                         FROM oc_product p
