@@ -6435,11 +6435,11 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         *	$sql2.=") AS tb";
         *	$query2=$db->query($sql2);
         */
-
+     return $sql ;
         $query = $db->query($sql);
 
         $results = $query->rows;
-            return $results;
+
         $all_orders = array();
         foreach($results as $key=>$value){
             $value['date_added'] = date("H:i:s",  strtotime($value['date_added']));
