@@ -6479,6 +6479,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         elseif($product_id==5004){
 
             $sql = "select * from oc_order_distr where ordclass = 5";
+            return $sql ;
         }
         elseif($product_id==5005){
 
@@ -6494,7 +6495,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
         $distr= $db->query($sql);
         $distr = $distr->rows;
-return $distr;
+
         foreach($distr as $d_key=>$d_value){
             unset($all_orders[$d_value['order_id']]);
         }
