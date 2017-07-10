@@ -2286,12 +2286,12 @@ ORDER BY
             concat(round(A.weight,0), C.title) unit,
             A.shelf_life,
             now() checktime
-            from xsj.oc_product A
-            left join xsj.oc_product_description B on A.product_id = B.product_id and B.language_id = 2
-            left join xsj.oc_weight_class_description C on A.weight_class_id = C.weight_class_id and C.language_id = 2
-            left join  xsj.oc_product_special D on (A.product_id = D.product_id and now() between D.date_start and D.date_end)
+            from xsjb2b.oc_product A
+            left join xsjb2b.oc_product_description B on A.product_id = B.product_id and B.language_id = 2
+            left join xsjb2b.oc_weight_class_description C on A.weight_class_id = C.weight_class_id and C.language_id = 2
+            left join  xsjb2b.oc_product_special D on (A.product_id = D.product_id and now() between D.date_start and D.date_end)
             left join xsj.oc_product_promo E on A.product_id = E.product_id
-            left join xsj.oc_product_inv_class PC on A.inv_class = PC.product_inv_class_id
+            left join xsjb2b.oc_product_inv_class PC on A.inv_class = PC.product_inv_class_id
             where A.product_id in (" . implode(',', $product_ids) . ")";
 
         $query = $db->query($sql);
