@@ -413,9 +413,9 @@ class PROMOTION{
         $sql = "SELECT
                 p.product_id,
                 round(if(isnull(pw.price) OR pw.price<0, p.price, pw.price),2) price,
-                round(if(isnull(ps.price),p.price,ps.price),2) special_price
+                round(if(isnull(ps.price),pw.price,ps.price),2) special_price
                 FROM oc_product p
-                LEFT JOIN oc_product_to_warehouse pw ON p.product_id = pw.product_id
+                LEFT JOIN oc_product_to_warehouse pw ON (p.product_id = pw.product_id AND pw.status = 1)
                 LEFT JOIN oc_product_special ps ON (p.product_id = ps.product_id AND now() BETWEEN ps.date_start AND ps.date_end AND ps.warehouse_id = {$warehouse_id} AND ps.area_id = 0)
                 WHERE
                 pw.warehouse_id = {$warehouse_id}
