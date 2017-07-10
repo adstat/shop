@@ -164,11 +164,12 @@ class ControllerSaleOrderReplenish extends Controller
             $query = $this->db->query($sql);
             $json = $query->row;
 
+            //由限明天配送日期，改为查找未配送状态，Alex- 2017-07-09
             if(isset($json['customer_id'])){
                 $sql = "select order_id, deliver_date from oc_order
                         where type = 1 and customer_id = '".$json['customer_id']."'
                         and station_id = '".$json['station_id']."'
-                        and order_status_id not in (3) and deliver_date = date_add(current_date(), interval 1 day)
+                        and order_status_id not in (3) and order_deliver_status_id = 1
                         ";
                 $query = $this->db->query($sql);
                 $json['target_orders'] = $query->rows;
