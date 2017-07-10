@@ -378,6 +378,7 @@ if($method == 'getOrderss'){
     $data['deliver_date'] = $_POST['deliver_date'];
     $data['area_id_list'] = $_POST['area_id_list'];
     $data['warehouse_id'] = $_POST['warehouse_id'];
+    var_dump($data);
     $orders = init('getOrderss', $id, json_encode($data), 1); //Get Stations
     
     
