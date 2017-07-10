@@ -1940,6 +1940,7 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
                 'order_print_status' => $result['order_print_status'],
                 'bd_id' => $result['bd_id'],
                 'station_id' => $result['station_id'],
+                'allot_flag' => $result['allot_flag'],
 
                 'user_point_paid' => round($result['user_point_paid']).'.00',
                 'wxpay_paid' => round($result['wxpay_paid']).'.00',

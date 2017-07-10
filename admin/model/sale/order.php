@@ -229,7 +229,7 @@ class ModelSaleOrder extends Model {
 		o.pickupspot_id, o.deliver_date, o.shipping_method, o.shipping_phone, o.payment_method, o.payment_code, o.shipping_firstname, o.shipping_address_1,
 		o.order_status_id, o.order_deliver_status_id, o.order_payment_status_id,o.station_id,
 		A.logistic_allot_id, B.logistic_driver_id, B.logistic_driver_title, B.logistic_driver_phone,
-		o.order_print_status,
+		o.order_print_status,if(A.logistic_allot_id is not null,1,0) allot_flag,
         concat(left(ps.name,4),'*') pspot_short_name,  ps.name pspot_name, o.customer_group_id, o.is_nopricetag, bd.bd_name, bd.phone bd_phone, ocg.shortname group_shortname
 		FROM `" . DB_PREFIX . "order` o
 		LEFT JOIN oc_x_pickupspot ps ON o.pickupspot_id = ps.pickupspot_id
@@ -1109,8 +1109,8 @@ GROUP BY
 
 		$bool =true;
 		//查找是否已有库存扣减记录，如有添加库存增加退库记录
-		$sql = "INSERT INTO `oc_x_stock_move` (`station_id`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`)
-                    select A.station_id, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, " . INVENTORY_TYPE_ORDER_STOCK_RETURN . " inventory_type_id, now() date_added
+		$sql = "INSERT INTO `oc_x_stock_move` (`station_id`, `timestamp`, `from_station_id`, `to_station_id`, `order_id`, `inventory_type_id`, `date_added`, `added_by`)
+                    select A.station_id, unix_timestamp(now()) timestamp, 0 from_station_id, 0 to_station_id, A.order_id, " . INVENTORY_TYPE_ORDER_STOCK_RETURN . " inventory_type_id, now() date_added,'".$this->user->getId()."'
                     from oc_order A
                     inner join oc_x_stock_move B on A.order_id = B.order_id and inventory_type_id = '" . INVENTORY_TYPE_ORDER_STOCK_OUT . "'
                     where A.order_id = '" . $order_id . "'";

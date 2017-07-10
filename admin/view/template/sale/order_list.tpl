@@ -342,7 +342,7 @@
                               <option value="1">财务已退微信支付</option>
                           </select>
                           <?php } ?>-->
-                        <?php if($order['order_deliver_status_id'] == 1){ ?>
+                        <?php if($order['order_deliver_status_id'] == 1 && !$order['allot_flag']){ ?>
 
                           <?php if($order['order_status_id'] == 5){ ?>
                           <button class="change_status" style="color:#ff2222" onclick="javascript:processOrder('orderStatus',<?=$order['order_id']; ?>, 5);return false;">取消分拣中的订单</button>
