@@ -255,7 +255,7 @@
                   <div class="form-group">
                       <label class="col-sm-2 control-label" for="input-price">价格</label>
                       <div class="col-sm-6">
-                          <input type="text" id="set_price" name="price" value="<?php echo $price; ?>" placeholder="价格" id="input-price" class="form-control" />
+                          <input type="text" id="set_price" name="price" value="<?php echo $price; ?>" placeholder="价格" id="input-price" class="form-control" readonly />
                       </div>
                   </div>
 
