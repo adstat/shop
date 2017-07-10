@@ -226,6 +226,7 @@
                 <?php
                     $cancelled = "";
                     $lock = false;
+                    $finace_lock = false;
                     if($order['order_status_id'] == CANCELLED_ORDER_STATUS){
                         $cancelled = "cancelled_order";
                         $lock = true;
@@ -234,6 +235,10 @@
                     //if( !in_array($order['order_deliver_status_id'],unserialize(ALLOW_M_DELIVER)) && !in_array($order['order_payment_status_id'],unserialize(ALLOW_M_PAYMENT)) ){
                     //    $lock = true;
                     //}
+
+                    if( !in_array($order['order_deliver_status_id'],unserialize(ALLOW_M_DELIVER)) && !in_array($order['order_payment_status_id'],unserialize(ALLOW_M_PAYMENT)) ){
+                        $finace_lock = true;
+                    }
 
                     if($order['order_deliver_status_id'] != 1 && $order['order_deliver_status_id'] != 7){
                         $lock = true;
@@ -419,7 +424,7 @@
                       </div>
 
 
-                      <?php if( in_array($order['order_payment_status_id'],unserialize(ALLOW_M_PAYMENT)) && !$lock && $updatePayment){ ?>
+                      <?php if( in_array($order['order_payment_status_id'],unserialize(ALLOW_M_PAYMENT)) && !$finace_lock && $updatePayment){ ?>
                           <br /><i>改为:</i><br />
                           <button class="change_status" onclick="javascript:processOrder('payment',<?=$order['order_id']; ?>, 2);return false;">现金已支付</button>
 
