@@ -6427,6 +6427,8 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         $sql .= " AND oc_order.deliver_date  = '" . $data['deliver_date'] . "'";
         $sql .=" group by oc_order.order_id";
         $sql .=" order by a.city,a.district,a.name,oc_order.shipping_address_1";
+
+        return $sql;
         /*
          * 数据插入到新表temp_order
         *	$sql2=" INSERT INTO temp_order(order_id,quantity) SELECT * FROM (";
