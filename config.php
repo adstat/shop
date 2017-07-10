@@ -1,7 +1,7 @@
 <?php
 ini_set('display_errors',0);
 
-define('SITE_URI','http://b2b.xianshiji.com');
+define('SITE_URI','http://192.168.1.99');
 define('DIR_PATH','192.168.1.99/xsj');
 
 //define('SITE_URI','http://localhost/xsjb2b');
