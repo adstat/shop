@@ -5990,7 +5990,7 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
 
 
         $data_inv = json_decode($data, 2);
-
+        return $data_inv;
         $date = $data_inv['date'];
         $username = $data_inv['username'] ? $data_inv['username'] : '';
         $password = $data_inv['password'] ? $data_inv['password'] : '';
