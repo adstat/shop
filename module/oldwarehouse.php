@@ -6351,7 +6351,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         global $log;
 
         $data = json_decode($data, 2);
-return $data;
+
         $product_id = isset($data['product_id']) ? $data['product_id'] : false;
         if(!$product_id){
             return false;
