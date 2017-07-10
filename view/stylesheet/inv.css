@@ -1,0 +1,499 @@
+        html, body, div, object, pre, code, h1, h2, h3, h4, h5, h6, p, span, em,
+        cite, del, a, img, ul, li, ol, dl, dt, dd, fieldset, legend, form,
+        input, button, textarea, header, section, footer, article, nav, aside,
+        menu, figure, figcaption {
+            margin: 0;
+            padding: 0;
+            outline: none
+            
+        }
+         .inventory_name{
+		    color: #000000;
+		    font-family: "Arial";
+		    font-size: 13px;
+		    font-style: normal;
+		    font-weight: normal;
+		    height: 100px;
+		    left: 0;
+		    <!--position: absolute;-->
+		    text-decoration: none;
+		    top: 0;
+		    width: 200px;
+		}
+		span{
+			 font-size: 80%;
+		}
+        h1, h2, h3, h4, h5, h6, sup {
+            font-size: 100%;
+            font-weight: normal
+        }
+		input{
+			<!--border:solid:1px;-->
+			width:10em;
+		
+		}
+        fieldset, img {
+            border: 0;
+        }
+
+        textarea  select{
+            -webkit-appearance: none;
+            outline: none;
+        }
+
+        mark {
+            background: transparent;
+        }
+
+        header, section, footer, article, nav, aside, menu {
+            display: block
+        }
+
+        .clr {
+            display: block;
+            clear: both;
+            height: 0;
+            overflow: hidden;
+        }
+            /*table {
+                border-collapse:collapse;
+                border-spacing:0;
+            }*/
+        ol, ul, li {
+            list-style: none;
+        }
+
+        em {
+            font-style: normal;
+        }
+
+        label, button, textarea {
+            border: none;
+            vertical-align: middle;
+        }
+
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        html {
+            -webkit-text-size-adjust: none;
+        }
+
+        body {
+            text-align: left;
+            font-family: Helvetica, Tahoma, Arial, Microsoft YaHei, sans-serif;
+            color: #666;
+            background-color:#FFEFD5;
+            
+            font-size: 1em;
+        }
+
+        .invopt{
+            background-color:#DF0000;
+            height:3em;
+            line-height: 1em;
+            padding: 0.5em 0.5em;
+            margin:0.1em 0.1em;
+            font-size: 1em;
+            text-decoration: none;
+            border: 0.1em solid #CC0101;
+            border-radius: 0.2em;
+            color: #ffffff;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        .invback{
+            background-color:#DF0000;
+            width:5em;
+            height:3em;
+            line-height: 1em;
+            padding: 0.5em 0.5em;
+            margin:0.1em 0.1em;
+            font-size: 1em;
+            text-decoration: none;
+            border: 0.1em solid #CC0101;
+            border-radius: 0.2em;
+            color: #ffffff;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        .qtyopt{
+            background-color:#DF0000;
+            width:2em;
+            height:1.8em;
+            line-height: 1.2em;
+            padding: 0.1em 0.1em;
+            margin:0.1em 0.1em;
+            font-size: 1.2em;
+            text-decoration: none;
+            border: 0.1em solid #CC0101;
+            border-radius: 0.2em;
+            color: #ffffff;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+            float: left;
+            font-weight: bold;
+        }
+
+        .submit{
+            background-color: #DF0000;
+            padding: 0.3em 0.8em;
+            margin:0.1em 0.1em;
+            font-size: 1em;
+            text-decoration: none;
+            border: 0.1em solid #CC0101;
+            border-radius: 0.2em;
+            color: #ffffff;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+            float: right;
+        }
+
+        #inventory{
+            width: 100%;
+        }
+
+        #product{
+            margin: 0.5em auto;
+            height: 1.5em;
+            font-size:0.9em;
+            background-color: #d0e9c6;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+            padding-left: 0.2em;
+        }
+
+
+        .addprod{
+            cursor: pointer;
+            color: #fff;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        .qty{
+            width:1.2em;
+            height:1.2em;
+            font-size: 1.5em;
+            text-align: center;
+            background: none;
+        }
+
+        #inv_control{
+            padding:0.5em
+        }
+
+        .style_green{
+            background-color: #117700;
+            border: 0.1em solid #006600;
+        }
+
+        .style_lightgreen{
+            background-color: #8FBB6C;
+            border: 0.1em solid #8FBB6C;
+        }
+
+        .style_gray{
+            background-color:#9d9d9d;
+            border: 0.1em solid #888888;
+        }
+
+        .style_red{
+            background-color:#DF0000;
+            border: 0.1em solid #CC0101;
+        }
+
+        .style_yellow{
+            background-color:#FF6600;
+            border: 0.1em solid #df8505;
+        }
+
+        .style_light{
+            background-color:#fbb450;
+            border: 0.1em solid #fbb450;
+        }
+
+        .style_ok{
+            background-color:#ccffcc;
+            border: 0.1em solid #669966;
+        }
+
+        .style_error{
+            background-color:#ffff00;
+            border: 0.1em solid #ffcc33;
+        }
+
+        #productsInfo{
+            border: 0.1em solid #888888;
+        }
+
+        #station{
+           font-size: 1em;
+        }
+
+        .message{
+            width: auto;
+            margin: 0.5em;
+            padding: 0.5em;
+            text-align: center;
+
+            border-radius: 0.3em;
+            box-shadow: 0.2em rgba(0, 0, 0, 0.2);
+        }
+
+        .current_do_class td{
+            color:red;
+            height: 5em;
+        }
+        
+        #productsHold td{
+            background-color:#d0e9c6;
+            color: #000;
+            height: 2.5em;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        #productsHold th{
+            padding: 0.3em;
+            background-color:#8fbb6c;
+            color: #000;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+        
+        #productsHoldDo td{
+            background-color:#d0e9c6;
+            color: #000;
+            height: 2em;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+        
+        #productsHoldDo th{
+            padding: 0.3em;
+            background-color:#8fbb6c;
+            color: #000;
+            height: 3em;
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+        
+        #ordersHold td{
+            background-color:#d0e9c6;
+            color: #000;
+            height: 2.5em;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        #ordersHold th{
+            padding: 0.3em;
+            background-color:#8fbb6c;
+            color: #000;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        
+        
+        .submit_s{
+            padding: 0.2em 0.2em;
+            margin:0.1em 0.1em;
+            font-size: 0.9em;
+            text-decoration: none;
+            border-radius: 0.2em;
+            color:#333;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+
+        #invMovesHold th{
+            padding: 0.3em;
+            background-color:#f0ad4e;
+            color: #000;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        #invMovesHold td{
+            background-color:#ffffaa;
+            color: #000;
+            height: 2.5em;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        #invMovesPrintCaption{
+            width: 100%;
+            text-align: left;
+        }
+
+
+        #invMovesPrintHold{
+            border-right: solid #000 1px;
+            border-bottom: solid #000 1px;
+        }
+
+        #invMovesPrintHold th{
+            padding: 3px;
+            /*background-color:#f0ad4e;*/
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+
+            border-left: solid #000 1px;
+            border-top: solid #000 1px;
+            /*border-radius: 0.1em;*/
+            /*box-shadow: 0.1em rgba(0, 0, 0, 0.2);*/
+        }
+
+        #invMovesPrintHold td{
+            /*background-color:#ffffaa;*/
+            color: #000;
+            height: 15px;
+            font-size: 12px;
+            padding: 2px;
+
+            border-left: solid #000 1px;
+            border-top: solid #000 1px;
+            /*border-radius: 0.1em;*/
+            /*box-shadow: 0.1em rgba(0, 0, 0, 0.2);*/
+        }
+
+        #prtInvMoveType,#prtInvMoveTitle,#prtInvMoveTime{
+            color: #000;
+            font-weight: bold;
+        }
+
+        .simple-player-container {
+            display: inline-block;
+            -webkit-border-radius: 5px;
+            -moz-border-radius: 5px;
+            border-radius: 5px;
+        }
+        .simple-player-container > div > ul {
+            margin: 0;
+            padding-left: 0;
+        }
+        .simpleplayer-play-control {
+            background-image: url('images/play.png');
+            display: block;
+            width: 16px;
+            height: 16px;
+            bottom: -5px;
+            position: relative;
+        }
+        .simpleplayer-play-control:hover {
+            background-image: url('images/playing.png');
+        }
+        .simpleplayer-stop-control {
+            background-image: url('images/stop.png');
+            display: block;
+            width: 16px;
+            height: 16px;
+            bottom: -5px;
+            position: relative;
+        }
+        .simpleplayer-stop-control:hover {
+            background-image: url('images/stoped.png');
+        }
+
+        input::-webkit-input-placeholder {
+            color: #CC0000;
+        }
+        input:-moz-placeholder {
+            color: #CC0000;
+        }
+
+        input#product{
+            height: 1.2em;
+            font-size: 1.1em;
+        }
+
+        .productBarcode{font-size:14px;}
+
+        .prodlist{font-size: 1.4em;}
+
+        #overlay {
+            background: #000;
+            filter: alpha(opacity=50); /* IE的透明度 */
+            opacity: 0.5;  /* 透明度 */
+            display: none;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            height: 100%;
+            z-index: 100; /* 此处的图层要大于页面 */
+            display:none;
+        }
+         .inventory_name{
+		    color: #000000;
+		    font-family: "Arial";
+		    font-size: 13px;
+		    font-style: normal;
+		    font-weight: normal;
+		    height: 100px;
+		    left: 0;
+		    <!--position: absolute;-->
+		    text-decoration: none;
+		    top: 0;
+		    width: 200px;
+		}
+		
+
+		#u1_input {
+		    color: #000000;
+		    font-family: "Arial";
+		    font-size: 13px;
+		    font-style: normal;
+		    font-weight: normal;
+		    height: 100px;
+		    left: 0;
+		    text-decoration: none;
+		    top: 0;
+		    width: 300px;
+		}
+		#sec1,#sec2,#sec3,#sec4{
+			
+			margin-left:200px;
+			 
+		}
+		
+		table{
+			border-collapse:collapse;
+			border-spacing:0;
+			border-left:1px solid #888;
+			border-top:1px solid #888;
+			background:#efefef;
+		}
+		th,td{
+			border-right:1px solid #888;
+			border-bottom:1px solid #888;
+			padding:5px 15px;
+		}
+		th{
+			font-weight:bold;
+			background:#ccc;
+		}
