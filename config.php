@@ -1,12 +1,11 @@
 <?php
-ini_set('display_errors',1);
+ini_set('display_errors',0);
 
-//define('SITE_URI','http://b2b.xianshiji.com');
-//define('DIR_PATH','/var/www/wx/b2b');
+define('SITE_URI','http://b2b.xianshiji.com');
+define('DIR_PATH','/var/www/wx/b2b');
 
-
-define('SITE_URI','http://192.168.31.69');
-define('DIR_PATH','G:\phpsy\WWW\xyaxsjb2b');
+//define('SITE_URI','http://localhost/xsjb2b');
+//define('DIR_PATH','/Users/alexsun/htdocs/xsjb2b');
 
 
 define('ADMIN_VIEW', 100);
@@ -36,9 +35,9 @@ define('DIR_CATALOG', DIR_PATH.'/www/catalog/');
 // DB
 define('DB_DRIVER', 'mysqli');
 define('DB_HOSTNAME', 'localhost');
-define('DB_USERNAME', 'root');
-define('DB_PASSWORD', 'root');
-define('DB_DATABASE', 'xsjb2b2');
+define('DB_USERNAME', 'b2badmin');
+define('DB_PASSWORD', 'dk2l3kms2me');
+define('DB_DATABASE', 'xsjb2b');
 define('DB_PREFIX', 'oc_');
 
 //线上昨日
@@ -159,8 +158,8 @@ $inventory_user_arr = array(
     "xsfj018" => "xsfj18",
     "xsfj019" => "xsfj19",
     "xsfj020" => "xsfj20",
-
-
+    
+    
     "xsfj021" => "xsfj21",
     "xsfj022" => "xsfj22",
     "xsfj023" => "xsfj23",
@@ -171,8 +170,8 @@ $inventory_user_arr = array(
     "xsfj028" => "xsfj28",
     "xsfj029" => "xsfj29",
     "xsfj030" => "xsfj30",
-
-
+    
+    
     'scfj001' => 'scfj01',
     'scfj002' => 'scfj02',
     'scfj003' => 'scfj03',
@@ -183,8 +182,8 @@ $inventory_user_arr = array(
     'scfj008' => 'scfj08',
     'scfj009' => 'scfj09',
     'scfj010' => 'scfj10',
-
-
+    
+    
     'rhfj001' => 'rhfj01',
     'rhfj002' => 'rhfj02',
     'rhfj003' => 'rhfj03',
@@ -195,8 +194,8 @@ $inventory_user_arr = array(
     'rhfj008' => 'rhfj08',
     'rhfj009' => 'rhfj09',
     'rhfj010' => 'rhfj10',
-
-
+    
+    
     'lwfj001' => 'lwfj01',
     'lwfj002' => 'lwfj02',
     'lwfj003' => 'lwfj03',
@@ -207,7 +206,7 @@ $inventory_user_arr = array(
     'lwfj008' => 'lwfj08',
     'lwfj009' => 'lwfj09',
     'lwfj010' => 'lwfj10',
-
+    
     //'wangyunying' => 'wangyunying' ,
     'wangshaokui' => 'skw98526', // 王少奎 仓库管理
 
