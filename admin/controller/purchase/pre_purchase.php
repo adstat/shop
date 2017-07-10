@@ -1146,6 +1146,8 @@ class ControllerPurchasePrePurchase extends Controller {
         $data['checkout_excel'] = $this->url->link('purchase/pre_purchase/checkout_excel', 'token=' . $this->session->data['token'], 'SSL');
 
          $data['user_group_id'] = $this->user->user_group_id;
+        //单独给出纳沈飞增加已提供发票的处理权限
+        $data['finace_user_id'] = $this->user->getId();
 
         //TODO, try better way to verify user permission, global method
         $data['modifyPermission'] = false;

@@ -175,11 +175,11 @@
                 <td class="text-left">商品属性</td>
                 <td class="text-left">订单总额</td>
                 <td class="text-left">收货总额</td>
+                <td class="text-left">发票信息</td>
                 <td class="text-left">添加人</td>
                 <td class="text-left">添加时间</td>
                 <td class="text-left">订单状态</td>
                 <td class="text-left">付款状态</td>
-                <td class="text-left">发票信息</td>
                 <td class="text-right"><?php if ($sort == 'o.date_deliver') { ?>
                   <a href="<?php echo $sort_date_deliver; ?>" class="<?php echo strtolower($order); ?>">实际到货日期</a>
                   <?php } else { ?>
@@ -243,7 +243,25 @@
                       <?php echo $order['get_total']; ?>
                       
                   </td>
-                  
+
+                <td class="text-center">
+                    <?php if( $order['invoice_flag'] == 1 ) { ?>
+                    有无发票：<span style="background-color: #33CC33; color: #ffffff; padding:3px;">是</span><br>
+                    <?php if($order['invoice_provided'] == 0){ ?>
+                    <!-- 给财务沈飞开已开票权限 -->
+                    <?php if($order['status'] != 3 && in_array($user_group_id,array(1,26)) or $finace_user_id == 133){ ?>
+                  <span id="handle_invoice_<?php echo $order['purchase_order_id'];?>">
+                    <button type="button" order_id="<?php echo $order['purchase_order_id'];?>"  data-loading-text="加载中..." class="btn btn-primary button-invoice-set" id="button-invoice-<?php echo $order['purchase_order_id'];?>"><i class="fa fa-plus-circle"></i> 已提供</button>
+                  </span>
+                    <?php } ?>
+                    <span id="invoice_provided_show_<?php echo $order['purchase_order_id'];?>" style="display: none">已提供发票：</span><span style="background-color: #33CC33; color: #ffffff; padding:3px;display: none" id="invoice_provided_<?php echo $order['purchase_order_id'];?>">是</span>
+                    <?php }else{ ?>
+                    <span>已提供发票：</span><span style="background-color: #33CC33; color: #ffffff; padding:3px;" id="invoice_provided_<?php echo $order['purchase_order_id'];?>">是</span>
+                    <?php } ?>
+                    <?php }else{ ?>
+                    <span style="background-color: #cc0000; color: #FFFF00; padding:3px;">否</span>;
+                    <?php } ?>
+                </td>
                   
                   <td class="text-left">
                       <?php echo $order['add_user_name']; ?>
@@ -290,23 +308,6 @@
                       </span>
                       <?php } ?>
                       
-                  </td>
-                  <td class="text-center">
-                      <?php if( $order['invoice_flag'] == 1 ) { ?>
-                      有无发票：<span style="background-color: #33CC33; color: #ffffff; padding:3px;">是</span><br>
-                      <?php if($order['invoice_provided'] == 0){ ?>
-                      <?php if($order['status'] != 3 && in_array($user_group_id,array(1,26))){ ?>
-                      <span id="handle_invoice_<?php echo $order['purchase_order_id'];?>">
-                        <button type="button" order_id="<?php echo $order['purchase_order_id'];?>"  data-loading-text="加载中..." class="btn btn-primary button-invoice-set" id="button-invoice-<?php echo $order['purchase_order_id'];?>"><i class="fa fa-plus-circle"></i> 已提供发票</button>
-                      </span>
-                      <?php } ?>
-                      <span id="invoice_provided_show_<?php echo $order['purchase_order_id'];?>" style="display: none">已提供发票：</span><span style="background-color: #33CC33; color: #ffffff; padding:3px;display: none" id="invoice_provided_<?php echo $order['purchase_order_id'];?>">是</span>
-                      <?php }else{ ?>
-                      <span>已提供发票：</span><span style="background-color: #33CC33; color: #ffffff; padding:3px;" id="invoice_provided_<?php echo $order['purchase_order_id'];?>">是</span>
-                      <?php } ?>
-                      <?php }else{ ?>
-                      <span style="background-color: #cc0000; color: #FFFF00; padding:3px;">否</span>;
-                      <?php } ?>
                   </td>
                   <td class="text-left">
                       计划到货日期:<br><?php echo $order['date_deliver_plan']; ?><br>

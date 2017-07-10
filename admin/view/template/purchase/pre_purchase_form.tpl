@@ -113,7 +113,7 @@
                 </div>
                 <div class="form-group">
                     <label class="control-label" for="input-warehouse-id">选择仓库</label>
-                    <select name="warehouse_id" id="input-warehouse-id" class="form-control">
+                    <select name="select_warehouse_id" id="input-warehouse-id" onchange="setWarehouseId();" class="form-control">
                         <option value="0">请选择仓库</option>
                         <?php foreach($warehouses as $warehouse){ ?>
                         <option value="<?php echo $warehouse['warehouse_id']; ?>"><?php echo  $warehouse['title']; ?></option>
@@ -273,7 +273,7 @@
                 <td colspan="14" class="text-center">
                     <input type="hidden" name="station_id" value="<?php echo $station_id?>">
                     <input type="hidden" name="supplier_type" value="<?php echo $supplier_type?>">
-                    <input style="display: none" type="hidden" name="warehouse_id" value="<?php echo $filter_warehouse_id_global; ?>" >
+                    <input type="hidden" name="warehouse_id" value="<?php echo $filter_warehouse_id_global; ?>" >
                 </td>
             </tr>
             </tfoot>
@@ -379,6 +379,10 @@ function addAdjust() {
     addAdjust();
 <?php } ?>
 
+function setWarehouseId(){
+    $('input[name="warehouse_id"]').val($('select[name="select_warehouse_id"]').val());
+}
+
 function submitAdjust(){
     var trs = $('#adjust tbody tr').length;
     if(trs < 1){
@@ -402,7 +406,7 @@ function submitAdjust(){
         return false;
     }
 
-    if($('select[name="warehouse_id"]').val() == 0){
+    if($('input[name="warehouse_id"]').val() == 0){
         alert("请选择区域仓库");
         return false;
     }
