@@ -3,14 +3,13 @@ date_default_timezone_set('Asia/Shanghai');
 require_once 'config.php';
 
 
-var_dump(55);
-var_dump(66);
+
 //Load PHP XMLRPC
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc.php';
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpcs.php';
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc_wrappers.php';
 
-var_dump(88);
+    
 
 
 define('APIURL', SITE_URI . '/api/xmlrpc/v1/index_warehouse.php');
