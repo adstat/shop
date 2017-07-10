@@ -6440,7 +6440,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         $query = $db->query($sql);
 
         $results = $query->rows;
-        return $results;
+        
         $all_orders = array();
         foreach($results as $key=>$value){
             $value['date_added'] = date("H:i:s",  strtotime($value['date_added']));
@@ -6462,6 +6462,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                 }
             }
         */
+
         $distr = array();
         if($product_id==5001){
 
