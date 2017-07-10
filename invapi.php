@@ -1624,7 +1624,7 @@ if($method == 'inventory_login'){
         "password" => $password,
         "warehouse_id"=>$warehouse_id,
     );
-
+        var_dump($data);
     $return = init($method, 0, json_encode($data), $station_id);
     //  $return = init($method, 0, json_encode($data), $station_id);
     if($return['status'] == 1){
