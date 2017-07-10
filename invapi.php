@@ -9,12 +9,11 @@ require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc.php';
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpcs.php';
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc_wrappers.php';
 
-    
+
 
 
 define('APIURL', SITE_URI . '/api/xmlrpc/v1/index_warehouse.php');
 
-var_dump(APIURL);
 define('APIOROGIN', 1); //API
 define('APIKEY', 'xsj_dev_mode_origin_01');
 
