@@ -6428,7 +6428,6 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         $sql .=" group by oc_order.order_id";
         $sql .=" order by a.city,a.district,a.name,oc_order.shipping_address_1";
 
-
         /*
          * 数据插入到新表temp_order
         *	$sql2=" INSERT INTO temp_order(order_id,quantity) SELECT * FROM (";
@@ -6440,12 +6439,13 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         $query = $db->query($sql);
 
         $results = $query->rows;
-        
+
         $all_orders = array();
         foreach($results as $key=>$value){
             $value['date_added'] = date("H:i:s",  strtotime($value['date_added']));
             $all_orders[$value['order_id']] = $value;
         }
+
 
         /*
             $return = array();
