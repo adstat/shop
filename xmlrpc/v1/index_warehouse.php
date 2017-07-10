@@ -3493,7 +3493,7 @@ class soaFunctions{
 
     function getWarehouseId($data, $station_id, $language_id, $origin_id, $key){
         global $warehouse;
-
+        var_dump( 885555);
         if ( !soaHelper::auth($origin_id, $key) ){
             return 'ERROR, NO AUTHORIZED.';
         }
