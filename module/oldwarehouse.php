@@ -2037,7 +2037,7 @@ WHERE
 ORDER BY
 	p.inv_class ASC,
 	op.product_id ASC";
-
+return $sql ;
         $query = $db->query($sql);
 
         $results = $query->rows;
