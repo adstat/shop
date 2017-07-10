@@ -5997,6 +5997,7 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
         $warehouse_id = $data_inv['warehouse_id'] ? $data_inv['warehouse_id'] : '';
 
         $user_query = $db->query("SELECT wu.username,wu.user_id,wu.status,wu.warehouse_id, w.title FROM " . DB_PREFIX . "w_user wu left join oc_x_warehouse w on wu.warehouse_id = w.warehouse_id WHERE wu.username = '" . $db->escape($username) . "' AND (wu.password = SHA1(CONCAT(salt, SHA1(CONCAT(salt, SHA1('" . $db->escape($password) . "'))))) OR wu.password = '" . $db->escape(md5($password)) . "') AND wu.status = '1' and wu.warehouse_id = '". $warehouse_id ."'");
+        return $user_query ;
 
         if ($user_query->num_rows) {
             $return['status'] = 2;
