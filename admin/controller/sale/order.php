@@ -2061,12 +2061,12 @@ SELECT '{$order_id}', '0', '{$comment}', NOW(), order_status_id, order_payment_s
         $data['user_group_id'] = $this->user->user_group_id;
 
         //Set User Permition for User Groups
-        //商务信息: 管理员｜用户订单管理 1,20
+        //商务信息: 管理员｜用户订单管理 | 商务助理 1,20,38
         //订单状态(取消订单): 管理员｜用户订单管理 1,20
         //配送状态: 管理员｜仓库主管｜仓库值班主管｜物流配送 1,17,21,18 => 20160718 改为客服（用户订单管理）
         //打印状态: 管理员｜仓库主管｜仓库值班主管 1,17,21
         //支付信息: 管理员｜财务管理 1,26
-        $data['updateCustInfo'] = in_array($data['user_group_id'], array(1, 20)) ? true : false;
+        $data['updateCustInfo'] = in_array($data['user_group_id'], array(1, 20,38)) ? true : false;
         $data['updateCustTagInfo'] = in_array($data['user_group_id'], array(1, 20, 28)) ? true : false;
         $data['updateOrderStatus'] = in_array($data['user_group_id'], array(1, 17, 20, 28)) ? true : false;
         $data['updateDeliverOn'] = in_array($data['user_group_id'], array(1,17,15,21)) ? true : false; //管理员，仓库主管，分拣组长可改配送出库

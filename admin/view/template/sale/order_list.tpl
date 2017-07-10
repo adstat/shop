@@ -235,7 +235,7 @@
                     //    $lock = true;
                     //}
 
-                    if($order['order_deliver_status_id'] > 1){
+                    if($order['order_deliver_status_id'] != 1){
                         $lock = true;
                     }
 
