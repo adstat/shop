@@ -747,6 +747,17 @@ class ModelCatalogProduct extends Model {
 			}
 		}
 
+		//根据仓库商品获得商品的基本的平均价
+		$sql = "select pw.product_id,if(AVG(pw.price) is not null,AVG(pw.price),0) avg_price
+			from oc_product_to_warehouse pw where pw.product_id = '".$product_id."'
+			group by pw.product_id";
+
+		$query = $this->db->query($sql);
+
+		if($query->num_rows){
+			$this->db->query("update oc_product set price = '".$query->row['avg_price']."' where product_id = '".(int)$product_id."'");
+		}
+
 		//先判断有没有全局仓库被选中，若被选中，则只保存相应的仓库
 //		if($filter_warehouse_id_global){
 //
