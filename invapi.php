@@ -1,7 +1,7 @@
 <?php
 date_default_timezone_set('Asia/Shanghai');
 require_once 'config.php';
-var_dump(8899);
+
 //Load PHP XMLRPC
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc.php';
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpcs.php';
