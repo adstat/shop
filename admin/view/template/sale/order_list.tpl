@@ -373,7 +373,7 @@
                       <?php if($order['order_deliver_status_id'] == 10 && $updateReDeliverStatus) { ?>
                           <br />
                           <button class="change_status"  style="color:#117700" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 7, '配送失败(后续操作退货入库)');return false;">配送失败</button>
-                          <button class="change_status"  style="color:#ff2222" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 11, '重新配送(配送日期延后一天)');return false;">重新配送</button>
+                          <button class="change_status"  style="color:#ff2222" onclick="javascript:processOrder('deliver',<?=$order['order_id']; ?>, 11, '重新配送(配送日期在当前日期延后一天)');return false;">重新配送</button>
                       <?php } ?>
                   </td>
                    <td class="text-left">
