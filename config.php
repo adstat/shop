@@ -2,7 +2,7 @@
 ini_set('display_errors',0);
 
 define('SITE_URI','http://b2b.xianshiji.com');
-define('DIR_PATH','/xsj');
+define('DIR_PATH','192.168.1.99/xsj');
 
 //define('SITE_URI','http://localhost/xsjb2b');
 //define('DIR_PATH','/Users/alexsun/htdocs/xsjb2b');
