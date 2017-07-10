@@ -1,0 +1,2 @@
+物流配送
+订单表oc_order添加字段logistic_index (TINYINT, 4) 物流索引
