@@ -6446,7 +6446,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
             $all_orders[$value['order_id']] = $value;
         }
 
-
+        return $all_orders ;
         /*
             $return = array();
             $return['data'] = array();
@@ -6479,7 +6479,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         elseif($product_id==5004){
 
             $sql = "select * from oc_order_distr where ordclass = 5";
-            return $sql ;
+
         }
         elseif($product_id==5005){
 
