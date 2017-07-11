@@ -21,9 +21,8 @@ if(empty($_COOKIE['inventory_user'])){
 
     <script type="text/javascript" src="view/javascript/jquery/datetimepicker/moment.js"></script>
     <script src="view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
-
     <link href="view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.css" type="text/css" rel="stylesheet" media="screen" />
-    <link rel="stylesheet" type="text/css" href="view/css/i.css"/>
+    <link rel="stylesheet" type="text/css" href="view/css/i.css">
 
 </head>
 
