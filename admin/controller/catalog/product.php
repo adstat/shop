@@ -598,6 +598,7 @@ class ControllerCatalogProduct extends Controller {
             $promo_title = false;
             $promo_maximum = false;
 			$promo_warehouse = false;
+			$special_flag = false;
 
 			if($filter_warehouse_id_global){
 
@@ -611,6 +612,14 @@ class ControllerCatalogProduct extends Controller {
 						$promo_maximum = $product_special['maximum'];
 						$promo_warehouse = $product_special['warehouse'];
 						break;
+					}
+				}
+			}else{
+				$product_special_history = $this->model_catalog_product->getSpecialFlag($result['product_id']);
+
+				foreach ($product_special_history  as $product_special) {
+					if (($product_special['date_start'] == '0000-00-00' || strtotime($product_special['date_start']) < time()) && ($product_special['date_end'] == '0000-00-00' || strtotime($product_special['date_end']) > time())) {
+						$special_flag = true;
 					}
 				}
 			}
@@ -630,11 +639,20 @@ class ControllerCatalogProduct extends Controller {
 			if($filter_warehouse_id_global){
 				$price = '['.$warehouse_name.'价格'.']'.$result['price_show'];
 			}else{
-				$price_gap = $result['h_price']-$result['l_price'];
-				if($price_gap > 0){
-					$price = "多仓价格区间为".$result['l_price'] . '-' . $result['h_price'];
+				if($special_flag){
+					$price_gap = $result['h_price']-$result['l_price'];
+					if($price_gap > 0){
+						$price = "多仓价格区间为".$result['l_price'] . '-' . $result['h_price']."(有特价)";
+					}else{
+						$price = "在用仓库价格都为：".$result['price_show']."(<span class=\"text-danger\">有特价</span>)";
+					}
 				}else{
-					$price = "在用仓库价格都为：".$result['price_show'];
+					$price_gap = $result['h_price']-$result['l_price'];
+					if($price_gap > 0){
+						$price = "多仓价格区间为".$result['l_price'] . '-' . $result['h_price'];
+					}else{
+						$price = "在用仓库价格都为：".$result['price_show'];
+					}
 				}
 			}
 
@@ -657,6 +675,7 @@ class ControllerCatalogProduct extends Controller {
 //				'price' => $result['price_show'],
 				'price' => $price,
 				'retail_price'      => $result['retail_price'],
+				'special_flag' => $special_flag,
 				'special'    => $special,
 				'showup'    => $showup,
 				'promo_title'    => $promo_title,

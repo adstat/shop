@@ -1677,6 +1677,13 @@ class ModelCatalogProduct extends Model {
 		return $query->rows;
 	}
 
+	public function getSpecialFlag($product_id){
+		$sql = "select * from oc_product_special where product_id = '".$product_id."' and warehouse_id <> 0";
+		$query = $this->db->query($sql);
+
+		return $query->rows;
+	}
+
 	public function getProductSpecials($product_id,$warehouse_id) {
 		$sql = "select ps.*,w.title warehouse from oc_product_special ps
 				left join oc_x_warehouse w on ps.warehouse_id = w.warehouse_id
