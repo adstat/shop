@@ -2197,7 +2197,6 @@ class soaFunctions{
     function getOrderss($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
 
-
         if ( !soaHelper::auth($origin_id, $key) ){
             return 'ERROR, NO AUTHORIZED.';
         }
