@@ -578,6 +578,10 @@ class ControllerCatalogProduct extends Controller {
 
 		$results = $this->model_catalog_product->getProducts($filter_data,$data['filter_warehouse_id_global']);
 
+		if($filter_warehouse_id_global){
+			$warehouse_name = $this->model_catalog_product->getProductWarehouseName($filter_warehouse_id_global);
+		}
+
 //		$product_total = sizeof($results)?sizeof($results):0;
 
         $stationInfo = $this->model_catalog_product->getStationInfo();
@@ -621,6 +625,19 @@ class ControllerCatalogProduct extends Controller {
 			}else{
 				$warehouse_sale = "[没有仓库出售该商品]";
 			}
+
+			//判断是否需要显示商品区间
+			if($filter_warehouse_id_global){
+				$price = '['.$warehouse_name.'价格'.']'.$result['price_show'];
+			}else{
+				$price_gap = $result['h_price']-$result['l_price'];
+				if($price_gap > 0){
+					$price = "多仓价格区间为".$result['l_price'] . '-' . $result['h_price'];
+				}else{
+					$price = "在用仓库价格都为：".$result['price_show'];
+				}
+			}
+
 			$data['products'][] = array(
 				'product_id' => $result['product_id'],
 				'sku' => $result['sku'],
@@ -637,7 +654,8 @@ class ControllerCatalogProduct extends Controller {
 				'abstract'       => $result['abstract'],
 				'model'      => $result['model'],
 //				'price'      => $result['price'],
-				'price' => $result['price_show'],
+//				'price' => $result['price_show'],
+				'price' => $price,
 				'retail_price'      => $result['retail_price'],
 				'special'    => $special,
 				'showup'    => $showup,
@@ -1365,7 +1383,7 @@ class ControllerCatalogProduct extends Controller {
 		}else{
 			$data['error_price'] = '';
 		}
-//var_dump($data['error_price']);die;
+
 		if (isset($this->error['name'])) {
 			$data['error_name'] = $this->error['name'];
 		} else {

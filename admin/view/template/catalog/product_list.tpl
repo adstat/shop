@@ -237,7 +237,7 @@
                   <td class="text-left">
                   <?php if ($product['special']) { ?>
                     <div>
-                        <span style="text-decoration: line-through;"><?php echo '['.$product['promo_warehouse'].'价格'.']'.$product['price']; ?></span><br />
+                        <span style="text-decoration: line-through;"><?php echo $product['price']; ?></span><br />
                         <span><?php echo '['.$product['promo_warehouse'].'促销价'.']'; ?></span><span class="text-danger"><?php echo $product['special']; ?></span>
                     </div>
                     <?php echo $product['showup']?"[置顶]":"" ?>
