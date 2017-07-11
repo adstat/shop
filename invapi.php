@@ -400,7 +400,7 @@ if($method == 'orderdistr'){
             //$orders['data'][$key]['no_inv'] = 1;
         }
     }
-
+   var_dump(555);
     //echo "<pre>";print_r($orders);exit;
     exit(json_encode($orders));
 }
