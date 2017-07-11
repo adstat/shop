@@ -1227,21 +1227,21 @@ class ControllerCatalogProduct extends Controller {
 
 
 		// 商品特殊销售价格
-		$product_specials = $product_id ? $this->model_catalog_product->getProductSpecials($this->request->get['product_id']) : array();
-		$data['product_specials'] = array();
-		foreach ($product_specials as $product_special) {
-			$data['product_specials'][] = array(
-				'customer_group_id' => $product_special['customer_group_id'],
-				'priority'          => $product_special['priority'],
-				'showup'            => $product_special['showup'],
-				'promo_title'       => $product_special['promo_title'],
-				'promo_limit'       => $product_special['promo_limit'],
-				'maximum'       => $product_special['maximum'],
-				'price'             => $product_special['price'],
-				'date_start'        => ($product_special['date_start'] != '0000-00-00') ? $product_special['date_start'] : '',
-				'date_end'          => ($product_special['date_end'] != '0000-00-00') ? $product_special['date_end'] :  ''
-			);
-		}
+//		$product_specials = $product_id ? $this->model_catalog_product->getProductSpecials($this->request->get['product_id'],$data['filter_warehouse_id_global']) : array();
+//		$data['product_specials'] = array();
+//		foreach ($product_specials as $product_special) {
+//			$data['product_specials'][] = array(
+//				'customer_group_id' => $product_special['customer_group_id'],
+//				'priority'          => $product_special['priority'],
+//				'showup'            => $product_special['showup'],
+//				'promo_title'       => $product_special['promo_title'],
+//				'promo_limit'       => $product_special['promo_limit'],
+//				'maximum'       => $product_special['maximum'],
+//				'price'             => $product_special['price'],
+//				'date_start'        => ($product_special['date_start'] != '0000-00-00') ? $product_special['date_start'] : '',
+//				'date_end'          => ($product_special['date_end'] != '0000-00-00') ? $product_special['date_end'] :  ''
+//			);
+//		}
 
 
         //商品折扣
