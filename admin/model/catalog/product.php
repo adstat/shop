@@ -749,7 +749,9 @@ class ModelCatalogProduct extends Model {
 
 		//根据仓库商品获得商品的基本的平均价
 		$sql = "select pw.product_id,if(AVG(pw.price) is not null,AVG(pw.price),0) avg_price
-			from oc_product_to_warehouse pw where pw.product_id = '".$product_id."'
+			from oc_product_to_warehouse pw
+			left join oc_x_warehouse w on pw.warehouse_id = w.warehouse_id
+			where pw.product_id = '".$product_id."' and w.status = 1
 			group by pw.product_id";
 
 		$query = $this->db->query($sql);
