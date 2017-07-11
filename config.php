@@ -28,14 +28,14 @@ define('DB_PREFIX', 'oc_');
 define('DB_DRIVER', 'mysql');
 define('DB_HOSTNAME', '127.0.0.1');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '');
+define('DB_PASSWORD', '123456');
 define('DB_DATABASE', 'xsjb2b');
 
 //Slave: Select
 define('DB_DRIVER_SLAVE', 'mysql');
 define('DB_HOSTNAME_SLAVE', '127.0.0.1');
 define('DB_USERNAME_SLAVE', 'root');
-define('DB_PASSWORD_SLAVE', '');
+define('DB_PASSWORD_SLAVE', '123456');
 define('DB_DATABASE_SLAVE', 'xsjb2b');
 
 ////DB: Last Day
