@@ -382,7 +382,7 @@ if($method == 'getOrderss'){
     $orders = init('getOrderss', $id, json_encode($data), 1); //Get Stations
     
     
-    //echo "<pre>";print_r($orders);exit;
+   
     exit(json_encode($orders));
 }
 
