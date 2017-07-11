@@ -19,10 +19,15 @@ if(empty($_COOKIE['inventory_user'])){
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script type="text/javascript" src="view/javascript/jquery/jquery-2.1.1.min.js"></script>
 
+
+    <link rel="stylesheet"  type="text/css"  href="view/javascript/jquery/datetimepicker/bootstrap.min.css">
+    <script type="text/javascript" src="view/javascript/jquery/datetimepicker/bootstrap.min.js"></script>
+
     <script type="text/javascript" src="view/javascript/jquery/datetimepicker/moment.js"></script>
     <script src="view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+
     <link href="view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.css" type="text/css" rel="stylesheet" media="screen" />
-    <link rel="stylesheet" type="text/css" href="view/css/i.css">
+    <link rel="stylesheet" type="text/css" href="view/css/i.css"/>
 
 </head>
 
