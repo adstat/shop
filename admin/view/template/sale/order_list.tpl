@@ -157,7 +157,7 @@
                           <?php if($station_set){ ?>
                           <option value="<?php echo $station['station_id']; ?>" <?php if($station['station_id']==$station_set){ ?>selected="selected"<?php } ?>><?php echo $station['name']; ?></option>
                           <?php }else{ ?>
-                          <option value="<?php echo $station['station_id']; ?>" <?php if($station['station_id']==$filter_station_id){ ?>selected="selected"<?php } ?>><?php echo $station['name']; ?></option>
+                          <option value="<?php echo $station['station_id']; ?>" <?php if($station['station_id']==$filter_station){ ?>selected="selected"<?php } ?>><?php echo $station['name']; ?></option>
                           <?php } ?>
                           <?php } ?>
                       </select>
