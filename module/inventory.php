@@ -5444,8 +5444,8 @@ and date_added > '" . $date_t . "'
             $dueTotal = array_key_exists($m['order_id'], $dueInfoList) ? $dueInfoList[$m['order_id']]['due_total'] : 0;
             $subTotal = array_key_exists($m['order_id'], $outInfoList) ? $outInfoList[$m['order_id']]['sub_total'] : 0;
             $outTotal = array_key_exists($m['order_id'], $outInfoList) ? $outInfoList[$m['order_id']]['out_total'] : 0;
-            $returnTotal = array_key_exists($m['order_id'], $outInfoList) ? $outInfoList[$m['order_id']]['return_total'] : 0;
-            $returnCreditsTotal = array_key_exists($m['order_id'], $outInfoList)? $outInfoList[$m['order_id']]['return_credits_total'] : 0;
+            $returnTotal = array_key_exists($m['order_id'], $returnedInfoList) ? $returnedInfoList[$m['order_id']]['return_total'] : 0;
+            $returnCreditsTotal = array_key_exists($m['order_id'], $returnedInfoList)? $returnedInfoList[$m['order_id']]['return_credits_total'] : 0;
             $currentReturnTotal = $currentReturnInfoList[$m['order_id']]['current_return_total'];
 
             //出库应收=｛实际出库-(小计-应付)｝
@@ -5456,6 +5456,11 @@ and date_added > '" . $date_t . "'
 
             $dueCurrent = $dueOut-$returnTotal-$currentReturnTotal;//本次退货应收 = 出库应收－已退货－本次退货
             $returnCurrent = ($dueCurrent < 0) ? abs($dueCurrent) : 0;//计算退货后后本次应收小于0，退余额
+
+            //判断是否全部退货或退货金额占订单80%以上，不退余额
+            if($currentReturnTotal >= $dueOut*0.8){
+                $returnCurrent = 0;
+            }
 
             //根据是出货退货和是否退余额确定退货操作
             $returnCredits = 0;
@@ -5473,6 +5478,12 @@ and date_added > '" . $date_t . "'
             if($isRepackMissing){
                 $return_reason_id = 3;
                 $return_action_id = ($returnCurrent > 0) ? 3 : 1; //如果是回库散件缺货，不入库，判断是否应退余额
+            }
+
+            //增加是否入库标志位，仓库操作时根据$return_action_id状态判断，是否入库标志可置为1，前台用户退货，司机确认时，默认为0，待仓库确认。
+            $inventoryReturned = 0;
+            if($return_action_id == 2 || $return_action_id == 4){
+                $inventoryReturned = 1;
             }
 
             //For Debug
@@ -5500,8 +5511,8 @@ and date_added > '" . $date_t . "'
             $bool = true;
 
             //写入退货表
-            $sql = "INSERT INTO `oc_return` (`order_id`, `customer_id`, `return_reason_id`, `return_action_id`, `return_status_id`, `comment`, `date_ordered`, `date_added`, `date_modified`, `add_user`, `return_credits`, `return_inventory_flag`, `credits_returned`)
-                    VALUES('".$m['order_id']."','".$outInfoList[$m['order_id']]['customer_id']."','".$return_reason_id."','".$return_action_id."','2','','".$outInfoList[$m['order_id']]['order_date']."',NOW(),NOW(),'".$userId."','".$returnCredits."','0','0');";
+            $sql = "INSERT INTO `oc_return` (`order_id`, `customer_id`, `return_reason_id`, `return_action_id`, `return_status_id`, `comment`, `date_ordered`, `date_added`, `date_modified`, `add_user`, `return_credits`, `return_inventory_flag`, `credits_returned`,`inventory_returned`)
+                    VALUES('".$m['order_id']."','".$outInfoList[$m['order_id']]['customer_id']."','".$return_reason_id."','".$return_action_id."','2','','".$outInfoList[$m['order_id']]['order_date']."',NOW(),NOW(),'".$userId."','".$returnCredits."','0','0','".$inventoryReturned."');";
 
             $bool = $bool && $dbm->query($sql);
             $return_id = $dbm->getLastId();
@@ -6378,7 +6389,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                where A.order_id = '".$data_inv['order_id']."'
                and A.order_status_id in (6,10)
                and A.order_deliver_status_id in (".$returnOrderDeliverStatus.")
-               and A.deliver_date between date_sub(current_date(), interval 7 day) and date_add(current_date(), interval 1 day)
+               and A.deliver_date between date_sub(current_date(), interval 15 day) and date_add(current_date(), interval 1 day)
                and B.inventory_type_id = 12 and C.status = 1
                and C.product_id in (".$return_product_id_str.")
                group by C.product_id";
