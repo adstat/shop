@@ -6478,7 +6478,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         }
         elseif($product_id==5004){
 
-            $sql = "select * from oc_order_distr where ordclass = 5";
+            $sql = "select * from oc_order_distr where ordclass = 5 ORDER BY order_id DESC LIMIT 10000";
 
         }
         elseif($product_id==5005){
