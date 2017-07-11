@@ -593,16 +593,21 @@ class ControllerCatalogProduct extends Controller {
             $showup = false;
             $promo_title = false;
             $promo_maximum = false;
+			$promo_warehouse = false;
 
-			$product_specials = $this->model_catalog_product->getProductSpecials($result['product_id']);
+			if($filter_warehouse_id_global){
 
-			foreach ($product_specials  as $product_special) {
-				if (($product_special['date_start'] == '0000-00-00' || strtotime($product_special['date_start']) < time()) && ($product_special['date_end'] == '0000-00-00' || strtotime($product_special['date_end']) > time())) {
-					$special = $product_special['price'];
-                    $showup = $product_special['showup'];
-                    $promo_title = $product_special['promo_title'];
-                    $promo_maximum = $product_special['maximum'];
-					break;
+				$product_specials = $this->model_catalog_product->getProductSpecials($result['product_id'],$filter_warehouse_id_global);
+
+				foreach ($product_specials  as $product_special) {
+					if (($product_special['date_start'] == '0000-00-00' || strtotime($product_special['date_start']) < time()) && ($product_special['date_end'] == '0000-00-00' || strtotime($product_special['date_end']) > time())) {
+						$special = $product_special['price'];
+						$showup = $product_special['showup'];
+						$promo_title = $product_special['promo_title'];
+						$promo_maximum = $product_special['maximum'];
+						$promo_warehouse = $product_special['warehouse'];
+						break;
+					}
 				}
 			}
 
@@ -631,12 +636,14 @@ class ControllerCatalogProduct extends Controller {
 				'name'       => $result['name'],
 				'abstract'       => $result['abstract'],
 				'model'      => $result['model'],
-				'price'      => $result['price'],
+//				'price'      => $result['price'],
+				'price' => $result['price_show'],
 				'retail_price'      => $result['retail_price'],
 				'special'    => $special,
 				'showup'    => $showup,
 				'promo_title'    => $promo_title,
 				'promo_maximum'    => $promo_maximum,
+				'promo_warehouse' => $promo_warehouse,
 				'quantity'   => $result['quantity'],
 				'status'     => ($result['status']) ? $this->language->get('text_enabled') : $this->language->get('text_disabled'),
                                 'status_id'  => $result['status'],

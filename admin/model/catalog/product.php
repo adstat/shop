@@ -1338,7 +1338,7 @@ class ModelCatalogProduct extends Model {
 		$Separator = '<br />';
         if(!empty($data['filter_product_category'])){
             $sql = "SELECT
-            p.*,pd.*,count(DISTINCT pw.warehouse_id) warehouse_num ,
+            p.*,pd.*,count(DISTINCT pw.warehouse_id) warehouse_num ,if($filter_warehouse_id_global > 0,pw.price,p.price) price_show,
 			 GROUP_CONCAT(DISTINCT pw.sku_barcode SEPARATOR '".$Separator."') sku_barcode,
 			 concat(round(p.weight,0), wd.title) w_size,
 			 max(if(pw.daily_limit is not null,pw.daily_limit,0)) max_limit,min(if(pw.daily_limit is not null,pw.daily_limit,0)) min_limit,
@@ -1362,7 +1362,7 @@ class ModelCatalogProduct extends Model {
         }
         else{
             $sql = "SELECT
-			 p.*,pd.*,count(DISTINCT pw.warehouse_id) warehouse_num ,
+			 p.*,pd.*,count(DISTINCT pw.warehouse_id) warehouse_num ,if($filter_warehouse_id_global > 0,pw.price,p.price) price_show,
 			 GROUP_CONCAT(DISTINCT pw.sku_barcode SEPARATOR '".$Separator."') sku_barcode,
 			 concat(round(p.weight,0), wd.title) w_size,
 			 max(if(pw.daily_limit is not null,pw.daily_limit,0)) max_limit,min(if(pw.daily_limit is not null,pw.daily_limit,0)) min_limit,
@@ -1670,8 +1670,12 @@ class ModelCatalogProduct extends Model {
 		return $query->rows;
 	}
 
-	public function getProductSpecials($product_id) {
-		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_special WHERE product_id = '" . (int)$product_id . "' ORDER BY priority, price");
+	public function getProductSpecials($product_id,$warehouse_id) {
+//		$sql = "SELECT * FROM " . DB_PREFIX . "product_special WHERE product_id = '" . (int)$product_id . "' ORDER BY priority, price";
+		$sql = "select ps.*,w.title warehouse from oc_product_special ps
+				left join oc_x_warehouse w on ps.warehouse_id = w.warehouse_id
+				where ps.product_id = '".$product_id."' and ps.warehouse_id = '".$warehouse_id."' and ps.area_id = 0";
+		$query = $this->db->query($sql);
 
 		return $query->rows;
 	}
