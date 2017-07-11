@@ -30,7 +30,7 @@
             <li><a href="#tab-data" data-toggle="tab">数据</a></li>
             <li><a href="#tab-links" data-toggle="tab">关联</a></li>
             <?php if($rbac){ ?><li style="display:none"><a href="#tab-special" data-toggle="tab">特价</a></li><?php } ?>
-            <li style="display: none"><a href="#tab-special-history" data-toggle="tab" onclick="specialHistory();">特价记录</a></li>
+            <li><a href="#tab-special-history" data-toggle="tab" onclick="specialHistory();">特价记录</a></li>
             <li><a href="#tab-reward" data-toggle="tab"><?php echo $tab_reward; ?></a></li>
             <!--<?php if($rbac){ ?><li><a href="#tab-discount" data-toggle="tab">多件折扣(覆盖特价)</a></li><?php } ?>-->
             <li style="display: none"><a href="#tab-modify" data-toggle="tab" onclick="modifyHistory();"> 商品属性修改历史</a></li>
@@ -255,7 +255,7 @@
                   <div class="form-group">
                       <label class="col-sm-2 control-label" for="input-price">价格</label>
                       <div class="col-sm-6">
-                          <input type="text" id="set_price" name="price" value="<?php echo $price; ?>" placeholder="价格" id="input-price" class="form-control" readonly />
+                          <input type="text" id="set_price" name="price" value="<?php echo $price; ?>" placeholder="价格" id="input-price" class="form-control" />
                       </div>
                   </div>
 
