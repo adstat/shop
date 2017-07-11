@@ -665,24 +665,6 @@ class ModelCatalogProduct extends Model {
 			}
 		}
 
-		//对商品属性表记录做修改历史
-		$sql_p = "INSERT INTO oc_product_history (`product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
-			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
-			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
-			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
-			`date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
-			`issupportstore`,`is_sku`,`related_product_id`,`class`,`factor`,`inv_class`,`inv_class_sort`,`produce_group_id`,`purchase_preset`,`supplier_id`,`weight_type`,`fix_discount`,`weightloss_rate`,
-			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,`user_id_modify`,`date_modify`)
-			select `product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
-			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
-			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
-			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
-`date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
-			`issupportstore`,`is_sku`,`related_product_id`,`class`,`factor`,`inv_class`,`inv_class_sort`,`produce_group_id`,`purchase_preset`,`supplier_id`,`weight_type`,`fix_discount`,`weightloss_rate`,
-			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,'". $user_id ."',now() from oc_product where product_id = '". $product_id ."'";
-
-		$query_s = $this->db->query($sql_p);
-		
 		        //商品积分相关
         //TODO 兼容多仓
         //$this->db->query("DELETE FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
@@ -696,41 +678,6 @@ class ModelCatalogProduct extends Model {
             $this->db->query("DELETE FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$product_id . "'");
             $this->db->query("INSERT INTO " . DB_PREFIX . "product_reward SET product_id = '" . (int)$product_id . "', points = '" . (int)$data['product_reward'] . "'");
         }
-
-		//删除原有商品原有的仓库信息,如果全局仓库ID变量存在，则只删除全局仓库ID的信息
-//		$sql = "DELETE FROM oc_product_to_warehouse where product_id =". (int) $product_id;
-//		if($filter_warehouse_id_global > 0){
-//			$sql .= " and warehouse_id =". (int) $filter_warehouse_id_global;
-//		}
-//		$this->db->query($sql);
-//		//保存仓库个性化商品信息
-//		$save_info = array();
-//		if(isset($data['warehouse_product']['select'])){
-//			foreach($data['warehouse_product']['select'] as $value){
-//				//如果当时对用仓库的价格没有填写，默认把商品信息中的价格保存到相应仓库里
-//				$save_info[] = array(
-//					'warehouse_id' => $value,
-//					'station_id' => $data['station_id'],
-//					'price' => array_key_exists($value,$data['warehouse_product']['price']) ? $data['warehouse_product']['price'][$value] : (float)$data['price'] ,
-//				);
-//			}
-//		}
-//		$m = sizeof($save_info);
-//		$i = 0;
-//		if($m){
-//			$sql_w = "INSERT INTO oc_product_to_warehouse (`product_id`,`warehouse_id`,`station_id`,`price`) VALUES ";
-//			foreach($save_info as $key => $value){
-//				$i++;
-//				$sql_w .= "( '".$product_id ."','".$value['warehouse_id'] ."','".$value['station_id'] ."','".$value['price'] ."')";
-//
-//				if($i < $m){
-//					$sql_w .= ',';
-//				}else{
-//					$sql_w .= ';';
-//				}
-//			}
-//			$this->db->query($sql_w);
-//		}
 
 		if(isset($data['warehouse_info'])){
 			foreach($data['warehouse_info'] as $key => $value){
@@ -759,6 +706,24 @@ class ModelCatalogProduct extends Model {
 		if($query->num_rows){
 			$this->db->query("update oc_product set price = '".$query->row['avg_price']."' where product_id = '".(int)$product_id."'");
 		}
+
+		//对商品属性表记录做修改历史
+		$sql_p = "INSERT INTO oc_product_history (`product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
+			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
+			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
+			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
+			`date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
+			`issupportstore`,`is_sku`,`related_product_id`,`class`,`factor`,`inv_class`,`inv_class_sort`,`produce_group_id`,`purchase_preset`,`supplier_id`,`weight_type`,`fix_discount`,`weightloss_rate`,
+			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,`user_id_modify`,`date_modify`)
+			select `product_id`,`station_id`,`agent_id`,`repack`,`is_gift`,`is_replenish_gift`,`instock`,`is_selected`,`is_soon_to_expire`,`product_type`,`product_type_id`,`weight_inv_flag`,`sku_id`,`status`,
+			`name`,`safestock`,`date_new_on`,`date_new_off`,`model`,`sku`,`upc`,`ean`,`jan`,`isbn`,`mpn`,`location`,`stock_status_id`,
+			`image`,`oss`,`manufacturer_id`,`shipping`,`price`,`cashback`,`retail_price`,`tax_class_id`,`date_available`,`weight_range_least`,`weight_range_most`,`weight`,`weight_class_id`,
+			`unit_size`,`unit_weight_class_id`,`inv_size`,`box_size`,`box_weight_class_id`,`length`,`width`,`height`,`length_class_id`,`subtract`,`sort_order`,`viewed`,`date_added`,
+`date_modified`,`storage_mode_id`,`storage_mode`,`product_id_ext`,`linkproductid`,`quantity`,`minimum`,`maximum`,`unit_price`,`customer_total_limit`,`wxpay_only`,`shelf_life`,`shelf_life_strict`,
+			`issupportstore`,`is_sku`,`related_product_id`,`class`,`factor`,`inv_class`,`inv_class_sort`,`produce_group_id`,`purchase_preset`,`supplier_id`,`weight_type`,`fix_discount`,`weightloss_rate`,
+			`purchase_cost`,`warehouse_cost`,`repack_cost`,`package_weight`,`scan_product`,`price_protect`,'". $user_id ."',now() from oc_product where product_id = '". $product_id ."'";
+
+		$query_s = $this->db->query($sql_p);
 
 		//先判断有没有全局仓库被选中，若被选中，则只保存相应的仓库
 //		if($filter_warehouse_id_global){
