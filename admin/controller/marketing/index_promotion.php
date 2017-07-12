@@ -281,6 +281,7 @@ class ControllerMarketingIndexPromotion extends Controller{
                 'promo_title' => $result['promo_title'],
                 'date_start' => $result['date_start'],
                 'date_end' => $result['date_end'],
+                'maximum' => $result['maximum'],
             );
         }
 
