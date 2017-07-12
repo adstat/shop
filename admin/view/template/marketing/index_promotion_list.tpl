@@ -9,6 +9,7 @@
             <td class="text-center">区域</td>
             <td class="text-center">促销价</td>
             <td class="text-center">原价</td>
+            <td class="text-center">限购</td>
             <td class="text-center">标题</td>
             <td class="text-center">开始日期</td>
             <td class="text-center">结束日期</td>
@@ -25,6 +26,7 @@
             <td class="text-center"><?php echo $history['area_name']; ?></td>
             <td class="text-center editable" id="price_<?php echo $history['product_id'].'_'.$history['warehouse_id'].'_'.$history['area_id']; ?>" ><?php echo $history['price']; ?></td>
             <td class="text-center"><?php echo $history['ori_price']; ?></td>
+            <td class="text-center editable" id="maximum_<?php echo $history['product_id'].'_'.$history['warehouse_id'].'_'.$history['area_id']; ?>"><?php echo $history['maximum']; ?></td>
             <td class="text-center editable" id="title_<?php echo $history['product_id'].'_'.$history['warehouse_id'].'_'.$history['area_id']; ?>"><?php echo $history['promo_title']; ?></td>
             <td class="text-center editable" id="start_<?php echo $history['product_id'].'_'.$history['warehouse_id'].'_'.$history['area_id']; ?>"><?php echo $history['date_start']; ?></td>
             <td class="text-center editable" id="end_<?php echo $history['product_id'].'_'.$history['warehouse_id'].'_'.$history['area_id']; ?>"><?php echo $history['date_end']; ?></td>
@@ -66,10 +68,11 @@
         $('#edit_'+id).hide();
         $('#save_'+id).show();
 
-        $('#price_'+id).html('<input id="save_price_'+id+'" name="promotion_price[]">');
-        $('#title_'+id).html('<input id="save_title_'+id+'" name="promotion_title[]">');
-        $('#start_'+id).html(' <div class = "input-group promotion_date"><input type="text" id="save_start_'+id+'"  name="date_start[]"   data-date-format="YYYY-MM-DD" id="input_date_start" class="form-control" /> <span class="input-group-btn">  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button></span></div>');
-        $('#end_'+id).html(' <div class = "input-group promotion_date"><input type="text" id="save_end_'+id+'"  name="date_end[]"   data-date-format="YYYY-MM-DD" id="input_date_end" class="form-control" /> <span class="input-group-btn">  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button></span></div>');
+        $('#price_'+id).html('<input id="save_price_'+id+'" name="promotion_price[]" value="'+$('#price_'+id).text()+'">');
+        $('#maximum_'+id).html('<input id="save_maximum_'+id+'" name="promotion_maximum[]" value="'+$('#maximum_'+id).text()+'">');
+        $('#title_'+id).html('<input id="save_title_'+id+'" name="promotion_title[]" value="'+$('#title_'+id).text()+'">');
+        $('#start_'+id).html(' <div class = "input-group promotion_date"><input type="text" id="save_start_'+id+'"  name="date_start[]" value="'+$('#start_'+id).text()+'"  data-date-format="YYYY-MM-DD" id="input_date_start" class="form-control" /> <span class="input-group-btn">  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button></span></div>');
+        $('#end_'+id).html(' <div class = "input-group promotion_date"><input type="text" id="save_end_'+id+'"  name="date_end[]" value="'+$('#end_'+id).text()+'"  data-date-format="YYYY-MM-DD" id="input_date_end" class="form-control" /> <span class="input-group-btn">  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button></span></div>');
 
         $('.promotion_date').datetimepicker({
             pickTime: false
@@ -87,6 +90,7 @@
         var title = $("#save_title_"+id).val();
         var start = $("#save_start_"+id).val();
         var end = $("#save_end_"+id).val();
+        var maximum = $("#save_maximum_"+id).val();
         var flag = confirm('确认更改促销信息?');
         if(flag){
             $.ajax({
@@ -102,6 +106,7 @@
                     title : title,
                     start: start,
                     end : end,
+                    maximum : maximum,
                 },
                 dataType: 'json',
                 success: function(data){
@@ -111,6 +116,7 @@
                         $('#title_'+id).html(title);
                         $('#start_'+id).html(start);
                         $('#end_'+id).html(end);
+                        $('#maximum_'+id).html(maximum);
 
                         $('#edit_'+id).show();
                         $('#save_'+id).hide();

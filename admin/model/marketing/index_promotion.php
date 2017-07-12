@@ -90,7 +90,7 @@ class ModelMarketingIndexPromotion extends Model {
 
 	$sql = "select ps.product_id,ps.warehouse_id,w.title warehouse_name,ps.area_id,
 		if(ps.area_id = 0 , '全部', a.name) area_name,p.name product_name,ps.price,
-		ps.promo_title,p.price ori_price,ps.date_start,ps.date_end
+		ps.promo_title,p.price ori_price,ps.date_start,ps.date_end,ps.maximum
 		from oc_product_special ps
 		left join oc_product p on ps.product_id = p.product_id
 		left join oc_x_warehouse w on w.warehouse_id = ps.warehouse_id
@@ -152,19 +152,21 @@ class ModelMarketingIndexPromotion extends Model {
 			foreach($warehouse as $value){
 				//每种设置的商品促销，在仓库里一一保存
 				foreach($data['product'] as $product){
-					$this->db->query("delete from oc_product_special where product_id = '".(int)$product['product_id']."' and warehouse_id = '".(int)$value['warehouse_id']."'");
-					$insert = "INSERT INTO oc_product_special (`product_id`,`warehouse_id`,`price`,`maximum`,`promo_title`,`date_start`,`date_end`,`priority`)
-					values('".$product['product_id']."','".$value['warehouse_id']."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
-					$this->db->query($insert);
+					if($product['price']){
+						$this->db->query("delete from oc_product_special where product_id = '".(int)$product['product_id']."' and warehouse_id = '".(int)$value['warehouse_id']."'");
+						$insert = "INSERT INTO oc_product_special (`product_id`,`warehouse_id`,`price`,`maximum`,`promo_title`,`date_start`,`date_end`,`priority`)
+						values('".$product['product_id']."','".$value['warehouse_id']."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
+						$this->db->query($insert);
 
-					$product_special_id = $this->db->getLastId();
+						$product_special_id = $this->db->getLastId();
 
-					//插入特价历史记录
+						//插入特价历史记录
 
-					$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,`user_id_modify`,`date_modify`)
+						$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,`user_id_modify`,`date_modify`)
 						select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,'". $this->user->getId() ."',now() from oc_product_special where product_special_id = '".$product_special_id ."'";
 
-					$this->db->query($sql_s);
+						$this->db->query($sql_s);
+					}
 				}
 			}
 	    }
@@ -174,26 +176,11 @@ class ModelMarketingIndexPromotion extends Model {
 	    if(!isset($data['set-area'])){
 			$area_id = 0;
 			foreach($data['product'] as $product){
-				$this->db->query("delete from oc_product_special where product_id = '".$product['product_id']."' and warehouse_id = '".(int)$warehouse_id."'");
-				$insert = "INSERT INTO oc_product_special (`product_id`,`warehouse_id`,`area_id`,`price`,`maximum`,`promo_title`,`date_start`,`date_end`,`priority`)
-				values('".$product['product_id']."','".$warehouse_id."','".$area_id."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
-				$this->db->query($insert);
-				//插入特价历史记录
-				$product_special_id = $this->db->getLastId();
-
-				$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,`user_id_modify`,`date_modify`)
-						select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,'". $this->user->getId() ."',now() from oc_product_special where product_special_id = '".$product_special_id ."'";
-
-				$this->db->query($sql_s);
-			}
-	    }else{
-			foreach($data['set-area'] as $area){
-				foreach($data['product'] as $product){
-					$this->db->query("delete from oc_product_special where product_id = '".$product['product_id']."' and warehouse_id = '".(int)$warehouse_id."' and area_id = '".$area."'");
+				if($product['price']){
+					$this->db->query("delete from oc_product_special where product_id = '".$product['product_id']."' and warehouse_id = '".(int)$warehouse_id."'");
 					$insert = "INSERT INTO oc_product_special (`product_id`,`warehouse_id`,`area_id`,`price`,`maximum`,`promo_title`,`date_start`,`date_end`,`priority`)
-					values('".$product['product_id']."','".$warehouse_id."','".$area."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
+					values('".$product['product_id']."','".$warehouse_id."','".$area_id."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
 					$this->db->query($insert);
-
 					//插入特价历史记录
 					$product_special_id = $this->db->getLastId();
 
@@ -201,6 +188,25 @@ class ModelMarketingIndexPromotion extends Model {
 						select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,'". $this->user->getId() ."',now() from oc_product_special where product_special_id = '".$product_special_id ."'";
 
 					$this->db->query($sql_s);
+				}
+			}
+	    }else{
+			foreach($data['set-area'] as $area){
+				foreach($data['product'] as $product){
+					if($product['price']){
+						$this->db->query("delete from oc_product_special where product_id = '".$product['product_id']."' and warehouse_id = '".(int)$warehouse_id."' and area_id = '".$area."'");
+						$insert = "INSERT INTO oc_product_special (`product_id`,`warehouse_id`,`area_id`,`price`,`maximum`,`promo_title`,`date_start`,`date_end`,`priority`)
+						values('".$product['product_id']."','".$warehouse_id."','".$area."','".$product['price']."','".$product['maximum']."','".$product['promo_title']."','".$product['date_start']."','".$product['date_end']."','".$product['priority']."')";
+						$this->db->query($insert);
+
+						//插入特价历史记录
+						$product_special_id = $this->db->getLastId();
+
+						$sql_s = "INSERT INTO oc_product_special_history (`product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,`user_id_modify`,`date_modify`)
+						select `product_special_id`,`product_id`,`customer_group_id`,`priority`,`price`,`date_start`,`date_end`,`maximum`,`showup`,`is_promo`,`promo_title`,`promo_limit`,`warehouse_id`,`area_id`,'". $this->user->getId() ."',now() from oc_product_special where product_special_id = '".$product_special_id ."'";
+
+						$this->db->query($sql_s);
+					}
 				}
 			}
 	    }
@@ -295,7 +301,8 @@ class ModelMarketingIndexPromotion extends Model {
 		price = '".$data['price']."',
 		date_start = '".$data['start']."',
 		date_end = '".$data['end']."',
-		promo_title = '".$data['title']."'
+		promo_title = '".$data['title']."',
+		maximum = '".$data['maximum']."'
 		where product_id = '".(int)$data['product_id']."'
 		and warehouse_id = '".(int)$data['warehouse_id']."'
 		and area_id = '".(int)$data['area_id']."'";
