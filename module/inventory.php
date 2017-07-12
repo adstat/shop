@@ -6695,29 +6695,6 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
             return array('status' => 0, 'message' => "缺少关键参数，请刷新页面重新提交");
         }
 
-        //退货记录完成，开始写入入库数据
-        //退货入库操作写库存表，仅操作回库且需要退货入库的订单
-        //if($return_action_id == 2 || $return_action_id == 4){
-        $stockMoveData = array();
-        $stockMoveData['api_method']        = 'inventoryReturn';
-        $stockMoveData['timestamp']         = time();
-        $stockMoveData['from_station_id']   = 0;
-        $stockMoveData['to_station_id']     = $station_id;
-        $stockMoveData['order_id']          = $order_id;
-        $stockMoveData['purchase_order_id'] = 0;
-        $stockMoveData['added_by']          = $user_id;
-        $stockMoveData['memo']              = '司机退货,仓库确认入库';
-        $stockMoveData['add_user_name']     = '';
-        $stockMoveData['products']          = array();
-
-        //获取退货的商品列表,需要station_id, product_id, price, quantity, box_quantity
-        $sql = "SELECT '{$station_id}', `product_id`, `price` special_price, `quantity` qty, `box_quantity`
-                    FROM oc_return_product
-                    WHERE return_id = '{$return_id}'";
-        $query = $db->query($sql);
-        $stockMoveData['products'] = $query->rows;
-        // product数量要不要更改??
-
         $dbm->begin();
         $bool = true;
         // 已退 driver_quantity 司机退货数量
@@ -6743,6 +6720,35 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
             return array('status' => 0, 'message' => '仓库确认退货失败');
         } else {
             $dbm->commit();
+
+            //退货记录完成，开始写入入库数据
+            //退货入库操作写库存表，仅操作回库且需要退货入库的订单
+            //if($return_action_id == 2 || $return_action_id == 4){
+            $stockMoveData = array();
+            $stockMoveData['api_method']        = 'inventoryReturn';
+            $stockMoveData['timestamp']         = time();
+            $stockMoveData['from_station_id']   = 0;
+            $stockMoveData['to_station_id']     = $station_id;
+            $stockMoveData['order_id']          = $order_id;
+            $stockMoveData['purchase_order_id'] = 0;
+            $stockMoveData['added_by']          = $user_id;
+            $stockMoveData['memo']              = '司机退货,仓库确认入库';
+            $stockMoveData['add_user_name']     = '';
+            $stockMoveData['products']          = array();
+
+            //获取退货的商品列表,需要station_id, product_id, price, quantity, box_quantity
+            $sql = "SELECT '{$station_id}', `product_id`, `price` special_price, `quantity` qty, `box_quantity`
+                    FROM oc_return_product
+                    WHERE return_id = '{$return_id}'";
+            $query = $db->query($sql);
+            $stockMoveData['products'] = $query->rows;
+            // product数量要不要更改??
+            foreach($stockMoveData['products'] as $key => $value){
+                if(!empty($products[$value['product_id']])){
+                    $stockMoveData['products'][$key]['qty'] = $products[$value['product_id']];
+                }
+            }
+
             $this->addInventoryMoveOrder($stockMoveData, $station_id);
             return array('status' => 1, 'message' => '仓库确认退货成功');
         }
