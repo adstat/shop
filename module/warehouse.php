@@ -487,7 +487,7 @@ class WAREHOUSE{
             $product_id = trim(substr($value[0],2));
 
             $sql = "select sum(A.quantity) AS sort_quantity,B.inventory_name from oc_x_order_check_details A  RIGHT JOIN  oc_order_distr B ON  A.order_id = B.order_id WHERE B.order_id = '". $order_id ."'";
-    
+
             $query = $db->query($sql);
             $sort_quantity = $query->row;
             $results = $sort_quantity['sort_quantity']+$value[3] ;
@@ -721,6 +721,8 @@ class WAREHOUSE{
 
     public function getWarehouseId( ){
         global $db;
+
+
         $sql = "SELECT  warehouse_id ,title,station_id  FROM  oc_x_warehouse ";
 
         $query = $db->query($sql);
@@ -862,6 +864,622 @@ class WAREHOUSE{
         $results = $query->rows;
         return $results;
     }
+
+
+
+    //出库单
+    public function getWarehouseRequisition( array $data){
+        global $db;
+
+        $warehouse_id = isset($data['data']['warehouse_id']) ? $data['data']['warehouse_id'] : false;
+
+        $sql = " select wr.relevant_id ,wr.from_warehouse ,wr.to_warehouse,wr.date_added,u.username,wr.deliver_date,wrs.name ,w.title,wr.relevant_status_id,wr.out_type,wr.comment
+              from  oc_x_warehouse_requisition wr
+              LEFT JOIN oc_x_warehouse w  ON  wr.to_warehouse = w.warehouse_id
+              LEFT JOIN oc_x_warehouse_requisition_status wrs ON wr.relevant_status_id = wrs.relevant_status_id
+              LEFT JOIN oc_user u ON  u.user_id = wr.added_by WHERE 1=1  and DATE (wr.date_added) between  date_sub(current_date(), interval 3 day)  and  current_date()  ";
+
+        $query = $db->query($sql);
+        $results = $query->rows;
+        return $results;
+    }
+
+    public function searchRequisition( array $data){
+        global  $db;
+        $date_start = isset($data['data']['date_start']) ? $data['data']['date_start'] : false;
+        $date_end = isset($data['data']['date_end']) ? $data['data']['date_end'] : false;
+        $filter_out_type = isset($data['data']['filter_out_type']) ? $data['data']['filter_out_type'] : false;
+        $filter_out_type_id = isset($data['data']['filter_out_type_id']) ? $data['data']['filter_out_type_id'] : false;
+
+        $sql = " select wr.relevant_id ,wr.from_warehouse ,wr.to_warehouse,wr.date_added,u.username,wr.deliver_date,wrs.name ,w.title,wr.relevant_status_id,wr.out_type,wr.comment
+              from  oc_x_warehouse_requisition wr
+              LEFT JOIN oc_x_warehouse w  ON  wr.to_warehouse = w.warehouse_id
+              LEFT JOIN oc_x_warehouse_requisition_status wrs ON wr.relevant_status_id = wrs.relevant_status_id
+              LEFT JOIN oc_user u ON  u.user_id = wr.added_by WHERE 1=1 and
+              DATE(wr.date_added) BETWEEN '".$date_start."' and '".$date_end ."'
+               ";
+
+
+        if($filter_out_type_id){
+            $sql .= " and wr.out_type = '".$filter_out_type ."'";
+        }
+
+        $query = $db->query($sql);
+        $results = $query->rows;
+        return $results;
+    }
+
+
+    public function viewItem(array $data){
+        global  $db;
+
+        $relevant_id = isset($data['data']['relevant_id']) ? $data['data']['relevant_id'] : false;
+
+        $sql = " select wri.relevant_id ,wri.product_id ,p.name ,pi.inventory ,wri.num ,ps.product_section_title ,w.title,wr.out_type
+              from oc_x_warehouse_requisition_item wri
+              LEFT JOIN  oc_product_section  ps ON wri.product_id = ps.product_id
+              LEFT JOIN  oc_x_warehouse_requisition wr ON wr.relevant_id = wri.relevant_id
+              LEFT JOIN  oc_x_warehouse w ON  wr.to_warehouse = w.warehouse_id
+              LEFT JOIN  oc_product p ON wri.product_id = p.product_id
+              LEFT JOIN  oc_product_inventory pi ON wri.product_id = pi.product_id and wr.from_warehouse = pi.warehouse_id
+              WHERE  wri.relevant_id = '".$relevant_id."' ";
+
+        $query = $db->query($sql);
+        $results = $query->rows;
+        return $results;
+    }
+
+    public function startShipment(array  $data){
+        global  $db;
+
+        $invalidProducts = '';
+        $invalidProducts2 = '';
+
+        $relevant_id = isset($data['data']['relevant_id']) ? $data['data']['relevant_id'] : false;
+        $warehouse_id = isset($data['data']['warehouse_id']) ? $data['data']['warehouse_id'] : false;
+
+//        $sql = "select  sm.relevant_id ,wr.relevant_status_id from oc_x_stock_move sm   left join  oc_x_warehouse_requisition wr on sm.relevant_id = wr.relevant_id WHERE  sm.relevant_id = '".$relevant_id ."' and sm.warehouse_id = '".$warehouse_id."'";
+//
+//        $query = $db->query($sql);
+//        $results = $query->row;
+//
+//        if ($query->num_rows) {
+//                if($results['relevant_status_id'] == 4) {
+//                    $inventory_type_id = 21;
+//                }else if($results['relevant_status_id'] == 6){
+//                    $inventory_type_id = 22;
+//                }
+//            //查询是否写入oc_stock_move表
+//            $sql = " select
+//                  from oc_x_stock_move sm
+//                  LEFT  JOIN   oc_x_stock_move_item smi ON  sm.inventory_move_id = smi.inventory_move_id
+//                  WHERE  sm.relevent_id = '".$relevant_id ."' and '". $warehouse_id ."' ";
+//
+//
+//
+//
+//
+//        }else{
+
+            //获取该出库单的状态以及所有商品ID
+            $sql = "select  wr.relevant_id ,wr.relevant_status_id ,wri.product_id from oc_x_warehouse_requisition wr  LEFT JOIN oc_x_warehouse_requisition_item wri ON  wri .relevant_id = wr.relevant_id  WHERE  wr.relevant_id = '".$relevant_id."'";
+            $query = $db->query($sql);
+            $results = $query->rows;
+
+
+            $product_id='';
+            $productids = '';
+            foreach($results  as $result){
+                $product_id .= ','.($result['product_id']); //字符串
+                $productids[] = $result['product_id']; //数组
+            }
+            $product_ids = ltrim($product_id, ",");
+
+
+            foreach ($productids as $productid){
+                $sql = "select   wrt.product_id
+                from oc_x_warehouse_requisition_temporary wrt WHERE wrt.relevant_id = '".$relevant_id ."' and
+                wrt.relevant_status_id = '".$results[0]['relevant_status_id']."' and
+                wrt.product_id = '".$productid ."'
+                group by  wrt.product_id ";
+
+
+                $invalid =$db->query($sql)->row;
+                if(!$invalid){
+                    $invalidProducts .=','.$productid;  //不存在临时表中
+
+                }else{
+                    $invalidProducts2  .=','.$invalid['product_id']; //存在临时表中
+                }
+            }
+
+            $invalidProducts = ltrim($invalidProducts, ",");
+            $invalidProducts2= ltrim($invalidProducts2, ",");
+
+
+
+            if($invalidProducts){
+                //没插入临时表时的取值
+                $sql2 = "select wri.product_id ,wri.relevant_id ,p.name ,pi.inventory ,wri.num ,ps.product_section_title ,w.title,wr.out_type
+            from oc_x_warehouse_requisition_item wri
+            LEFT JOIN  oc_product_section  ps ON wri.product_id = ps.product_id
+            LEFT JOIN  oc_x_warehouse_requisition wr ON wr.relevant_id = wri.relevant_id
+            LEFT JOIN  oc_x_warehouse w ON  wr.to_warehouse = w.warehouse_id
+            LEFT JOIN  oc_product p ON wri.product_id = p.product_id
+            LEFT JOIN  oc_product_inventory pi ON wri.product_id = pi.product_id and wr.from_warehouse = pi.warehouse_id
+            WHERE  wri.relevant_id = '".$relevant_id."'and  wri.product_id in (".$invalidProducts .")
+             ";
+
+
+                $query2 = $db->query($sql2);
+                $return['product2'] = $query2->rows;
+            }
+
+            if($invalidProducts2){
+                //查询插入临时表的信息
+                $sql1 = " select   wrt.product_id ,p.name, ps.product_section_title ,wri.num  ,wrt.quantity
+                from oc_x_warehouse_requisition_temporary wrt
+                LEFT JOIN oc_x_warehouse_requisition_item wri ON  wrt.relevant_id = wri.relevant_id and wrt.product_id = wri.product_id
+                LEFT JOIN oc_product p ON  p.product_id = wrt.product_id
+                LEFT JOIN  oc_product_section ps ON  ps.product_id = wrt.product_id
+                WHERE wrt.relevant_id = '".$relevant_id ."' and
+                wrt.relevant_status_id = '".$results[0]['relevant_status_id']."' and
+                wrt.product_id in (".$invalidProducts2 .")
+                group by  wrt.product_id";
+
+                $query1 = $db->query($sql1);
+                $return['product1'] = $query1->rows;
+            }
+
+            return $return;
+
+    }
+
+    public function getRelevantProductID(array  $data){
+        global  $db;
+        $relevant_id = isset($data['data']['relevant_id']) ? $data['data']['relevant_id'] : false;
+        $sku = isset($data['data']['sku']) ? $data['data']['sku'] : false;
+
+        if (!$sku) {
+            return false;
+        }
+        if(is_numeric($sku) && strlen($sku) > 6){
+            $sql = " select wri.product_id,psb.sku_barcode,p.name,ps.product_section_title,wri.num
+                  from oc_x_warehouse_requisition_item  wri
+                  LEFT JOIN oc_product_sku_barcode psb  ON  wri.product_id = psb.product_id
+                  LEFT JOIN oc_product p ON  wri.product_id = p.product_id
+                  LEFT JOIN oc_product_section ps ON  wri.product_id = ps.product_id
+                  WHERE  wri.relevant_id = '".$relevant_id ."' and psb.sku_barcode = '".$sku."'";
+
+        }elseif(is_numeric($sku) && strlen($sku) <= 6){
+            $sql = " select wri.product_id,p.name,ps.product_section_title,wri.num
+                  from oc_x_warehouse_requisition_item  wri
+                  LEFT JOIN oc_product p ON  wri.product_id = p.product_id
+                  LEFT JOIN oc_product_section ps ON  wri.product_id = ps.product_id
+                  WHERE  wri.relevant_id = '".$relevant_id ."' and wri.product_id = '".$sku."' ";
+        }
+
+        $query = $db->query($sql);
+        if ($query->num_rows) {
+            $return['status'] = 2;
+            $return['product'] = $query->rows;
+            return $return;
+
+        }
+        else{
+            $return['status'] = 1;
+            return $return;
+        }
+    }
+
+    public function submitProduct( array $data){
+        global  $db;
+        $relevant_id = isset($data['data']['relevant_id']) ? $data['data']['relevant_id'] : false;
+        $postData = isset($data['data']['postData']) ? $data['data']['postData'] : false;
+        $warehouse_id = isset($data['data']['warehouse_id']) ? $data['data']['warehouse_id'] : false;
+        $product_id = explode('/',$postData[0]);
+
+        //获取价格以及出库单状态
+        $sql = " select wr.relevant_status_id ,wri.price
+                from  oc_x_warehouse_requisition wr
+                LEFT JOIN  oc_x_warehouse_requisition_item wri ON  wr.relevant_id = wri.relevant_id
+                WHERE wri.relevant_id = '". $relevant_id ."' and wri.product_id = '". $product_id[0]."' ";
+
+        $query = $db->query($sql);
+        $result = $query->row;
+
+      //查找是否插入了临时表
+        $sql1 = "select wrt.relevant_id
+              from oc_x_warehouse_requisition_temporary wrt  WHERE  wrt.relevant_id = '".$relevant_id."' and wrt.product_id = '". $product_id[0]."' and wrt.relevant_status_id = '".$result['relevant_status_id']."'  and wrt.warehouse_id = '". $warehouse_id ."'";
+        $query1 = $db->query($sql1);
+
+        //是否插入中间表执行不同的sql
+        if ($query1->num_rows) {
+            //更新中间表的数据
+                $sql = "update oc_x_warehouse_requisition_temporary set quantity = '".$postData[3] ."' where  relevant_id = '".$relevant_id."' and product_id = '". $product_id[0]."' and relevant_status_id = '".$result['relevant_status_id']."' and warehouse_id = '".$warehouse_id ."'";
+            $query = $db->query($sql);
+            return $result['status'] = 1;
+        }else{
+            //插入中间表
+            $sql = " insert into oc_x_warehouse_requisition_temporary
+                ( `relevant_id`,`relevant_status_id`,`product_id`,`price`,`quantity`,`warehouse_id`,`date_added`)
+                VALUES ( '".$relevant_id ."','".$result['relevant_status_id']."','".$product_id[0]."','".$result['price']."', '". $postData[3]."','".$warehouse_id."',NOW())";
+
+            $query = $db->query($sql);
+
+            return $result['status'] = 2;
+        }
+
+    }
+
+    public function submitProducts(array $data){
+        global  $db;
+        $relevant_id = isset($data['data']['relevant_id']) ? $data['data']['relevant_id'] : false;
+        $postData = isset($data['data']['postData']) ? $data['data']['postData'] : false;
+        $warehouse_user = isset($data['data']['warehouse_user']) ? $data['data']['warehouse_user'] : false;
+        $warehouse_id = isset($data['data']['warehouse_id']) ? $data['data']['warehouse_id'] : false;
+
+        $sql = "select   wr.relevant_status_id
+              from  oc_x_warehouse_requisition wr  WHERE wr.relevant_id = '".$relevant_id."'";
+
+        $query = $db->query($sql);
+        $result = $query->row;
+
+        if($result['relevant_status_id'] == 2){
+                $inventory_type_id = 21;
+            $sql = "insert  into oc_x_stock_move
+              (`relevant_id`,`timestamp`,`inventory_type_id`,`date_added`,`add_user_name` ,`warehouse_id`  )
+              VALUES ('".$relevant_id ."' ,UNIX_TIMESTAMP(NOW()), '".$inventory_type_id ."' ,NOW(),'".$warehouse_user ."' ,'".$warehouse_id ."')";
+
+            $query = $db->query($sql);
+
+            $inventory_move_id = $db->getLastId();
+
+            if($inventory_move_id){
+                foreach ($postData as $value){
+                    $product_id = substr($value[0],9);
+                    $quantity = $value[4]-$value[3];
+                    $sql = "insert into oc_x_stock_move_item (`inventory_move_id`,`product_id`,`quantity`,`warehouse_id`)
+                        VALUES ('".$inventory_move_id."','".$product_id."' , '". $quantity ."','".$warehouse_id."')";
+                    $query = $db->query($sql);
+                }
+                $sql = " update oc_x_warehouse_requisition  set  relevant_status_id = 4 WHERE relevant_id = '".$relevant_id ."'";
+                $query = $db->query($sql);
+            }
+        }else if($result['relevant_status_id'] == 4){
+                $inventory_type_id = 22;
+            $sql = "insert  into oc_x_stock_move
+              (`relevant_id`,`timestamp`,`inventory_type_id`,`date_added`,`add_user_name` ,`warehouse_id`  )
+              VALUES ('".$relevant_id ."' ,UNIX_TIMESTAMP(NOW()), '".$inventory_type_id ."' ,NOW(),'".$warehouse_user ."' ,'".$warehouse_id ."')";
+
+            $query = $db->query($sql);
+
+            $inventory_move_id = $db->getLastId();
+
+            if($inventory_move_id){
+                foreach ($postData as $value){
+                    $product_id = substr($value[0],9);
+                    $quantity = $value[3]-$value[4];
+                    $sql = "insert into oc_x_stock_move_item (`inventory_move_id`,`product_id`,`quantity`,`warehouse_id`)
+                        VALUES ('".$inventory_move_id."','".$product_id."' , '". $quantity ."','".$warehouse_id."')";
+                    $query = $db->query($sql);
+                }
+
+                $sql = " update oc_x_warehouse_requisition  set  relevant_status_id = 6 WHERE relevant_id = '".$relevant_id ."'";
+                $query = $db->query($sql);
+
+            }
+        }
+
+
+
+    }
+
+    public function handleRedistr(array  $data){
+        global  $db;
+        $order_id = isset($data['data']['order_id']) ? $data['data']['order_id'] : false;
+
+        $sql = "select COUNT(order_id)AS num from oc_order_deliver_issue WHERE order_id = '".$order_id."'";
+
+        $query = $db ->query($sql);
+        $results = $query->row;
+        if($results['num'] > 0){
+            return $results['status'] = 1;
+        }else{
+            return $results['status'] = 2;
+        }
+    }
+    public function showOrderDetail($data){
+        global  $db;
+
+        $order_id = isset($data['data']['order_id']) ? $data['data']['order_id'] : false;
+
+        $sql = "SELECT pd.name, p.status, p.sku, p.box_size, p.inv_class_sort, p.model, p.price, p.product_id FROM oc_order_deliver_issue odi LEFT JOIN oc_order_product op ON odi.order_id = op.order_id LEFT JOIN oc_product AS p ON op.product_id = p.product_id LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN  oc_product_description AS pd ON p.product_id = pd.product_id WHERE odi.order_id = '".$order_id."' ";
+
+        $query = $db ->query($sql);
+        $results = $query->rows;
+
+        return $results;
+    }
+
+    public function showDeliverConfirm(array  $data){
+        global  $db;
+
+        $order_id = isset($data['data']['order_id']) ? $data['data']['order_id'] : false;
+
+        $sql = "SELECT rdp.return_id, pd.name, p.status, p.sku, p.box_size, p.inv_class_sort, p.model, p.price, p.product_id FROM oc_return_deliver_product rdp LEFT JOIN oc_product AS p ON rdp.product_id = p.product_id LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN  oc_product_description AS pd ON p.product_id = pd.product_id WHERE rdp.order_id = '".$order_id."' and rdp.status = 2  ";
+
+        $query = $db ->query($sql);
+        $results = $query->rows;
+
+        return $results;
+    }
+
+
+
+
+    public function warehouseConfirmReturnProduct(array $data)
+    {
+
+        global $db, $dbm;
+
+        $return_id  = !empty($data['data']['return_id'])    ? (int)$data['data']['return_id']   : false;
+        $station_id = !empty($data['station_id'])   ? (int)$data['station_id']  : 2;
+
+        $order_id   = !empty($data['data']['order_id'])     ? (int)$data['data']['order_id']    : false;
+
+        $user_id    = !empty($data['data']['inventory_user_id'])      ? (int)$data['data']['inventory_user_id']     : false;
+        $warehouse_id    = !empty($data['data']['warehouse_id'])      ? (int)$data['data']['warehouse_id']     : false;
+        $products   = !empty($data['data']['products'])     ? $data['data']['products']         : array();
+        $productsBarcodeWithQtyRaw = explode(',',$products);
+
+        foreach($productsBarcodeWithQtyRaw as $m){
+            $n = explode(':',$m);
+            $productsBarcodeWithQty[]= array(
+                $n[0] => $n[1],
+            );
+        }
+
+        $products = $productsBarcodeWithQty;
+
+        if(!$return_id || !$station_id || !$order_id || !$user_id || empty($products)){
+
+            return array('status' => 0, 'message' => "缺少关键参数，请刷新页面重新提交");
+        }
+
+
+        $dbm->begin();
+        $bool = true;
+        // 已退 driver_quantity 司机退货数量
+
+        foreach($products as $key => $v){
+                foreach( $v as $product_id => $qty) {
+                    $sql = "UPDATE oc_return_deliver_product
+                        SET date_warehouse_confirm = NOW(), driver_return_quantity = {$qty}
+                        WHERE order_id = {$order_id}
+                        AND product_id = {$product_id}";
+                    $bool = $bool && $dbm->query($sql);
+                }
+
+
+        }
+
+        // 确认人 确认时间 inventory_returned = 1
+        $sql = "UPDATE oc_return SET
+                    add_user = {$user_id},
+                    date_added = NOW(),
+                    date_modified = NOW(),
+                    inventory_returned = 1
+                    WHERE return_id = {$return_id}";
+        $bool = $bool && $dbm->query($sql);
+
+        if (!$bool) {
+            $dbm->rollback();
+            return array('status' => 0, 'message' => '仓库确认退货失败');
+        } else {
+            $dbm->commit();
+
+            //退货记录完成，开始写入入库数据
+            //退货入库操作写库存表，仅操作回库且需要退货入库的订单
+            //if($return_action_id == 2 || $return_action_id == 4){
+            $stockMoveData = array();
+            $stockMoveData['api_method']        = 'inventoryReturn';
+            $stockMoveData['timestamp']         = time();
+            $stockMoveData['from_station_id']   = 0;
+            $stockMoveData['to_station_id']     = $station_id;
+            $stockMoveData['order_id']          = $order_id;
+            $stockMoveData['purchase_order_id'] = 0;
+            $stockMoveData['added_by']          = $user_id;
+            $stockMoveData['memo']              = '司机退货,仓库确认入库';
+            $stockMoveData['add_user_name']     = '';
+            $stockMoveData['products']          = array();
+
+            //获取退货的商品列表,需要station_id, product_id, price, quantity, box_quantity
+            $sql = "SELECT '{$station_id}', `product_id`, `price` special_price, `quantity` qty, `box_quantity`
+                    FROM oc_return_product
+                    WHERE return_id = '{$return_id}'";
+            $query = $db->query($sql);
+            $stockMoveData['products'] = $query->rows;
+            // product数量要不要更改??
+            foreach($stockMoveData['products'] as $key => $value){
+                if(!empty($products[$value['product_id']])){
+                    $stockMoveData['products'][$key]['qty'] = $products[$value['product_id']];
+                }
+            }
+
+            $this->addInventoryMoveOrder($stockMoveData, $station_id,$warehouse_id);
+
+            return array('status' => 1, 'message' => '仓库确认退货成功');
+        }
+    }
+
+
+    function addInventoryMoveOrder($data, $station_id,$warehouse_id) {
+        global $db, $dbm, $log;
+
+        //$log->write('INFO:['.__FUNCTION__.']'.': '.serialize($data)."\n\r");
+
+        if (!is_array($data) || !sizeof($data) || !$station_id) {
+            $log->write('ERR:[' . __FUNCTION__ . ']' . ': 参数错误' . "\n\r");
+            return false;
+        }
+
+        if (!sizeof($data['products']) && $data['api_method'] != 'inventoryOrderIn') {
+            $log->write('ERR:[' . __FUNCTION__ . ']' . ': 缺少商品信息' . "\n\r");
+            return false;
+        }
+
+        if (!isset($data['timestamp']) || !$data['timestamp']) {
+            return false;
+        }
+
+        if (!defined('INVENTORY_TYPE_OP')) {
+            $log->write('ERR:[' . __FUNCTION__ . ']' . ': 缺少库存计算关键配置数据[INVENTORY_TYPE_OP]' . "\n\r");
+            return false;
+        }
+
+        //Check timestamp
+        $sql = "select inventory_move_id from oc_x_stock_move where station_id = '" . $station_id . "' and timestamp = '" . $data['timestamp'] . "';";
+
+        $query = $db->query($sql);
+        if (sizeof($query->rows)) {
+            return false;
+        }
+
+
+        if($data['api_method'] == 'inventoryOrderIn'){
+
+            $sql = "select xsm.order_id,o.station_id from oc_x_stock_move as xsm left join oc_order as o on o.order_id = xsm.order_id where xsm.inventory_type_id = 12 and xsm.order_id = " . (isset($data['order_id']) ? (int) $data['order_id'] : 0);
+            $query = $dbm->query($sql);
+            $result_exists = $query->rows;
+
+            if(!empty($result_exists)){
+                if($result_exists[0]['station_id'] != 2){
+                    return false;
+                }
+            }
+
+        }
+
+
+
+
+
+        //Get Inventory Type Opration From config
+        $inventory_type_op = unserialize(INVENTORY_TYPE_OP); //array('api method'=>array(inventory_type_id, operation))
+        $inventory_op = $inventory_type_op[$data['api_method']][1];
+        $inventory_type = $inventory_type_op[$data['api_method']][0];
+
+        if (!$inventory_type) {
+            $log->write('INFO:[' . __FUNCTION__ . ']' . ': 未指定库存变动类型' . "\n\r");
+            return false;
+        }
+
+        $data_insert = array();
+
+        $data_insert['station_id'] = $station_id;
+        $data_insert['timestamp'] = $data['timestamp'];
+        $data_insert['from_station_id'] = isset($data['from_station_id']) ? (int) $data['from_station_id'] : 0;
+        $data_insert['to_station_id'] = isset($data['to_station_id']) ? (int) $data['to_station_id'] : 0;
+        $data_insert['order_id'] = isset($data['order_id']) ? (int) $data['order_id'] : 0;
+
+        $data_insert['purchase_order_id'] = isset($data['purchase_order_id']) ? (int) $data['purchase_order_id'] : 0;
+
+        $data_insert['inventory_type_id'] = isset($inventory_type) ? (int) $inventory_type : 0;
+        $data_insert['date_added'] = date('Y-m-d H:i:s', time());
+        $data_insert['added_by'] = isset($data['added_by']) ? (int) $data['added_by'] : 0;
+        $data_insert['memo'] = isset($data['memo']) ? $db->escape($data['memo']) : '';
+        $data_insert['add_user_name'] = isset($data['add_user_name']) ? $data['add_user_name'] : '';
+        $data_insert['warehouse_id'] = $warehouse_id;
+        $log->write('INFO:[' . __FUNCTION__ . ']' . ': 变动类型：'.$data['api_method']);
+
+        $dbm->begin();
+        //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 插入库存表 Begin' . "\n\r");
+        $bool = true;
+        $sql = "INSERT INTO `oc_x_stock_move` SET ";
+        foreach ($data_insert as $key => $val) {
+            $sql .= '`' . $key . '`' . '="' . $val . '"';
+            if (current($data_insert) === false) {
+                $sql .= ';';
+            } else {
+                $sql .= ', ';
+            }
+            next($data_insert);
+        }
+
+        $bool = $bool && $dbm->query($sql);
+        $inventory_move_id = $dbm->getLastId();
+
+        //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 插入库存表' . "\n\r");
+
+        if(!empty($data['products'])){
+            $sql = "INSERT INTO `oc_x_stock_move_item` (`inventory_move_id`, `station_id`, `due_date`, `product_id`, `price`, `product_batch`, `quantity`, `box_quantity`, `weight`, `is_gift`, `checked`, `status`, `sku_id`,`warehouse_id`) VALUES ";
+            $m = 0;
+            foreach ($data['products'] as $product) {
+                $sql .= "(" . $inventory_move_id . ", " . $station_id . ", '" . (isset($product['due_date']) ? $product['due_date'] : '0000-00-00') . "', '" . $product['product_id'] . "', '" . $product['special_price'] . "', '" . (isset($product['product_batch']) ? $product['product_batch'] : '') . "', " . $product['qty'] * $inventory_op . ", '".(isset($product['box_quantity']) ? $product['box_quantity'] : 1)."', " . (isset($product['product_weight']) ? $product['product_weight'] : 0) . "," . (isset($product['is_gift']) ? $product['is_gift'] : 0) . ", " . (isset($product['checked']) ? $product['checked'] : 0) . "," . (isset($product['status']) ? $product['status'] : 1) . "," . (isset($product['sku_id']) ? $product['sku_id'] : 0) . ",'". $warehouse_id ."')";
+                if (++$m < sizeof($data['products'])) {
+                    $sql .= ', ';
+                } else {
+                    $sql .= ';';
+                }
+            }
+
+            //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 插入库存明细表' . "\n\r");
+            $bool = $bool && $dbm->query($sql);
+        }
+        //If the method is init, make every other records checked
+        if ($data['api_method'] == 'inventoryInit') {
+            $sql = "UPDATE oc_x_stock_move_item SET checked=1 WHERE station_id = '" . $station_id . "' AND checked = 0 AND inventory_move_id < " . $inventory_move_id;
+            $bool = $bool && $dbm->query($sql);
+        }
+
+        //对于指定的库存变动类型（退货入库、商品报损、库存调整），同步调整前台可售库存。（采购入库已在其他地方处理）
+        $inventory_type_auto_sync = unserialize(INVENTORY_TYPE_AUTO_SYNC);
+
+        if(in_array($inventory_type, $inventory_type_auto_sync)){
+            $sql = "INSERT INTO oc_x_inventory_move (`station_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`,`warehouse_id`)
+                    VALUES('".$station_id."', current_date(), unix_timestamp(), '0', '".$inventory_type."', now(), '".$data_insert['added_by']."', '".$data_insert['add_user_name']."', '[API]".$data_insert['memo']."','".$warehouse_id."')";
+            $bool = $bool && $dbm->query($sql);
+            //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 变动操作SQL：'.$sql);
+            $inventory_move_id = $dbm->getLastId();
+            //$inventory_move_id = 999;
+            $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`,`warehouse_id`) VALUES';
+
+            $m = 0;
+            foreach ($data['products'] as $product) {
+                //处理散件退货商品 - 散件暂时不退货可售库存
+                //TODO 散件售卖
+                $returnInvqty = $product['qty'];
+                if(isset($product['box_quantity']) && $product['box_quantity'] > 1){
+                    $returnInvqty = 0;
+                }
+                $sql .= "('".$inventory_move_id."','".$station_id."','".$product['product_id']."','".$returnInvqty*$inventory_op ."','". $warehouse_id ."')";
+                if (++$m < sizeof($data['products'])) {
+                    $sql .= ', ';
+                } else {
+                    $sql .= ';';
+                }
+
+            }
+            //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 变动操作SQL：'.$sql);
+            $bool = $bool && $dbm->query($sql);
+            //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 可售库存变动已添加');
+        }
+
+        if (!$bool) {
+            //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 插入库存表 Rollback' . "\n\r");
+            $dbm->rollback();
+            return false;
+        } else {
+            //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 插入库存表 Commit' . "\n\r");
+            $dbm->commit();
+            return true;
+        }
+
+        //TODO Update inventory / Redis
+    }
+
+
 }
 
 

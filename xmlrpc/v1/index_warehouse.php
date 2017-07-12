@@ -2124,8 +2124,46 @@ class soaXMLRPC{
             )
         );
 
+        $services['soa.showDeliverConfirm'] = array(
+            'function' => 'soaFunctions::showDeliverConfirm',
+            'docstring'=> 'showDeliverConfirm($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.submitDeliverConfirmProduct'] = array(
+            'function' => 'soaFunctions::submitDeliverConfirmProduct',
+            'docstring'=> 'submitDeliverConfirmProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
 
+        $services['soa.warehouseConfirmReturnProduct'] = array(
+            'function' => 'soaFunctions::warehouseConfirmReturnProduct',
+            'docstring'=> 'warehouseConfirmReturnProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
         return $services;
+
+
     }
 }
 
@@ -2196,6 +2234,7 @@ class soaFunctions{
 
     function getOrderss($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
+
 
         if ( !soaHelper::auth($origin_id, $key) ){
             return 'ERROR, NO AUTHORIZED.';
@@ -3590,7 +3629,34 @@ class soaFunctions{
 
         return $warehouse->showOrderDetail(json_decode($data, true));
     }
+    function showDeliverConfirm($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
 
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->showDeliverConfirm(json_decode($data, true));
+    }
+
+    function submitDeliverConfirmProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->submitDeliverConfirmProduct(json_decode($data, true));
+    }
+
+    function warehouseConfirmReturnProduct($data,$origin_id,$key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->warehouseConfirmReturnProduct(json_decode($data, true));
+    }
 
 
 }
