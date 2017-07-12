@@ -13,7 +13,6 @@ require_once(DIR_SYSTEM.'/log.php');
 //TODO, use autoloader
 //require_once(DIR_MODULE.'/loader.php');
 require_once (DIR_MODULE.'/logistic.php');
-require_once (DIR_MODULE.'/inventory.php');
 
 //Get XMLRPC Module
 require_once './xmlrpc.php';
@@ -22,7 +21,7 @@ require_once './xmlrpc_wrappers.php';
 
 
 class soaXMLRPC{
-    static function onGetWebServices(){
+    function onGetWebServices(){
         global $xmlrpcI4, $xmlrpcInt, $xmlrpcBoolean, $xmlrpcDouble, $xmlrpcString, $xmlrpcDateTime, $xmlrpcBase64, $xmlrpcArray, $xmlrpcStruct, $xmlrpcValue;
         $services = array();
 
@@ -38,13 +37,13 @@ class soaXMLRPC{
 
             'getVisitDone' => '',
             'updateStatus'=>'',
-            'updateStatus2'=>'',
+           // 'updateStatus2'=>'',
             'getOrderNoInfo'=>'',
             'getOrderAllInfo'=>'',
             'getOrderAlreadyInfo'=>'',
             'getReturnOrders'=>'',
             'deliverConfirmReturnProduct' => '',
-            'warehouseConfirmReturnProduct' => ''
+
         );
 
         foreach($registeredServices as $k=>$v){
@@ -231,22 +230,16 @@ class soaFunctions{
     }
 
     function deliverConfirmReturnProduct($data,$origin_id,$key){
+        global $logistic;
         if ( !soaHelper::auth($origin_id, $key) ){
             return 'ERROR, NO AUTHORIZED.';
         }
 
-        global $inventory;
-        return $inventory->deliverConfirmReturnProduct(json_decode($data, true));
+
+        return $logistic->deliverConfirmReturnProduct(json_decode($data, true));
     }
 
-    function warehouseConfirmReturnProduct($data,$origin_id,$key){
-        if ( !soaHelper::auth($origin_id, $key) ){
-            return 'ERROR, NO AUTHORIZED.';
-        }
 
-        global $inventory;
-        return $inventory->deliverConfirmReturnProduct(json_decode($data, true));
-    }
 
 }
 
