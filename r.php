@@ -503,6 +503,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
     
     <button class="invopt" id="return_index" style="display:none;width:4em;" onclick="javascript:location.reload();">返回</button>
     <div align="right"><?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <span onclick="javascript:logout_inventory_user();">退出</span></div>
+<div  style="display: none" id="inventory_user_id"> <?php echo $_COOKIE['inventory_user_id'];?> </div>
 <div  style="display: none" id="warehouse_id"> <?php echo $_COOKIE['warehouse_id'];?> </div>
     <div align="center" style="display:block; margin:0.5em auto" id="logo"><img src="view/image/logo.png" style="width:6em"/></div>
 
@@ -528,6 +529,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 <button id="deliverReruenWholeProducts" class = 'invopt' style="display: block" onclick="javascript:inventoryMethodHandler('deliverReruenWholeProducts');  ">操作整单退货</button>
                 <button id="deliverReturnMissingProduct" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('deliverReturnMissingProduct');">回库散件缺货</button>
                 <button id="inventoryFrameIn" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('inventoryFrameIn');">回收篮框</button><br>
+
             </div>
 
             <div id="orderMissing" style="display: none">
@@ -621,6 +623,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             <div id="productList2" name="productList2" method="POST" style="display: none;">
                 <input type="button" class="submit" style="display: none" id="whole_order"  value="记录整单退货" onclick="hide();">
                 <input type="button" class="submit"  style="display: none"  id="show_whole_order"  value="显示该订单所有商品" onclick="showOrderDetail();">
+                <input type="button" class="submit"  style="display: none"  id="show_deliver_confirm_order"  value="显示司机确认退货商品" onclick="showDeliverConfirm();">
                 <div id="order_id2" style="display:none;">订单号 <input placeholder="扫描订单号" style="font-size:1.2rem; width: 7rem" type="text" id="input_order_id2" name="input_order_id2">   </div>
                 <input type="hidden" id="isBack" value="0" />
                 <input type="hidden" id="isRepackMissing" value="0" />
@@ -687,6 +690,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                     </select>
                 </div>
                 <input class="submit" id="submitReturnProduct" type="button" value="提交" onclick="javascript:submitReturnProduct();">
+                <input style="display: none" class="submit" id="submitDeliverConfirmProduct" type="button" value="提交司机确认退货" onclick="javascript:submitDeliverConfirmProduct();">
 
                 <div style="float: none; clear: both"></div>
                 <hr  style="margin: 1rem 0;"/>
@@ -985,10 +989,15 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             $("#submit_frame_cage").hide();
             $("#return_index").show();
             $("#order_id").hide();
+           if(method == 'deliverReturnProduct'){
+               $("#show_deliver_confirm_order").show();
+
+           }
             if(method == 'inventoryReturnProduct'  || method == 'deliverReturnMissingProduct'){
                 $("#whole_order").hide();
                 $("#show_whole_order").hide();
                 $("#return_reason").hide();
+                $("#show_deliver_confirm_order").hide();
             }
             if(method == 'deliverReruenWholeProducts'){
                 $("#whole_order").show();
@@ -1666,6 +1675,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         }
     }
 
+
     function confirmReturnProduct(){
         var warehouse_id = $("#warehouse_id").text();
         if(confirm('确认这些退货记录吗，操作不可撤销？')){
@@ -2077,7 +2087,153 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             }
         });
 
+    }
 
+    function showDeliverConfirm(){
+        var order_id = $("#input_order_id2").val();
+        if(order_id == ''){
+            alert('请扫描订单号。');
+            return false;
+        }
+
+        $("#submitDeliverConfirmProduct").show();
+        $("#submitReturnProduct").hide();
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            data: {
+                method: 'showDeliverConfirm',
+                data: {
+                    order_id: order_id,
+                }
+
+            },
+            success:function(response){
+                var jsonData = $.parseJSON(response);
+                var html = '';
+                $.each(jsonData, function(index,v) {
+                    html += '<tr class="barcodeHolder" id="bd'+ v.product_id +'">' +
+                        '<td style="display:none;" id="product_id_'+v.product_id+'">'+v.product_id+'</td>' +
+                        '<td>' +
+                        '<span style="display:none;" name="productBarcode" >' + v.product_id + '</span>' +
+                        '<span style="display:none;" inputBarcode="'+v.product_id+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct'+v.product_id+'" >'+v.product_id+'</span>' +
+                        '<span id="info'+ v.product_id +'">'+'['+v.product_id+']'+v.name+'</span>' +
+                        '<br /><span style="font-size: 0.8rem">[<span id="sku'+ v.product_id +'">'+ v.sku+'</span>]</span>' +
+                        '</td>' +
+
+                        '<td style="width:4em; text-align: center">' +
+                        '<span id="returntype'+v.product_id+'">退整件</span>' +
+                        '<input class="qty" type="hidden" id="boxqty'+ v.product_id +'" name="boxqty'+ v.product_id +'" value="1" />' +
+                        '<input class="qty" style="display: none; background-color: #fff; border: 1px #ccc solid; margin: 5px 0" id="returnboxqty'+ v.product_id +'" name="returnboxqty'+ v.product_id +'" value="1" />' +
+                        '<input class="addprod style_green returnType" style="display: none" id="returnbox'+v.product_id+'" type="button" value="改退整件" onclick="returnBox('+v.product_id+');">' +
+                        '<input class="addprod style_green returnType" style="display: inline" id="returnpart'+v.product_id+'" type="button" value="改退散件" onclick="returnPart('+v.product_id+');">' +
+                        '</td>' +
+                        '<td style="width:4em;"><input class="qty" id="'+ v.product_id +'" name="'+ v.product_id +'" value="1"  /></td>' +
+                        '<td>' +
+                        '<input class="qtyopt" type="button" value="+" onclick="javascript:qtyadd2(\''+ v.product_id +'\')" >' +
+                        '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus2(\''+ v.product_id +'\')" >' +
+                        '</td>' +
+                        '<td style="width:4em; display: none"><input class="qty" id="return_id" name="'+ v.product_id +'" value="'+ v.return_id +'"  /></td>' +
+                        '</tr>';
+
+                    var boxSize = parseInt(v.box_size);
+                    if(boxSize == 0){
+                        boxSize = 1;
+                    }
+
+                    $("#info"+ v.product_id).html('['+v.product_id+']'+v.name);
+                    $("#sku"+v.product_id).html(v.sku);
+                    $("#boxqty"+v.product_id).val(boxSize);
+                    //$("#price"+id).html(jsonData.price);
+                    $("#productBarcodeProduct"+v.product_id).html(v.product_id);
+                    $("#product_id_"+v.product_id).html(v.product_id);
+                });
+
+                $('#productsInfo2').html(html);
+            }
+        });
+
+    }
+
+    function submitDeliverConfirmProduct(){
+        var return_reason = $("#return_reason").val();
+        var return_id = $("#return_id").val();
+
+        var prodListWithQty = getReturnProductBarcodeWithQty();
+
+        var warehouse_id = $("#warehouse_id").text();
+        var inventory_user_id = $("#inventory_user_id").text();
+        if(prodListWithQty == 0){
+            alert("输入的数量不合法");return false;
+        }
+
+        if(prodListWithQty == '' || prodListWithQty == null ){
+            alert('获取条码列表错误或还没有输入商品条码。');
+            return false;
+        }
+        var order_id = $("#input_order_id2").val();
+        if(order_id == ''){
+            alert('请扫描订单号。');
+            return false;
+        }
+
+        if(confirm('确认提交此次操作？')){
+
+            $('#submitReturnProduct').attr('class',"submit style_gray");
+            $('#submitReturnProduct').attr('disabled',"disabled");
+            $('#submitReturnProduct').attr('value',"正在提交...");
+
+            $.ajax({
+                type : 'POST',
+                url : 'invapi.php',
+                data : {
+                    method : 'warehouseConfirmReturnProduct',
+                    data:{
+                        order_id : order_id,
+                        return_id : return_id,
+                        station_id : 2,
+                        products : prodListWithQty,
+                        return_reason:return_reason,
+                        warehouse_id : warehouse_id,
+                        inventory_user_id:inventory_user_id,
+                    }
+                },
+                success : function (response , status , xhr){
+                    if(response){
+                        console.log(response);
+
+                        var jsonData = $.parseJSON(response);
+                        if(jsonData.status){
+                            if(jsonData.status !== 1){
+                                alert(jsonData.message);
+                                return false;
+                            }
+                            if(jsonData.status == 1){
+                                alert("提交成功");
+                                $('#productsInfo2').html("");
+                                //inventoryMethodHandler($('#returnMethod').val());
+                            }
+                        }
+                        else{
+                            //$('#message').attr('class',"message style_error");
+                            $('#message').html(jsonData.message);
+                            //console.log('Inv. Process Error.');
+                        }
+
+
+                        if(jsonData.status == 999){
+                            alert(jsonData.msg);
+                            window.location = 'inventory_login.php?return=r.php&ver=db';
+                        }
+                    }
+                },
+                complete : function(){
+                    $('#submitReturnProduct').attr('class',"submit");
+                    $('#submitReturnProduct').removeAttr("disabled");
+                    $('#submitReturnProduct').attr('value',"提交");
+                }
+            });
+        }
     }
 
 

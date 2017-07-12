@@ -179,6 +179,12 @@ $basic_method = array(
     'reDistrList',
     'getOrderInfo',
     'getLogisticId',
+    'showOrderDetail',
+    'handleRedistr',
+
+    //司机确认收到退货
+    'showDeliverConfirm',
+    'warehouseConfirmReturnProduct',
 );
 
 if(in_array($method, $basic_method)){
@@ -1149,6 +1155,7 @@ if($method == 'addReturnDeliverProduct'){
     
     exit(json_encode($planned));
 }
+
 
 
 
