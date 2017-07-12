@@ -152,6 +152,7 @@
                     </table>
                       <div class="col-sm-4">
                         <div class="form-group">
+                            <input type="hidden" name="warehouse_id" value="<?php echo $warehouse_id; ?>" id="warehouse_id" />
                             是否退余额：<input type="checkbox" name="sub_use_credits" value="1" ><br>
                             <div style="display:none;" >确认到货时间：<input type="text" name="date_deliver" value="<?php echo $date_deliver;?>" placeholder="到货日期" data-date-format="YYYY-MM-DD" id="input-date-deliver" class="form-control" /></div>
                             退货说明：<textarea name="order_comment" value="" placeholder=""  id="input-order-comment" class="form-control" ></textarea>
@@ -271,7 +272,10 @@
             alert("请选择到货日期");return false;
         }
         
-        
+        var warehouse_id = $('#warehouse_id').val();
+        if(warehouse_id <= 0){
+            alert("仓库ID有误");return false;
+        }
         
 
         if(window.confirm('确认提交退货单？')){

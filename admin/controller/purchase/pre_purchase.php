@@ -348,11 +348,12 @@ class ControllerPurchasePrePurchase extends Controller {
                
                if(!empty($copy_order_info)){
                    
-                   $data['purchase_order_id'] = $_GET['purchase_order_id'];
+                    $data['purchase_order_id'] = $_GET['purchase_order_id'];
                    
                     $data['date_deliver'] = $copy_order_info['date_deliver'];  
                     $data['station_id'] = $copy_order_info['station_id'];
                     $data['supplier_type'] = $copy_order_info['supplier_type'];
+                    $data['warehouse_id'] = $copy_order_info['warehouse_id'];
                     $pre_purchase_product = array();
                     foreach($copy_order_info['products'] as $key => $value){
                         $pre_purchase_product[$value['product_id']]['pre_purchase_product']['count_date'] = '';
@@ -393,8 +394,7 @@ class ControllerPurchasePrePurchase extends Controller {
                }
            }
            
-           if($this->request->server['REQUEST_METHOD'] == 'POST' && isset($this->request->post['products']) && $this->request->post['products']){
-               
+           if($this->request->server['REQUEST_METHOD'] == 'POST' && isset($this->request->post['products']) && $this->request->post['products'] && $this->request->post['warehouse_id']){
                if(isset($_POST['order_type'])){
                    $this->model_purchase_pre_purchase->addPrePurchaseOrderReturn($_POST);
                }
@@ -445,8 +445,7 @@ class ControllerPurchasePrePurchase extends Controller {
            }
         }
         
-        
-        
+
         
         $data['pre_purchase_product'] = $pre_purchase_product;
         $data['date_array'] = $date_arr;

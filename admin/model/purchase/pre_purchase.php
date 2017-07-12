@@ -130,6 +130,7 @@ class ModelPurchasePrePurchase extends Model {
             return array(
                 'purchase_order_id' => $order_query->row['purchase_order_id'],
                 'station_id' => $order_query->row['station_id'],
+                'warehouse_id' => $order_query->row['warehouse_id'],
                 'date_added' => $order_query->row['date_added'],
                 'date_deliver' => $order_query->row['date_deliver'],
                 'image' => $order_query->row['image'],
@@ -864,6 +865,7 @@ AND xsm.purchase_order_id = " . $order_id . "
         $user_id = $this->user->getId();
         $user_name = $this->user->getUserName();
         $products = $data['products'];
+        $warehouse_id = !empty($data['warehouse_id']) ? (int)$data['warehouse_id'] : 0;
 
         $product_ids = array();
         if(!empty($data['products'])){
@@ -906,14 +908,15 @@ supplier_id  = " . $data['supplier_type'] . "";
         $bool = 1;
 
         //增加采购记录
-        $sql = "INSERT INTO `oc_x_pre_purchase_order` (`station_id`, `date_added`, `date_deliver`,  `added_by`, `add_user_name`,supplier_type,checkout_type_id,checkout_cycle_id,checkout_cycle_num,checkout_username,checkout_userbank,checkout_usercard,order_comment,invoice_flag,order_type,related_order) VALUES('{$data['station_id']}', '{$date_added}', '{$data['date_deliver']}', '{$user_id}', '{$user_name}','{$data['supplier_type']}','{$supplier_info['checkout_type_id']}','{$supplier_info['checkout_cycle_id']}','{$supplier_info['checkout_cycle_num']}','{$supplier_info['checkout_username']}','{$supplier_info['checkout_userbank']}','{$supplier_info['checkout_usercard']}','{$data['order_comment']}','0','{$data['order_type']}','{$data['purchase_order_id']}')";
+        $sql = "INSERT INTO `oc_x_pre_purchase_order` (`station_id`, `date_added`, `date_deliver`,  `added_by`, `add_user_name`,supplier_type,checkout_type_id,checkout_cycle_id,checkout_cycle_num,checkout_username,checkout_userbank,checkout_usercard,order_comment,invoice_flag,order_type,related_order, warehouse_id)
+                  VALUES('{$data['station_id']}', '{$date_added}', '{$data['date_deliver']}', '{$user_id}', '{$user_name}','{$data['supplier_type']}','{$supplier_info['checkout_type_id']}','{$supplier_info['checkout_cycle_id']}','{$supplier_info['checkout_cycle_num']}','{$supplier_info['checkout_username']}','{$supplier_info['checkout_userbank']}','{$supplier_info['checkout_usercard']}','{$data['order_comment']}','0','{$data['order_type']}','{$data['purchase_order_id']}', {$warehouse_id})";
 
         $bool = $bool && $this->db->query($sql);
 
         $purchase_order_id = $this->db->getLastId();
 
         //增加采购
-        $sql = "INSERT INTO `oc_x_pre_purchase_order_product` (`purchase_order_id`, station_id, `sku_id`, `product_id`, `weight`, `weight_class_id`, `date`,`price`,quantity,supplier_quantity,quantity_old) VALUES ";
+        $sql = "INSERT INTO `oc_x_pre_purchase_order_product` (`purchase_order_id`, station_id, `sku_id`, `product_id`, `weight`, `weight_class_id`, `date`,`price`,quantity,supplier_quantity,quantity_old, warehouse_id) VALUES ";
         $m=0;
 
 
@@ -925,7 +928,7 @@ supplier_id  = " . $data['supplier_type'] . "";
 
         $order_total = 0;
         foreach($products as $product){
-            $sql .= "(".$purchase_order_id."," . $data['station_id'] . ", '".$sku_weight_arr[$product['product_id']]['sku_id'] ."'," . $product['product_id'] . " , '" . $sku_weight_arr[$product['product_id']]['weight'] . "', '" . $sku_weight_arr[$product['product_id']]['weight_class_id'] . "', '".$data['date_deliver']."', '" . (!empty($product['price']) ? $product['price'] : 0) . "'," . (isset($product['quantity']) ? $product['quantity'] : 0) . ", " . (!empty($product['supplier_quantity']) ? $product['supplier_quantity'] : 0) . "," . (!empty($product['purchase_quantity_old']) ? $product['purchase_quantity_old'] : 0) . ")";
+            $sql .= "(".$purchase_order_id."," . $data['station_id'] . ", '".$sku_weight_arr[$product['product_id']]['sku_id'] ."'," . $product['product_id'] . " , '" . $sku_weight_arr[$product['product_id']]['weight'] . "', '" . $sku_weight_arr[$product['product_id']]['weight_class_id'] . "', '".$data['date_deliver']."', '" . (!empty($product['price']) ? $product['price'] : 0) . "'," . (isset($product['quantity']) ? $product['quantity'] : 0) . ", " . (!empty($product['supplier_quantity']) ? $product['supplier_quantity'] : 0) . "," . (!empty($product['purchase_quantity_old']) ? $product['purchase_quantity_old'] : 0) . ", {$warehouse_id})";
             if(++$m < sizeof($products)){
                 $sql .= ', ';
             }
