@@ -22,7 +22,7 @@ class ControllerDashboardRecent extends Controller {
 		$data['orders'] = array();
 
 		$filter_data = array(
-			'sort'  => 'o.date_added',
+			'sort'  => 'o.order_id',
 			'order' => 'DESC',
 			'start' => 0,
 			'limit' => 5
