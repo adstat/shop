@@ -250,10 +250,11 @@ class ControllerMarketingIndexPromotion extends Controller{
 
     public function getProductInfo(){
         $product_special_id = $this->request->get['product_id'];
+        $warehouse_id = $this->request->get['warehouse_id'];
 
         $this->load->model('marketing/index_promotion');
 
-        $json = $this->model_marketing_index_promotion->getProductInfo($product_special_id);
+        $json = $this->model_marketing_index_promotion->getProductInfo($product_special_id,$warehouse_id);
 
         echo json_encode($json);
     }

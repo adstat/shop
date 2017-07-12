@@ -286,7 +286,7 @@
         console.log(rowId);
         $.ajax({
             type: 'GET',
-            url: 'index.php?route=marketing/index_promotion/getProductInfo&token=<?php echo $_SESSION["token"]; ?>&product_id='+product_id,
+            url: 'index.php?route=marketing/index_promotion/getProductInfo&token=<?php echo $_SESSION["token"]; ?>&warehouse_id=<?php echo $filter_warehouse_id_global; ?>&product_id='+product_id,
             dataType: 'json',
             success : function(data){
                 if(!data[0]['name']){

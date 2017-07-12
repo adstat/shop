@@ -243,18 +243,46 @@ class ModelMarketingIndexPromotion extends Model {
 	return $result;
     }
 
-    public function getProductInfo($product_id){
-	$sql = "SELECT
-	    pd.name,if(p.instock=1,
-	    if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
-	    round(p.price,2) ori_price,
-	    round(c.purchase_cost*p.price_protect,2) limit_price,
-	    round(p.price*0.95,2) compare_price
-	    FROM oc_product p
-	    LEFT JOIN oc_product_description pd on pd.product_id = p.product_id
-	    LEFT JOIN oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = 2 and A.status=1
-	    LEFT JOIN oc_x_purchase_cost c on c.product_id = p.product_id
-	    WHERE p.product_id = '".$product_id."'";
+    public function getProductInfo($product_id,$warehouse_id){
+		//如果做促销的时候选择了对应仓库，则给出仓库的商品价格,否则已仓库最低价做判断，并且库存为仓库平均库存
+		if($warehouse_id){
+			$sql = "SELECT
+			pd.name,if(p.instock=1,
+			if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
+			round(pw.price,2) ori_price,
+			round(c.purchase_cost*p.price_protect,2) limit_price,
+			round(pw.price*0.95,2) compare_price
+			FROM oc_product p
+			LEFT JOIN oc_product_description pd on pd.product_id = p.product_id
+			LEFT JOIN oc_product_to_warehouse pw on pw.product_id = p.product_id
+			LEFT JOIN oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = 2 and A.status=1 and A.warehouse_id = '".$warehouse_id."'
+			LEFT JOIN oc_x_purchase_cost c on c.product_id = p.product_id
+			WHERE p.product_id = '".$product_id."' and pw.warehouse_id = '".$warehouse_id."'
+			group by pw.product_id";
+		}else{
+			$sql = "SELECT
+			pd.name,
+			min(pi.stock) min_stock,
+			max(pi.stock) max_stock,
+			concat('均存',avg(pi.stock)) stock,
+			round(min(pw.price),2) ori_price,
+			round(c.purchase_cost*p.price_protect,2) limit_price,
+			round(min(pw.price)*0.95,2) compare_price
+			FROM oc_product p
+			LEFT JOIN oc_product_description pd on pd.product_id = p.product_id
+			LEFT JOIN oc_product_to_warehouse pw on pw.product_id = p.product_id
+			LEFT JOIN (
+				select p.product_id, if(p.instock=1,if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock
+				from oc_product p
+				left join oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = 2 and A.status=1
+				where p.product_id = '".$product_id."'
+				group by A.warehouse_id
+			) pi on pi.product_id = p.product_id
+			LEFT JOIN oc_x_purchase_cost c on c.product_id = p.product_id
+			WHERE p.product_id = '".$product_id."'
+			group by pw.product_id";
+		}
+
 
 	$result = $this->db->query($sql);
 
