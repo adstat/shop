@@ -6389,7 +6389,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                where A.order_id = '".$data_inv['order_id']."'
                and A.order_status_id in (6,10)
                and A.order_deliver_status_id in (".$returnOrderDeliverStatus.")
-               and A.deliver_date between date_sub(current_date(), interval 15 day) and date_add(current_date(), interval 1 day)
+               and A.deliver_date between date_sub(current_date(), interval 7 day) and date_add(current_date(), interval 1 day)
                and B.inventory_type_id = 12 and C.status = 1
                and C.product_id in (".$return_product_id_str.")
                group by C.product_id";
@@ -6490,8 +6490,8 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                 $returnProudctPrice = round($order_product_arr[$m['product_id']]['price']/$m['box_quantity'],2);
             }
             $sql .= "('".$returnDataParam['return_reason_id']."','".$returnDataParam['return_action_id']."','".$returnDataParam['is_back']."','". $returnDataParam['is_repack_missing'] ."','" .
-                $data_inv['order_id'] . "','" . $m['product_id'] . "','" . $order_product_arr[$m['product_id']]['name'] . "','','" . $m['quantity'] . "','" . $inPart . "','" . $m['box_quantity'] . "','" . $returnProudctPrice . "','" . $returnProudctPrice*$m['quantity'] . "'," . $customer_id . ",now()),";
-       }
+                $data_inv['order_id'] . "','" . $m['product_id'] . "','" . $order_product_arr[$m['product_id']]['name'] . "','','" . $m['quantity'] . "','" . $inPart . "','" . $m['box_quantity'] . "','" . $returnProudctPrice . "','" . $returnProudctPrice*$m['quantity'] . "', 0 ,now()),";
+        }
         if(substr($sql, strlen($sql)-1, 1) == ','){
             $sql = substr($sql, 0, -1);
         }
@@ -6503,7 +6503,250 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
     }
 
 
+    public function deliverConfirmReturnProduct(array $data)
+    {
+        global $db, $dbm;
+        global $log;
 
+        //TODO 计算订单应收金额
+        //TODO 计算缺货金额
+        //TODO 应收金额 >= 缺货金额,  仅退货
+        //TODO 应收金额 < 缺货金额,  退余额＝缺货金额－应收金额，实际应收为0，退余额待财务确认
+
+
+        $isBack          = !empty($data['data']['isBack'])          ? (int)$data['data']['isBack']          : false;
+        $inPart          = !empty($data['data']['inPart'])          ? (int)$data['data']['inPart']          : 0;
+        $isRepackMissing = !empty($data['data']['isRepackMissing']) ? (int)$data['data']['isRepackMissing'] : 0;
+        $order_id        = !empty($data['data']['order_id'])        ? (int)$data['data']['order_id']        : false;
+        $driver_id       = !empty($data['data']['driver_id'])       ? (int)$data['data']['driver_id']       : false;
+
+        if(!$isBack || !$order_id || !$driver_id){
+            return array('status' => 0, 'message' => "缺少关键参数，请刷新页面重新提交");
+        }
+
+        //查找指定日期，有效的且未确认的退货记录
+        $sql = "select order_id, sum(total) current_return_total
+                    from oc_return_deliver_product
+                    where status = 1
+                    and order_id = {$order_id}
+                    and confirmed = 0
+                    and confirm_driver_id = 0
+                    and is_back = {$isBack}
+                    and in_part = {$inPart}
+                    and is_repack_missing = {$isRepackMissing}
+                    group by order_id";
+        $query             = $db->query($sql);
+        $currentReturnInfo = $query->row;
+        if(!empty($currentReturnInfo)){
+            return array('status' => 0, 'message' => "没有该订单对货申请记录");
+        }
+
+        //查找订单应付
+        $sql = "select order_id, sum(value) due_total
+                    from oc_order_total
+                    where accounting = 1
+                    and order_id = {$order_id}
+                    group by order_id";
+        $query   = $db->query($sql);
+        $dueInfo = $query->row;
+
+        //查找实际出库数据
+        $sql = "select
+                    O.order_id,
+                    O.customer_id,
+                    O.station_id,
+                    date(O.date_added) order_date,
+                    O.sub_total,
+                    sum(C.quantity*C.price*-1) out_total
+                    from oc_order O
+                    left join oc_x_stock_move B on O.order_id = B.order_id
+                    left join oc_x_stock_move_item C on B.inventory_move_id = C.inventory_move_id
+                    where O.order_id = {$order_id}
+                    and B.inventory_type_id = 12
+                    and C.status = 1
+                    group by O.order_id";
+        $query   = $db->query($sql);
+        $outInfo = $query->row;
+
+        //查找已退货且退余额数据
+        $sql = "select R.order_id, sum(R.return_credits) return_total, sum(if(CT.amount is null, 0, CT.amount)) return_credits_total
+                    from oc_return R
+                    left join oc_customer_transaction CT on R.return_id = CT.return_id
+                    where R.order_id = {$order_id}
+                    and R.return_status_id != 3
+                    and R.return_reason_id = 1
+                    and R.return_action_id = 3
+                    group by R.order_id";
+        $query        = $db->query($sql);
+        $returnedInfo = $query->row;
+
+
+        //依次单个订单
+        $currentReturnTotal = $currentReturnInfo['current_return_total'];
+
+        $dueTotal    = !empty($dueInfo)      ? $dueInfo['due_total']         : 0;
+        $subTotal    = !empty($outInfo)      ? $outInfo['sub_total']         : 0;
+        $outTotal    = !empty($outInfo)      ? $outInfo['out_total']         : 0;
+        $returnTotal = !empty($returnedInfo) ? $returnedInfo['return_total'] : 0;
+
+
+        //出库应收=｛实际出库-(小计-应付)｝
+        //出库应退＝｛小计-应付-实际出库｝
+        //出库缺货应收1=｛出库应收-出库缺货1｝
+        //出库缺货应退1={出库缺货1-出库应收}
+        $dueOut         = $outTotal - ($subTotal-$dueTotal);
+
+        $dueCurrent     = $dueOut-$returnTotal-$currentReturnTotal;//本次退货应收 = 出库应收－已退货－本次退货
+        $returnCurrent  = ($dueCurrent < 0) ? abs($dueCurrent) : 0;//计算退货后后本次应收小于0，退余额
+        //判断是否全部退货或退货金额占订单80%以上，不退余额
+        if($currentReturnTotal >= $dueOut*0.8){
+            $returnCurrent = 0;
+        }
+
+        //根据是出货退货和是否退余额确定退货操作
+        $returnCredits    = 0;
+        $return_action_id = 1; //操作类型1（无），类型2（退还余额,退货入库），类型3（退还余额），类型4（退货入库）
+        if($returnCurrent > 0){
+            $return_action_id = $isBack ? 2 : 3;
+            $returnCredits = $returnCurrent;
+        }
+        else{
+            $return_action_id = $isBack ? 4 : 1;
+            $returnCredits = 0;
+        }
+
+        $return_reason_id = $isBack ? 2 : 5; //出库缺货类型5（仓库出库，物流未找到），散件缺货时类型3（仓库出库，客户未收到）, 退货时类型2（客户退货）
+        if($isRepackMissing){
+            $return_reason_id = 3;
+            $return_action_id = ($returnCurrent > 0) ? 3 : 1; //如果是回库散件缺货，不入库，判断是否应退余额
+        }
+
+        //增加是否入库标志位，仓库操作时根据$return_action_id状态判断，是否入库标志可置为1，前台用户退货，司机确认时，默认为0，待仓库确认。
+        $inventoryReturned = 0;
+
+        //For Debug
+        $currentReturn = array(
+            'dueTotal'           => $dueTotal,
+            'subTotal'           => $subTotal,
+            'outTotal'           => $outTotal,
+            'dueOut'             => $dueOut,
+            'currentReturnTotal' => $currentReturnTotal,
+            'dueCurrnet'         => $dueCurrent,
+            'returnCredits'      => $returnCredits,
+            'return_reason_id'   => $return_reason_id,
+            'return_action_id'   => $return_action_id
+        );
+
+        $returnAll = $returnTotal + $currentReturnTotal;
+        if($returnAll > $outTotal){
+            //退货合计超过出库合计，跳过
+            return array('status' => 0, 'message' => "确认退货失败, 部分订单退货金额有误，请核实[{$order_id}]");
+        }
+
+        $dbm->begin();
+        $bool = true;
+
+        //写入退货表
+        $sql = "INSERT INTO `oc_return` (`order_id`, `customer_id`, `return_reason_id`, `return_action_id`, `return_status_id`, `comment`, `date_ordered`, `date_added`, `date_modified`, `add_user`, `return_credits`, `return_inventory_flag`, `credits_returned`,`inventory_returned`, `confirm_driver_id`, `date_driver_confirm`)
+                VALUES('{$order_id}', '{$outInfo['customer_id']}', '{$return_reason_id}', '{$return_action_id}', '2', '司机确认退货', '{$outInfo['order_date']}', '0', '0', '0', '{$returnCredits}', '1' ,'0' ,'{$inventoryReturned}', '{$driver_id}', NOW());";
+        $bool = $bool && $dbm->query($sql);
+        $return_id = $dbm->getLastId();
+
+        $sql = "INSERT INTO `oc_return_product` (`return_id`, `product_id`, `product`,  `quantity`, `in_part`, `box_quantity`, `price`, `total`, `return_product_credits`)
+                SELECT '{$return_id}', `product_id`, `product`,  `quantity`,  `in_part`, `box_quantity`, `price`, `total`,  `total`
+                FROM oc_return_deliver_product
+                WHERE status = 1
+                AND confirmed = 0
+                AND order_id = '{$order_id}'
+                AND is_back = '{$isBack}'
+                AND is_repack_missing = '{$isRepackMissing}'";
+        $bool = $bool && $dbm->query($sql);
+
+        //完成后更新出库回库记录状态
+        $sql = "UPDATE oc_return_deliver_product set confirm_driver_id = '{$driver_id}', date_driver_confirm = NOW(), return_id = '{$return_id}'
+                WHERE status = 1
+                AND order_id = '{$order_id}'
+                AND is_back = '{$isBack}'
+                AND is_repack_missing = '{$isRepackMissing}'";
+        $bool = $bool && $dbm->query($sql);
+
+        if (!$bool) {
+            $log->write('ERR:[' . __FUNCTION__ . ']' . ':  出库缺货开始退货［回滚］' . "\n\r");
+            $dbm->rollback();
+
+            return array('status' => 0, 'message' => '确认退货失败');
+        } else {
+            $log->write('INFO:[' . __FUNCTION__ . ']' . ': 出库缺货开始退货［提交］' . "\n\r");
+            $dbm->commit();
+
+            return array('status' => 1, 'message' => '确认退货成功');
+        }
+    }
+
+    public function warehouseConfirmReturnProduct(array $data)
+    {
+        global $db, $dbm;
+        $return_id  = !empty($data['data']['return_id'])    ? (int)$data['data']['return_id']   : false;
+        $station_id = !empty($data['data']['station_id'])   ? (int)$data['data']['station_id']  : false;
+        $order_id   = !empty($data['data']['order_id'])     ? (int)$data['data']['order_id']    : false;
+        $user_id    = !empty($data['data']['user_id'])      ? (int)$data['data']['user_id']     : false;
+        $products   = !empty($data['data']['products'])     ? $data['data']['products']         : array();
+        if(!$return_id || !$station_id || !$order_id || !$user_id || !empty($products)){
+            return array('status' => 0, 'message' => "缺少关键参数，请刷新页面重新提交");
+        }
+
+        //退货记录完成，开始写入入库数据
+        //退货入库操作写库存表，仅操作回库且需要退货入库的订单
+        //if($return_action_id == 2 || $return_action_id == 4){
+        $stockMoveData = array();
+        $stockMoveData['api_method']        = 'inventoryReturn';
+        $stockMoveData['timestamp']         = time();
+        $stockMoveData['from_station_id']   = 0;
+        $stockMoveData['to_station_id']     = $station_id;
+        $stockMoveData['order_id']          = $order_id;
+        $stockMoveData['purchase_order_id'] = 0;
+        $stockMoveData['added_by']          = $user_id;
+        $stockMoveData['memo']              = '司机退货,仓库确认入库';
+        $stockMoveData['add_user_name']     = '';
+        $stockMoveData['products']          = array();
+
+        //获取退货的商品列表,需要station_id, product_id, price, quantity, box_quantity
+        $sql = "SELECT '{$station_id}', `product_id`, `price` special_price, `quantity` qty, `box_quantity`
+                    FROM oc_return_product
+                    WHERE return_id = '{$return_id}'";
+        $query = $db->query($sql);
+        $stockMoveData['products'] = $query->rows;
+        // product数量要不要更改??
+
+        $dbm->begin();
+        $bool = true;
+        // 已退 driver_quantity 司机退货数量
+        foreach($products as $product_id => $qty){
+            $sql = "UPDATE oc_return_deliver_product
+                        SET date_warehouse_confirm = NOW(), driver_return_quantity = {$qty}
+                        WHERE order_id = {$order_id}
+                        AND product_id = {$product_id}";
+            $bool = $bool && $dbm->query($sql);
+        }
+
+        // 确认人 确认时间 inventory_returned = 1
+        $sql = "UPDATE oc_return SET
+                    add_user = {$user_id},
+                    date_added = NOW(),
+                    date_modified = NOW(),
+                    inventory_returned = 1
+                    WHERE return_id = {$return_id}";
+        $bool = $bool && $dbm->query($sql);
+
+        if (!$bool) {
+            $dbm->rollback();
+            return array('status' => 0, 'message' => '仓库确认退货失败');
+        } else {
+            $dbm->commit();
+            $this->addInventoryMoveOrder($stockMoveData, $station_id);
+            return array('status' => 1, 'message' => '仓库确认退货成功');
+        }
+    }
 
 }
 
