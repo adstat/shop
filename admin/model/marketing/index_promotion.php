@@ -252,6 +252,7 @@ class ModelMarketingIndexPromotion extends Model {
     public function getProductInfo($product_id,$warehouse_id){
 		//如果做促销的时候选择了对应仓库，则给出仓库的商品价格,否则已仓库最低价做判断，并且库存为仓库平均库存
 		if($warehouse_id){
+			//由于每晚结算的商品可售库存并没有添加仓库属性字段，且当前系统每个平台只有一个仓库，暂且拿掉warehouse_id的条件
 			$sql = "SELECT
 			pd.name,if(p.instock=1,
 			if(sum(A.quantity) is null or sum(A.quantity)<0, 0,sum(A.quantity))-p.safestock, 999) stock,
@@ -261,7 +262,7 @@ class ModelMarketingIndexPromotion extends Model {
 			FROM oc_product p
 			LEFT JOIN oc_product_description pd on pd.product_id = p.product_id
 			LEFT JOIN oc_product_to_warehouse pw on pw.product_id = p.product_id
-			LEFT JOIN oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = 2 and A.status=1 and A.warehouse_id = '".$warehouse_id."'
+			LEFT JOIN oc_x_inventory_move_item A on p.product_id = A.product_id and A.station_id = 2 and A.status=1
 			LEFT JOIN oc_x_purchase_cost c on c.product_id = p.product_id
 			WHERE p.product_id = '".$product_id."' and pw.warehouse_id = '".$warehouse_id."'
 			group by pw.product_id";
