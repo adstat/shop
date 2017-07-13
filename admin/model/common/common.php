@@ -14,9 +14,15 @@ class Modelcommoncommon extends Model
         return $query->rows;
     }
     public function getBdNameByBdId($bd_id){
-        $sql = 'select bd_name from '.DB_PREFIX.'x_bd where bd_id='.$bd_id;
-        $query = $this->db->query($sql);
-        return $query->row['bd_name'];
+        if($bd_id){
+            $sql = 'select bd_name from '.DB_PREFIX.'x_bd where bd_id='.$bd_id;
+            $query = $this->db->query($sql);
+            return $query->row['bd_name'];
+        }else{
+            $bd_name = "¶©µ¥Îª¿ÕBD";
+            return $bd_name;
+        }
+
     }
 
     public function getOrderStatusName($id){
