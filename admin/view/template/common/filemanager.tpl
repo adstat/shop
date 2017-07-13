@@ -115,7 +115,10 @@ $('#button-search').on('click', function() {
 });
 //--></script> 
 <script type="text/javascript"><!--
+var timer;
+var flag;
 $('#button-upload').on('click', function() {
+	flag = true;
 	$('#form-upload').remove();
 	
 	$('body').prepend('<form enctype="multipart/form-data" id="form-upload" style="display: none;"><input type="file" name="file" value="" /></form>');
@@ -123,7 +126,7 @@ $('#button-upload').on('click', function() {
 	$('#form-upload input[name=\'file\']').trigger('click');
 	
 	timer = setInterval(function() {
-		if ($('#form-upload input[name=\'file\']').val() != '') {
+		if ($('#form-upload input[name=\'file\']').val() != '' && flag == true) {
 			clearInterval(timer);
 			
 			$.ajax({
@@ -143,13 +146,13 @@ $('#button-upload').on('click', function() {
 					$('#button-upload').prop('disabled', false);
 				},
 				success: function(json) {
+					flag = false;
 					if (json['error']) {
 						alert(json['error']);
 					}
 					
 					if (json['success']) {
 						alert(json['success']);
-						
 						$('#button-refresh').trigger('click');
 					}
 				},			
