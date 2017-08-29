@@ -16,6 +16,16 @@
             <div class="form-group row">
                 <div class="col-sm-3">
                     <div class="form-group">
+
+
+                        <div class="form-group">
+                            <label>商品ID</label>
+                            <input type="text" name="products" id="product_id"  value="" placeholder="商品ID" class="form-control"  />
+
+                        </div>
+
+
+
                         <label>选择仓库</label>
                         <select name="station_id" id="input-station_id" class="form-control">
                             <option value="">选择仓库</option>
@@ -94,6 +104,11 @@
                             </select>
                         </div>
                         <div style="float: left; margin-right: 10px;">
+                            <select class="form-control" id="customer_area">
+                                <option value="0">全部区域</option>
+                            </select>
+                        </div>
+                        <div style="float: left; margin-right: 10px;">
                              <button type="button" class="btn btn-primary "  v-on:click="search()" onclick="javascript:getsumnums();"><i class="fa fa-search"  ></i> 查询</button>
                         </div>
 
@@ -114,15 +129,15 @@
                             <tbody id="m-tbody">
                             <tr class="order_list" v-for="val in list" v-bind:data-order_id="val.order_id" v-on:dblclick="add($event)">
                                 <td v-if="val.classify_type==1" v-bind:data-classify_type="1">
-                                    <span style="color: #ff0000">已分配</span><br>{{ val.order_id }}
+                                    <span style="color: #ff0000">已分配 {{val.urgent}}</span><br>{{ val.order_id }}
                                     <span style="color:#64A600">({{val.name }})</span>
                                 </td>
                                 <td v-if="val.classify_type==2" v-bind:data-classify_type="2">
-                                    <span style="color: #ff0000">重新分配</span><br>{{ val.order_id }}
+                                    <span style="color: #ff0000">重新分配 {{val.urgent}}</span><br>{{ val.order_id }}
                                     <span style="color:#64A600">({{val.name }})</span>
                                 </td>
                                 <td v-if="val.classify_type==3" v-bind:data-classify_type="3">
-                                    <span style="color: #f00000">未分配</span>  {{ val.order_id }}
+                                    <span style="color: #f00000">未分配 {{val.urgent}} </span>  {{ val.order_id }}
                                     <span style="color: #64A600">({{val.name }})</span>
                                     <input type="hidden" class="list_order_id" v-bind:value="val.order_id" />
                                 </td>
@@ -216,7 +231,7 @@
                             <td>
                                 {{ oh.num }}
                             </td>
-                            <td><button v-on:click="del($event)" v-bind:data-logistic_allot_order_id="oh.logistic_allot_order_id" v-bind:data-logistic_allot_id="oh.logistic_allot_id">取消</button></td>
+                            <td><button v-on:click="del($event)" v-bind:data-logistic_allot_order_id="oh.logistic_allot_order_id" v-bind:data-logistic_allot_id="oh.logistic_allot_id" v-bind:data-order_id="oh.order_id">取消</button></td>
                         </tr>
                         </tbody>
                     </table>
@@ -226,6 +241,42 @@
     </div>
 
 </div>
+
+<script type="text/javascript">
+
+        $('input[name=\'products\']').autocomplete({
+            'source': function(request, response) {
+                var warehouse_id = $("#warehouse_id_global").val();
+                $.ajax({
+                    type: 'POST',
+                    url: 'index.php?route=purchase/warehouse_allocation_note/autocomplete&token=<?php echo $token; ?>&products=' +  encodeURIComponent(request),
+                    dataType: 'json',
+                    data:{
+                        warehouse_id :warehouse_id,
+                    },
+                    success: function(json) {
+                        console.log(json);
+
+                  response($.map(json, function(item) {
+                        console.log( item['fix']);
+                        return {
+                           label: 1,
+                           //   label: item['name'],
+                           value: 2
+                       }
+                    }));
+                    }
+                });
+            },
+            'select': function(item) {
+                $('input[name=\'products\']').val(item['value']);
+            }
+        });
+
+
+</script>
+
+
 <script src="view/javascript/bootstrap/vue.js"></script>
 <script type="text/javascript">
     $('.date').datetimepicker({
@@ -259,19 +310,19 @@
     }
 </script>
 <script>
-    Array.prototype.indexOf = function (val) {
-        for (var i = 0; i < this.length; i++) {
-            if (this[i] == val) return i;
-        }
-        return -1;
-    };
-
-    Array.prototype.remove = function (val) {
-        var index = this.indexOf(val);
-        if (index > -1) {
-            this.splice(index, 1);
-        }
-    };
+//    Array.prototype.indexOf = function (val) {
+//        for (var i = 0; i < this.length; i++) {
+//            if (this[i] == val) return i;
+//        }
+//        return -1;
+//    };
+//
+//    Array.prototype.remove = function (val) {
+//        var index = this.indexOf(val);
+//        if (index > -1) {
+//            this.splice(index, 1);
+//        }
+//    };
 
     function in_array(search, array) {
         for (var i in array) {
@@ -320,7 +371,7 @@
                     var logistic_index = $('#logistic_index').val();
                     var order_status_id = $('#input-order-status-id').val();
                     var warehouse_id_global = $("#warehouse_id_global").val();
-
+                    var area_id = $("#customer_area").val();
                     if(warehouse_id_global == 0){
                         alert( '分车之前请先选好仓库');
                         return false;
@@ -339,10 +390,11 @@
                             logistic_index:logistic_index,
                             order_status_id :order_status_id,
                             warehouse_id_global:warehouse_id_global,
+                            area_id,area_id,
                         },
                         success:function(data) {
                             console.log("SEARCH: "+data);
-
+                           // getCustomerArea();
                             try {
                                 _self.list = data;
                             } catch (e) {
@@ -358,6 +410,7 @@
 
                             if(logistic_index == 0){
                                 updateLogisticIndex();
+
                             }
                         }
                     });
@@ -411,7 +464,14 @@
                                 that.clone().data('order_id', that.data('order_id'))
                                         .addClass('new_add')
                                         .bind("dblclick",function(){
-                                            vue.order_ids.remove(order_id);
+//                                            vue.order_ids.remove(order_id);
+                                            var index = $.inArray(order_id, vue.order_ids);
+                                            vue.order_ids.splice(index, 1);
+                                            var xx_order_ids = vue.order_ids;
+                                            $.each(xx_order_ids, function(index, item){
+                                                item
+                                            });
+
                                             console.log("Selected Orders:"+vue.order_ids);
                                             $('#orders').val(vue.order_ids.join(','));
                                             that.css('background-color','#fff');
@@ -419,7 +479,9 @@
                                         })
                         );
                     }else{
-                        this.order_ids.remove(order_id);
+                        //this.order_ids.remove(order_id);
+                        var index = $.inArray(order_id, this.order_ids);
+                        this.order_ids.splice(index, 1);
                         $('#orders').val(this.order_ids.join(','));
                         that.css('background-color','#fff');
                         $('#d-tbody tr').each(function() {
@@ -433,8 +495,10 @@
                     var _self = this;
                     var logistic_allot_order_id = e.target.getAttribute('data-logistic_allot_order_id');
                     var logistic_allot_id = e.target.getAttribute('data-logistic_allot_id');
+                    var order_id = e.target.getAttribute('data-order_id');
+
                     $.ajax({
-                        url:'index.php?route=logistic/logistic_allot/del&token=<?= $_SESSION['token']?>&logistic_allot_order_id='+logistic_allot_order_id+'&logistic_allot_id='+logistic_allot_id,
+                        url:'index.php?route=logistic/logistic_allot/del&token=<?= $_SESSION['token']?>&logistic_allot_order_id='+logistic_allot_order_id+'&logistic_allot_id='+logistic_allot_id+'&order_id='+order_id,
                         success:function(){
                             _self.get_allot_order_history();
                             _self.search();
@@ -500,10 +564,12 @@
                 get_line:function(){
                     var _self = this;
                     var date = $('#search_date').val();
+                    var warehouse_id_global = $("#warehouse_id_global").val();
                     $.ajax({
                         url: 'index.php?route=logistic/logistic_allot_order/getLine&token=<?php echo $_SESSION["token"];?>',
                         data:{
                             date:date,
+                            warehouse_id : warehouse_id_global,
                         },
                         success:function(data){
                             eval('_self.line_data ='+data) ;
@@ -598,6 +664,7 @@
             if(warehouse_id_global == 0){
                 return false;
             }
+
             $.ajax({
                 type: 'post',
                 async : false,
@@ -608,7 +675,7 @@
                     logistic_driver_id: logistic_driver_id,
                     deliver_date: deliver_date,
                     line_id :line_id,
-                    warehouse_id_global : warehouse_id_global,
+                    warehouse_id : warehouse_id_global,
 
                 },
                 success:function(data){
@@ -620,5 +687,42 @@
             });
 
         }
+
+//        $(document).ready(function() {
+//            getCustomerArea();
+//        });
+//        function getCustomerArea(){
+//
+//
+//            var warehouse_id_global = $("#warehouse_id_global").val();
+//            var deliver_date = $('#search_date').val();
+//            $.ajax({
+//                type: 'post',
+//                async : false,
+//                cache: false,
+//                dataType: 'json',
+//                url: 'index.php?route=logistic/logistic_allot_order/getCustomerArea&token=<?php echo $_SESSION["token"];?>',
+//                data:{
+//                    deliver_date: deliver_date,
+//                    warehouse_id : warehouse_id_global,
+//
+//                },
+//                success:function(data){
+//
+//                    var html = '<option value="0">全部区域</option>';
+//                    $.each(data, function(n, v){
+//                        html += '<option class="customer" value="'+ v.area_id+'">'+ v.name + ' ['+ v.orders +']单' +'</option>';
+//                    });
+//
+//                    $('#customer_area').html(html);
+//
+//
+//
+//                }
+//            });
+//
+//        }
+
     </script>
 <?php echo $footer; ?>
+
