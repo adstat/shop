@@ -12,3 +12,7 @@
 ## Alex 20150527 合并前台促销页面
 >> 合并了函数注册文件和module/product.php中的函数
 ## make a git test
+
+
+
+

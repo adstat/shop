@@ -1,0 +1,2 @@
+2018-03-18 22:31:37 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('66218','2','232','0','',1 , now() ,'' )
+

@@ -1,0 +1,433 @@
+2017-10-23 10:38:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:38:44 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:28 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:28 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:43 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:43 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:48 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:48 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:53 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:53 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:40:58 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:40:58 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:41:43 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:41:43 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:41:50 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:41:50 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:41:54 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:41:54 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:41:59 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:41:59 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:42:04 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:42:04 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:42:09 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:42:09 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:42:14 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:42:14 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:42:18 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:42:18 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:42:23 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:42:23 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:49:37 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:49:37 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:52:23 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:52:23 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:52:29 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:52:29 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:52:34 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:52:34 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:52:39 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:52:39 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:52:45 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:52:45 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:52:57 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:52:57 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:02 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:02 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:08 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:08 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:14 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:14 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:20 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:20 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:27 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:27 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:35 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:35 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:40 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:40 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:47 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:47 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:52 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:52 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:53:57 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:53:58 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 10:59:26 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 10:59:27 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:01:53 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:01:53 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:05 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:06 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:10 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:10 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:16 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:16 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:22 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:22 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:32 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:32 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:37 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:37 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:42 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:02:59 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:02:59 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:03 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:03 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:09 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:09 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:42 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:47 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:47 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:53 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:53 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:03:57 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:03:57 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:07:41 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:07:41 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:07:53 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:07:53 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:07:57 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:07:57 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:02 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:02 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:07 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:07 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:11 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:12 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:16 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:16 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:20 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:20 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:24 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:24 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:29 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:29 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:34 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:42 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:46 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:47 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:51 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:51 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:08:55 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:08:55 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:09:00 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:09:00 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:17:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:17:44 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:17:49 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:17:49 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:17:54 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:17:54 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:17:59 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:17:59 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:03 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:03 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:13 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:13 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:18 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:18 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:23 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:23 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:27 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:27 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:43 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:43 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:45 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:45 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:49 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:49 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:18:54 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:18:54 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:19:00 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:19:00 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:19:05 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:19:05 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:20:47 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:20:47 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:21:58 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:21:58 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:07 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:07 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:14 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:14 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:37 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:37 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:42 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:47 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:47 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:52 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:52 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:22:56 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:22:56 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:23:01 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:23:01 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:23:06 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:23:06 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:23:11 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:23:11 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:23:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:23:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:23:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:23:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:23:42 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:23:42 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:24:05 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:24:05 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:24:10 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:24:10 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:30:29 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:30:29 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:32:02 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:32:02 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:09 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:09 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:27 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:28 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:43 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:43 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:48 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:48 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:53 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:53 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:39:57 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:39:57 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:03 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:03 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:07 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:07 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:12 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:12 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:17 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:17 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:23 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:23 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:27 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:27 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:31 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:31 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:36 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:36 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:40:55 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:40:55 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:41:56 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:41:56 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:22 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:23 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:29 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:29 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:34 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:34 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:38 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:38 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:43 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:43 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:47 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:47 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:51 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:51 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:42:55 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:42:55 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:00 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:00 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:04 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:04 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:08 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:08 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:12 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:13 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:17 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:17 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:21 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:21 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:26 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:26 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 11:43:33 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 11:43:33 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 13:51:06 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOutProduct
+2017-10-23 16:01:09 - 取消退货[disableReturnDeliverProduct]：update oc_return_deliver_product set status = 0 where confirmed = 0 and confirm_user_id = '0' and return_deliver_product_id = '39419'
+
+2017-10-23 16:01:53 - 取消退货[disableReturnDeliverProduct]：update oc_return_deliver_product set status = 0 where confirmed = 0 and confirm_user_id = '0' and return_deliver_product_id = '39419'
+
+2017-10-23 16:44:36 - INFO:[confirmReturnBadSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 16:44:37 - INFO:[addInventoryBadMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 16:50:47 - INFO:[confirmReturnBadSingleProduct]: 出库缺货开始退货［提交］
+
+2017-10-23 16:50:47 - INFO:[addInventoryBadMoveOrders]: 变动类型：inventoryReturn
+2017-10-23 17:11:08 - INFO:[confirmReturnBadSingleProduct]: 出库缺货开始退货［提交］
+

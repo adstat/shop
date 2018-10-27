@@ -1,0 +1,8 @@
+2018-01-22 14:06:48 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('17796','3','34','1','111706',1 , now() ,'' )
+
+2018-01-22 14:06:48 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '17796'
+
+2018-01-22 14:08:23 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('17797','1','56','1','111701',1 , now() ,'' )
+
+2018-01-22 14:08:23 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '17797'
+

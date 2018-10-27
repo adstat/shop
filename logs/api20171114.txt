@@ -1,0 +1,11 @@
+2017-11-14 13:37:33 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='10', inv_comment='34', frame_count='0', frame_vg_list= '' where order_id = '436598'
+
+2017-11-14 13:37:33 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '436598'
+
+2017-11-14 13:37:56 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='10', inv_comment='34', frame_count='0', frame_vg_list= '' where order_id = '436598'
+
+2017-11-14 13:37:56 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '436598'
+
+2017-11-14 13:40:52 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='10', inv_comment='34', frame_count='0', frame_vg_list= '' where order_id = '436598'
+
+2017-11-14 13:40:52 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn

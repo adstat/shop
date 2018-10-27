@@ -1,0 +1,3 @@
+2018-02-05 16:52:52 - Array
+2018-02-05 16:52:54 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryInProduct
+2018-02-05 16:52:54 - update oc_x_inventory_purchase_order_sorting set move_flag = 1 where inventory_sorting_id in (22,23)

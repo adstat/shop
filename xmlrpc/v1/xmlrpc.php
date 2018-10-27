@@ -1,4 +1,5 @@
 <?php
+//return 1;
 // by Edd Dumbill (C) 1999-2002
 // <edd@usefulinc.com>
 // $Id: xmlrpc.inc,v 1.158 2007/03/01 21:21:02 ggiunta Exp $
@@ -857,6 +858,7 @@ $cp1252_to_xmlent =
 		*/
 		function xmlrpc_client($path, $server='', $port='', $method='')
 		{
+//return $path;
 			// allow user to specify all params in $path
 			if($server == '' and $port == '' and $method == '')
 			{
@@ -2270,7 +2272,7 @@ xmlrpc_encode_entitites($this->errstr, $GLOBALS['xmlrpc_internalencoding'], $cha
 					}
 				}
 				// be tolerant to line endings, and extra empty lines
-				$ar = split("\r?\n", trim(substr($data, 0, $pos)));
+				$ar = @split("\r?\n", trim(substr($data, 0, $pos)));
 				while(list(,$line) = @each($ar))
 				{
 					// take care of multi-line headers and cookies

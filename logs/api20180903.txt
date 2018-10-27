@@ -1,0 +1,4 @@
+2018-09-03 16:13:30 - [分拣]记录或更新货位号[addOrderProductStationes]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '' ,frame_count= '' where deliver_order_id = '326138'
+
+2018-09-03 16:24:23 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('326138','5','731','1','166910',1 , now() ,'730989' )
+

@@ -1,0 +1,70 @@
+2018-04-14 13:05:21 - [分拣]记录或更新货位号[addOrderProductStation]insert into oc_x_deliver_order_inv(deliver_order_id, frame_vg_list, inv_status, uptime, order_id ,frame_count) values ('150004','',1 , now() ,'607596', '' )
+
+2018-04-14 13:05:32 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='7', inv_comment='332', frame_count='0', frame_vg_list= '' where deliver_order_id = '150004'
+
+2018-04-14 13:05:33 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 8 where deliver_order_id = '150004'
+
+2018-04-14 13:05:40 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='7', inv_comment='332', frame_count='0', frame_vg_list= '' where deliver_order_id = '150004'
+
+2018-04-14 13:05:40 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '150004'
+
+2018-04-14 13:07:51 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('150014','8','333','0','',1 , now() ,'607602' )
+
+2018-04-14 13:07:51 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 8 where deliver_order_id = '150014'
+
+2018-04-14 13:07:59 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='8', inv_comment='333', frame_count='0', frame_vg_list= '' where deliver_order_id = '150014'
+
+2018-04-14 13:08:00 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 6 where order_id = '607602' 
+
+2018-04-14 16:22:34 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('150009','18','342','0','',1 , now() ,'607599' )
+
+2018-04-14 16:22:35 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 8 where deliver_order_id = '150009'
+
+2018-04-14 16:22:50 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='18', inv_comment='342', frame_count='0', frame_vg_list= '' where deliver_order_id = '150009'
+
+2018-04-14 16:22:51 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 6 where order_id = '607599' 
+
+2018-04-14 16:28:29 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('150021','12','543','0','',1 , now() ,'607607' )
+
+2018-04-14 16:28:29 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 8 where deliver_order_id = '150021'
+
+2018-04-14 16:28:39 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='12', inv_comment='543', frame_count='0', frame_vg_list= '' where deliver_order_id = '150021'
+
+2018-04-14 16:28:39 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '150021'
+
+2018-04-14 16:29:27 - [分拣]记录或更新货位号[addOrderProductStation]insert into oc_x_deliver_order_inv(deliver_order_id, frame_vg_list, inv_status, uptime, order_id ,frame_count) values ('150022','125597',1 , now() ,'607607', '1' )
+
+2018-04-14 16:29:30 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125597' ,frame_count= '1' where deliver_order_id = '150022'
+
+2018-04-14 16:29:32 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125597' ,frame_count= '1' where deliver_order_id = '150022'
+
+2018-04-14 16:29:50 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125597,125596' ,frame_count= '2' where deliver_order_id = '150022'
+
+2018-04-14 16:29:53 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125597,125596' ,frame_count= '2' where deliver_order_id = '150022'
+
+2018-04-14 16:30:10 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='0', inv_comment='55', frame_count='2', frame_vg_list= '125597,125596' where deliver_order_id = '150022'
+
+2018-04-14 16:30:10 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 8 where deliver_order_id = '150022'
+
+2018-04-14 16:30:17 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='0', inv_comment='55', frame_count='2', frame_vg_list= '125597,125596' where deliver_order_id = '150022'
+
+2018-04-14 16:30:17 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '150022'
+
+2018-04-14 17:01:44 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='12', inv_comment='543', frame_count='0', frame_vg_list= '' where deliver_order_id = '150021'
+
+2018-04-14 17:01:44 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '150021'
+
+2018-04-14 17:31:22 - [分拣]记录或更新货位号[addOrderProductStation]insert into oc_x_deliver_order_inv(deliver_order_id, frame_vg_list, inv_status, uptime, order_id ,frame_count) values ('152519','125595',1 , now() ,'609546', '1' )
+
+2018-04-14 17:31:23 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125595' ,frame_count= '1' where deliver_order_id = '152519'
+
+2018-04-14 17:31:24 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125595' ,frame_count= '1' where deliver_order_id = '152519'
+
+2018-04-14 17:31:25 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125595' ,frame_count= '1' where deliver_order_id = '152519'
+
+2018-04-14 17:31:26 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125595' ,frame_count= '1' where deliver_order_id = '152519'
+
+2018-04-14 17:31:40 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='0', inv_comment='3000', frame_count='1', frame_vg_list= '125595' where deliver_order_id = '152519'
+
+2018-04-14 17:31:41 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_x_deliver_order set order_status_id = 6 where deliver_order_id = '152519'
+

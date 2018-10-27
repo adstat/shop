@@ -1,0 +1,5 @@
+2018-03-29 15:03:17 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+
+2018-03-29 15:03:19 - INFO:[addInventoryMoveOrders]: 变动类型：inventoryReturn
+2018-03-29 15:08:39 - INFO:[confirmReturnSingleProduct]: 出库缺货开始退货［提交］
+

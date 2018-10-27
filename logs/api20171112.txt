@@ -1,0 +1,14 @@
+2017-11-12 13:31:24 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-12 13:32:58 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-12 13:35:35 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-12 13:58:44 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='0', inv_spare_comment='89', frame_count='0', frame_vg_list= '' where order_id = '347630'
+
+2017-11-12 14:46:43 - [分拣]记录或更新货位号[addFastMoveSortingToInv]insert into oc_order_inv(order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime , order_whole_status_id) values ('347631','2','4','0','',1 , now(),6)
+
+2017-11-12 22:53:30 - [分拣]提交订单为待审核[addOrderInfoByCount]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-12 22:54:51 - [分拣]提交订单为待审核[addOrderInfoByCount]update oc_order set order_status_id = 8 where order_id = '347630'
+

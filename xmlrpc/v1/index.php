@@ -21,17 +21,17 @@ ini_set('display_errors',1);
 
 
 //Get Modules Object, TODO, repalce with loader
-require_once (DIR_MODULE.'/product.php');
-require_once (DIR_MODULE.'/customer.php');
-require_once (DIR_MODULE.'/order.php');
-require_once (DIR_MODULE.'/common.php');
-require_once (DIR_MODULE.'/checkout.php');
-require_once (DIR_MODULE.'/cart.php');
-require_once (DIR_MODULE.'/inventory.php');
-require_once (DIR_MODULE.'/customer.php');
-require_once (DIR_MODULE.'/promotion.php');
-require_once (DIR_MODULE.'/warehouse.php');
-require_once (DIR_MODULE.'/locationverifi.php');
+//require_once (DIR_MODULE.'/product.php');
+//require_once (DIR_MODULE.'/customer.php');
+//require_once (DIR_MODULE.'/order.php');
+//require_once (DIR_MODULE.'/common.php');
+//require_once (DIR_MODULE.'/checkout.php');
+//require_once (DIR_MODULE.'/cart.php');
+//require_once (DIR_MODULE.'/inventory.php');
+//require_once (DIR_MODULE.'/customer.php');
+//require_once (DIR_MODULE.'/promotion.php');
+//require_once (DIR_MODULE.'/warehouse.php');
+//require_once (DIR_MODULE.'/locationverifi.php');
 //var_dump($order->test());
 
 
@@ -1945,6 +1945,18 @@ $services['soa.addPurchaseOrderProductStation'] = array(
         $services['soa.sendMsg'] = array(
             'function' => 'soaFunctions::sendMsg',
             'docstring'=> 'sendMsg($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getAbnormalSort'] = array(
+            'function' => 'soaFunctions::getAbnormalSort',
+            'docstring'=> 'getAbnormalSort($data)',
             'signature'=> array(
                 array(
                     $xmlrpcString, //Result
@@ -4407,6 +4419,14 @@ class soaFunctions{
 
         global $common;
         return $common->sendMsg(json_decode($data, true));
+    }
+    function getAbnormalSort($data, $origin_id, $key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $common;
+        return $common->getAbnormalSort(json_decode($data, true));
     }
 
     function productDetail($data, $origin_id, $key){

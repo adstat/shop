@@ -23,6 +23,7 @@ final class MySQL {
 	    	
 	    	
 	    	try {
+
 	    		$this->link = mysql_connect($hostname, $username, $password) or $this->throw_ex(mysql_error());
 	    	
 	    	}
@@ -44,6 +45,7 @@ final class MySQL {
 	    
 	    
 	    try {
+//	        var_dump($database.'@'.$this->link);
 	    	mysql_select_db($database, $this->link) or $this->throw_ex(mysql_error());
 	    
 	    }
@@ -80,8 +82,9 @@ final class MySQL {
 			
 			
 			try {
+//			    var_dump($this->link);exit;
 				$resource = mysql_query($sql, $this->link) or $this->throw_ex(mysql_error(),$sql);
-				
+//				var_dump($resource);
 			}
 			catch (Exception $e){
 				//echo "系统异常，请联系管理员。";

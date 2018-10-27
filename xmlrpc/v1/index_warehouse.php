@@ -182,6 +182,22 @@ class soaXMLRPC{
                 )
             )
         );
+        /*zx
+        自动领单*/
+        $services['soa.auto_order_distr'] = array(
+            'function' => 'soaFunctions::auto_order_distr',
+            'docstring' => 'auto_order_distr($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Specific ID
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
 
         $services['soa.orderRedistr'] = array(
             'function' => 'soaFunctions::orderRedistr',
@@ -260,6 +276,34 @@ class soaXMLRPC{
                 )
             )
         );
+        $services['soa.getOrderAreaList'] = array(
+            'function' => 'soaFunctions::getOrderAreaList',
+            'docstring' => 'getOrderAreaList($data)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+        $services['soa.updateStockSectionArea'] = array(
+            'function' => 'soaFunctions::updateStockSectionArea',
+            'docstring' => 'updateStockSectionArea($data)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
 
         $services['soa.getPurchaseOrderSortingList'] = array(
             'function' => 'soaFunctions::getPurchaseOrderSortingList',
@@ -276,6 +320,20 @@ class soaXMLRPC{
             )
         );
 
+        $services['soa.getWarehouseTransferArea'] = array(
+            'function' => 'soaFunctions::getWarehouseTransferArea',
+            'docstring'=> 'getWarehouseTransferArea($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
 
 
         //FOR Station Offline Retail
@@ -365,7 +423,20 @@ class soaXMLRPC{
                 )
             )
         );
-
+$services['soa.addOrderProductStationes'] = array(
+            'function' => 'soaFunctions::addOrderProductStationes',
+            'docstring' => 'addOrderProductStationes($data)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
         $services['soa.addPurchaseOrderProductStation'] = array(
             'function' => 'soaFunctions::addPurchaseOrderProductStation',
             'docstring' => 'addPurchaseOrderProductStation($data)',
@@ -472,7 +543,20 @@ class soaXMLRPC{
                 )
             )
         );
-
+        $services['soa.updateStockSectionProduct'] = array(
+            'function' => 'soaFunctions::updateStockSectionProduct',
+            'docstring' => 'updateStockSectionProduct($data)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
         $services['soa.delOrderProductToInv'] = array(
             'function' => 'soaFunctions::delOrderProductToInv',
             'docstring' => 'delOrderProductToInv($data)',
@@ -491,6 +575,21 @@ class soaXMLRPC{
         $services['soa.delPurchaseOrderProductToInv'] = array(
             'function' => 'soaFunctions::delPurchaseOrderProductToInv',
             'docstring' => 'delPurchaseOrderProductToInv($data)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+        //删除调拨单中间表数据
+        $services['soa.delPurchaseOrderRelevantToInv'] = array(
+            'function' => 'soaFunctions::delPurchaseOrderRelevantToInv',
+            'docstring' => 'delPurchaseOrderRelevantToInv($data)',
             'signature' => array(
                 array(
                     $xmlrpcString, //Result
@@ -712,6 +811,20 @@ class soaXMLRPC{
                 )
             )
         );
+        $services['soa.checkFrameCanInput'] = array(
+            'function' => 'soaFunctions::checkFrameCanInput',
+            'docstring' => 'checkFrameCanInput($data)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
 
         $services['soa.stationOrderConfirm'] = array(
             'function' => 'soaFunctions::stationOrderConfirm',
@@ -819,11 +932,56 @@ class soaXMLRPC{
             )
         );
 
+        //盘点
+        $services['soa.submitStockChecksProduct'] = array(
+            'function' => 'soaFunctions::submitStockChecksProduct',
+            'docstring' => 'submitStockChecksProduct($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+        $services['soa.addReturnDeliverBadProduct'] = array(
+            'function' => 'soaFunctions::addReturnDeliverBadProduct',
+            'docstring' => 'addReturnDeliverBadProduct($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
 
         //出库退货，取消记录
         $services['soa.disableReturnDeliverProduct'] = array(
             'function' => 'soaFunctions::disableReturnDeliverProduct',
             'docstring' => 'disableReturnDeliverProduct($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+
+        //报损当面
+        $services['soa.disableReturnBadDeliverProduct'] = array(
+            'function' => 'soaFunctions::disableReturnBadDeliverProduct',
+            'docstring' => 'disableReturnBadDeliverProduct($data, $station_id=1, $language_id=2, $origin_id, $key)',
             'signature' => array(
                 array(
                     $xmlrpcString, //Result
@@ -1128,7 +1286,35 @@ class soaXMLRPC{
                 )
             )
         );
-
+        // 盘点
+        $services['soa.getAddedStcokChecksProduct'] = array(
+            'function' => 'soaFunctions::getAddedStcokChecksProduct',
+            'docstring' => 'getAddedStcokChecksProduct($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+        $services['soa.getAddedBadReturnDeliverProduct'] = array(
+            'function' => 'soaFunctions::getAddedBadReturnDeliverProduct',
+            'docstring' => 'getAddedBadReturnDeliverProduct($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
         $services['soa.inventory_login'] = array(
             'function' => 'soaFunctions::inventory_login',
             'docstring' => 'inventory_login($data, $station_id=1, $language_id=2, $origin_id, $key)',
@@ -1217,6 +1403,24 @@ class soaXMLRPC{
                 )
             )
         );
+
+        //根据日期获取盘盈盘库的结果
+        $services['soa.getinventoryCheckSingleDate'] = array(
+            'function' => 'soaFunctions::getinventoryCheckSingleDate',
+            'docstring' => 'getinventoryCheckSingleDate($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+
+
 
         $services['soa.getInventoryVegCheck'] = array(
             'function' => 'soaFunctions::getInventoryVegCheck',
@@ -1369,6 +1573,22 @@ class soaXMLRPC{
         $services['soa.getSkuProductInfo'] = array(
             'function' => 'soaFunctions::getSkuProductInfo',
             'docstring' => 'getSkuProductInfo($data, $station_id=1, $language_id=2, $origin_id, $key)',
+            'signature' => array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //JSON Retail Order Info
+                    $xmlrpcInt, //Language ID
+                    $xmlrpcInt, //Station ID
+                    $xmlrpcInt, //Origin ID
+                    $xmlrpcString //Key
+                )
+            )
+        );
+
+        //仓库盘点
+        $services['soa.getStockChecksProductInfo'] = array(
+            'function' => 'soaFunctions::getStockChecksProductInfo',
+            'docstring' => 'getStockChecksProductInfo($data, $station_id=1, $language_id=2, $origin_id, $key)',
             'signature' => array(
                 array(
                     $xmlrpcString, //Result
@@ -2006,6 +2226,18 @@ class soaXMLRPC{
                 )
             )
         );
+        $services['soa.getUseWarehouseId'] = array(
+            'function' => 'soaFunctions::getUseWarehouseId',
+            'docstring'=> 'getUseWarehouseId($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
 
 
         //出库单
@@ -2021,9 +2253,188 @@ class soaXMLRPC{
                 )
             )
         );
+        //调拨单显示
+        $services['soa.relevantViewItem'] = array(
+            'function' => 'soaFunctions::relevantViewItem',
+            'docstring'=> 'relevantViewItem($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //调拨单提交
+        $services['soa.addPurchaseOrderRelevantToInv'] = array(
+            'function' => 'soaFunctions::addPurchaseOrderRelevantToInv',
+            'docstring'=> 'addPurchaseOrderRelevantToInv($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //苏州调拨单
+        $services['soa.getNewWarehouseRequisition'] = array(
+            'function' => 'soaFunctions::getNewWarehouseRequisition',
+            'docstring'=> 'getNewWarehouseRequisition($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //调拨单面单打印
+        $services['soa.print_relevants_merge'] = array(
+            'function' => 'soaFunctions::print_relevants_merge',
+            'docstring'=> 'print_relevants_merge($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        *调拨单合并*/
+        $services['soa.merge_relevant_orders'] = array(
+            'function' => 'soaFunctions::merge_relevant_orders',
+            'docstring'=> 'merge_relevant_orders($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        *删除合并的调拨单*/
+        $services['soa.delete_merge_relevant_orders'] = array(
+            'function' => 'soaFunctions::delete_merge_relevant_orders',
+            'docstring'=> 'delete_merge_relevant_orders($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        *取消调拨单*/
+        $services['soa.update_relevant_orders'] = array(
+            'function' => 'soaFunctions::update_relevant_orders',
+            'docstring'=> 'update_relevant_orders($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //获取订单状态历史
+        $services['soa.get_order_deliver_status_history'] = array(
+            'function' => 'soaFunctions::get_order_deliver_status_history',
+            'docstring'=> 'get_order_deliver_status_history($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        根据商品条码获取商品信息*/
+        $services['soa.getProductInformation'] = array(
+            'function' => 'soaFunctions::getProductInformation',
+            'docstring'=> 'getProductInformation($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        *获取周转筐的货位号*/
+        $services['soa.getContainerInformation'] = array(
+            'function' => 'soaFunctions::getContainerInformation',
+            'docstring'=> 'getContainerInformation($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        *获取do单信息*/
+        $services['soa.get_frame_vg_list_status'] = array(
+            'function' => 'soaFunctions::get_frame_vg_list_status',
+            'docstring'=> 'get_frame_vg_list_status($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        *检验货位号是否唯一*/
+        $services['soa.get_frame_vg_list_unique'] = array(
+            'function' => 'soaFunctions::get_frame_vg_list_unique',
+            'docstring'=> 'get_frame_vg_list_unique($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
         $services['soa.searchRequisition'] = array(
             'function' => 'soaFunctions::searchRequisition',
             'docstring'=> 'searchRequisition($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*
+         * zx
+         * 仓内调拨单查询
+         * */
+        $services['soa.searchRequisitionNew'] = array(
+            'function' => 'soaFunctions::searchRequisitionNew',
+            'docstring'=> 'searchRequisitionNew($data)',
             'signature'=> array(
                 array(
                     $xmlrpcString, //Result
@@ -2070,6 +2481,34 @@ class soaXMLRPC{
                 )
             )
         );
+        /*
+         * zx
+         * 仓内调拨单内容
+         * */
+        $services['soa.startShipmentNew'] = array(
+            'function' => 'soaFunctions::startShipmentNew',
+            'docstring'=> 'startShipmentNew($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.makeGetReadyLists'] = array(
+            'function' => 'soaFunctions::makeGetReadyLists',
+            'docstring'=> 'makeGetReadyLists($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
 
         $services['soa.submitProduct'] = array(
             'function' => 'soaFunctions::submitProduct',
@@ -2083,10 +2522,70 @@ class soaXMLRPC{
                 )
             )
         );
+        /*
+         * zx
+         * 仓内调拨单中间表提交
+         * */
+        $services['soa.submitProductNew'] = array(
+            'function' => 'soaFunctions::submitProductNew',
+            'docstring'=> 'submitProductNew($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //苏州调拨中间表提及
+        $services['soa.submitRelevantProduct'] = array(
+            'function' => 'soaFunctions::submitRelevantProduct',
+            'docstring'=> 'submitRelevantProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
 
         $services['soa.submitProducts'] = array(
             'function' => 'soaFunctions::submitProducts',
             'docstring'=> 'submitProducts($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        /*
+         * zx
+         * 仓内调拨单提交
+         *
+         * */
+        $services['soa.submitProductsNew'] = array(
+            'function' => 'soaFunctions::submitProductsNew',
+            'docstring'=> 'submitProductsNew($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //调拨单状态修改
+        $services['soa.submitProductsLists'] = array(
+            'function' => 'soaFunctions::submitProductsLists',
+            'docstring'=> 'submitProductsLists($data)',
             'signature'=> array(
                 array(
                     $xmlrpcString, //Result
@@ -2114,6 +2613,19 @@ class soaXMLRPC{
         $services['soa.showOrderDetail'] = array(
             'function' => 'soaFunctions::showOrderDetail',
             'docstring'=> 'showOrderDetail($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.selectContainer'] = array(
+            'function' => 'soaFunctions::selectContainer',
+            'docstring'=> 'selectContainer($data)',
             'signature'=> array(
                 array(
                     $xmlrpcString, //Result
@@ -2161,8 +2673,1580 @@ class soaXMLRPC{
                 )
             )
         );
-        return $services;
 
+        $services['soa.getinventoryname'] = array(
+            'function' => 'soaFunctions::getinventoryname',
+            'docstring'=> 'getinventoryname($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getperms'] = array(
+            'function' => 'soaFunctions::getperms',
+            'docstring'=> 'getperms($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //缺货提醒
+
+        $services['soa.shortReminder'] = array(
+            'function' => 'soaFunctions::shortReminder',
+            'docstring'=> 'shortReminder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getReminderList'] = array(
+            'function' => 'soaFunctions::getReminderList',
+            'docstring'=> 'getReminderList($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.confirmReminder'] = array(
+            'function' => 'soaFunctions::confirmReminder',
+            'docstring'=> 'confirmReminder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.confirmReplenishment'] = array(
+            'function' => 'soaFunctions::confirmReplenishment',
+            'docstring'=> 'confirmReplenishment($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getInfo'] = array(
+            'function' => 'soaFunctions::getInfo',
+            'docstring'=> 'getInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        // 物流退货按商品ID排序
+        $services['soa.getAddedOrderReturnDeliverProduct'] = array(
+            'function' => 'soaFunctions::getAddedOrderReturnDeliverProduct',
+            'docstring'=> 'getAddedOrderReturnDeliverProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //缺货单个确认
+
+
+        $services['soa.confirmReturnSingleProduct'] = array(
+            'function' => 'soaFunctions::confirmReturnSingleProduct',
+            'docstring'=> 'confirmReturnSingleProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+     // 报损当面
+        $services['soa.confirmReturnBadSingleProduct'] = array(
+            'function' => 'soaFunctions::confirmReturnBadSingleProduct',
+            'docstring'=> 'confirmReturnBadSingleProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //出库基础信息录入
+        $services['soa.submitCorrectionOutOrder'] = array(
+            'function' => 'soaFunctions::submitCorrectionOutOrder',
+            'docstring'=> 'submitCorrectionOutOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //出库订单商品信息核对
+        $services['soa.showOrderProducts'] = array(
+            'function' => 'soaFunctions::showOrderProducts',
+            'docstring'=> 'showOrderProducts($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //采购单信息
+
+        $services['soa.getPurchaseInfo'] = array(
+            'function' => 'soaFunctions::getPurchaseInfo',
+            'docstring'=> 'getPurchaseInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getPurchaseTypeOrders'] = array(
+            'function' => 'soaFunctions::getPurchaseTypeOrders',
+            'docstring'=> 'getPurchaseTypeOrders($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        // 更新分拣条码
+        $services['soa.changeProductSku'] = array(
+            'function' => 'soaFunctions::changeProductSku',
+            'docstring'=> 'changeProductSku($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //货架上货
+        $services['soa.confirmReturnShelves'] = array(
+            'function' => 'soaFunctions::confirmReturnShelves',
+            'docstring'=> 'confirmReturnShelves($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        // 移库操作
+        $services['soa.getTransferInfo'] = array(
+            'function' => 'soaFunctions::getTransferInfo',
+            'docstring'=> 'getTransferInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+
+        $services['soa.addTranserMission'] = array(
+            'function' => 'soaFunctions::addTranserMission',
+            'docstring'=> 'addTranserMission($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.addTranserMission1'] = array(
+            'function' => 'soaFunctions::addTranserMission1',
+            'docstring'=> 'addTranserMission1($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+
+          $services['soa.getTransferMission'] = array(
+              'function' => 'soaFunctions::getTransferMission',
+              'docstring'=> 'getTransferMission($data)',
+              'signature'=> array(
+                  array(
+                      $xmlrpcString, //Result
+                      $xmlrpcString, //Request JSON data
+                      $xmlrpcInt,    //Origin ID
+                      $xmlrpcString  //Key
+                  )
+              )
+          );
+        $services['soa.changeTransferValuse'] = array(
+            'function' => 'soaFunctions::changeTransferValuse',
+            'docstring'=> 'changeTransferValuse($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getTransferProductInfo'] = array(
+            'function' => 'soaFunctions::getTransferProductInfo',
+            'docstring'=> 'getTransferProductInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.addChangeProductTransfer'] = array(
+            'function' => 'soaFunctions::addChangeProductTransfer',
+            'docstring'=> 'addChangeProductTransfer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.ChangeProductTransferStatus'] = array(
+            'function' => 'soaFunctions::ChangeProductTransferStatus',
+            'docstring'=> 'ChangeProductTransferStatus($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.confirmCheckSingleProduct'] = array(
+            'function' => 'soaFunctions::confirmCheckSingleProduct',
+            'docstring'=> 'confirmCheckSingleProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.changeCheckSingleProduct'] = array(
+            'function' => 'soaFunctions::changeCheckSingleProduct',
+            'docstring'=> 'changeCheckSingleProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //回收篮筐
+        $services['soa.getOrderByFrame'] = array(
+            'function' => 'soaFunctions::getOrderByFrame',
+            'docstring'=> 'getOrderByFrame($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.submitFrameInStatus'] = array(
+            'function' => 'soaFunctions::submitFrameInStatus',
+            'docstring'=> 'submitFrameInStatus($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.confirmFrameInStatus'] = array(
+            'function' => 'soaFunctions::confirmFrameInStatus',
+            'docstring'=> 'confirmFrameInStatus($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.checkContainer'] = array(
+            'function' => 'soaFunctions::checkContainer',
+            'docstring'=> 'checkContainer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*查询异常数据*/
+        $services['soa.getAbnormalSort'] = array(
+            'function' => 'soaFunctions::getAbnormalSort',
+            'docstring'=> 'getAbnormalSort($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getTransfer'] = array(
+            'function' => 'soaFunctions::getTransfer',
+            'docstring'=> 'getTransfer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        //分区分拣
+        $services['soa.getOrderSpareSortingUser'] = array(
+            'function' => 'soaFunctions::getOrderSpareSortingUser',
+            'docstring'=> 'getOrderSpareSortingUser($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.insertOrderDistrSpare'] = array(
+            'function' => 'soaFunctions::insertOrderDistrSpare',
+            'docstring'=> 'insertOrderDistrSpare($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getOrderInfoByCount'] = array(
+            'function' => 'soaFunctions::getOrderInfoByCount',
+            'docstring'=> 'getOrderInfoByCount($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.confirmOrderInfoByCount'] = array(
+            'function' => 'soaFunctions::confirmOrderInfoByCount',
+            'docstring'=> 'confirmOrderInfoByCount($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addOrderInfoByCount'] = array(
+            'function' => 'soaFunctions::addOrderInfoByCount',
+            'docstring'=> 'addOrderInfoByCount($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getinventorynamerepack'] = array(
+            'function' => 'soaFunctions::getinventorynamerepack',
+            'docstring'=> 'getinventorynamerepack($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );$services['soa.submit_foreman_check_product'] = array(
+            'function' => 'soaFunctions::submit_foreman_check_product',
+            'docstring'=> 'submit_foreman_check_product($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );$services['soa.foreman_check_product'] = array(
+            'function' => 'soaFunctions::foreman_check_product',
+            'docstring'=> 'foreman_check_product($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );$services['soa.get_foreman_check_product'] = array(
+            'function' => 'soaFunctions::get_foreman_check_product',
+            'docstring'=> 'get_foreman_check_product($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );$services['soa.get_foreman_check_results'] = array(
+            'function' => 'soaFunctions::get_foreman_check_results',
+            'docstring'=> 'get_foreman_check_results($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );$services['soa.checkTail'] = array(
+            'function' => 'soaFunctions::checkTail',
+            'docstring'=> 'checkTail($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getOrderInfoBySpareComment'] = array(
+            'function' => 'soaFunctions::getOrderInfoBySpareComment',
+            'docstring'=> 'getOrderInfoBySpareComment($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addInvComment'] = array(
+            'function' => 'soaFunctions::addInvComment',
+            'docstring'=> 'addInvComment($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.palletMove'] = array(
+            'function' => 'soaFunctions::palletMove',
+            'docstring'=> 'palletMove($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.updateStocksChecks'] = array(
+            'function' => 'soaFunctions::updateStocksChecks',
+            'docstring'=> 'updateStocksChecks($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getAccomplishFrame'] = array(
+            'function' => 'soaFunctions::getAccomplishFrame',
+            'docstring'=> 'getAccomplishFrame($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.delOneProductInv'] = array(
+            'function' => 'soaFunctions::delOneProductInv',
+            'docstring'=> 'delOneProductInv($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getFrameProductNumber'] = array(
+            'function' => 'soaFunctions::getFrameProductNumber',
+            'docstring'=> 'getFrameProductNumber($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getStockChecks'] = array(
+            'function' => 'soaFunctions::getStockChecks',
+            'docstring'=> 'getStockChecks($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.deleteStockChecks'] = array(
+            'function' => 'soaFunctions::deleteStockChecks',
+            'docstring'=> 'deleteStockChecks($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getWarehouseSection'] = array(
+            'function' => 'soaFunctions::getWarehouseSection',
+            'docstring'=> 'getWarehouseSection($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.updateStockChecks'] = array(
+            'function' => 'soaFunctions::updateStockChecks',
+            'docstring'=> 'updateStockChecks($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+         $services['soa.addStockInventory'] = array(
+             'function' => 'soaFunctions::addStockInventory',
+             'docstring'=> 'addStockInventory($data)',
+             'signature'=> array(
+                 array(
+                     $xmlrpcString, //Result
+                     $xmlrpcString, //Request JSON data
+                     $xmlrpcInt,    //Origin ID
+                     $xmlrpcString  //Key
+                 )
+             )
+         );
+        $services['soa.getStockChecksMove'] = array(
+            'function' => 'soaFunctions::getStockChecksMove',
+            'docstring'=> 'getStockChecksMove($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addStockMove'] = array(
+            'function' => 'soaFunctions::addStockMove',
+            'docstring'=> 'addStockMove($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getStockChecksIn'] = array(
+            'function' => 'soaFunctions::getStockChecksIn',
+            'docstring'=> 'getStockChecksIn($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.delectStockMOve'] = array(
+            'function' => 'soaFunctions::delectStockMOve',
+            'docstring'=> 'delectStockMOve($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addStockIn'] = array(
+            'function' => 'soaFunctions::addStockIn',
+            'docstring'=> 'addStockIn($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addStockMoveTransfer'] = array(
+            'function' => 'soaFunctions::addStockMoveTransfer',
+            'docstring'=> 'addStockMoveTransfer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.confirmTransfer'] = array(
+            'function' => 'soaFunctions::confirmTransfer',
+            'docstring'=> 'confirmTransfer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getTransferMissionNUM'] = array(
+            'function' => 'soaFunctions::getTransferMissionNUM',
+            'docstring'=> 'getTransferMissionNUM($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.manualAddTransfer'] = array(
+            'function' => 'soaFunctions::manualAddTransfer',
+            'docstring'=> 'manualAddTransfer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getWarehouseTransferInfo'] = array(
+            'function' => 'soaFunctions::getWarehouseTransferInfo',
+            'docstring'=> 'getWarehouseTransferInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //仓库分区
+        $services['soa.getProductSectionType'] = array(
+            'function' => 'soaFunctions::getProductSectionType',
+            'docstring'=> 'getProductSectionType($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.confirmOut'] = array(
+            'function' => 'soaFunctions::confirmOut',
+            'docstring'=> 'confirmOut($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.confirmIn'] = array(
+            'function' => 'soaFunctions::confirmIn',
+            'docstring'=> 'confirmIn($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getStockSectionProduct'] = array(
+            'function' => 'soaFunctions::getStockSectionProduct',
+            'docstring'=> 'getStockSectionProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getSkuProductId'] = array(
+            'function' => 'soaFunctions::getSkuProductId',
+            'docstring'=> 'getSkuProductId($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getProductAllSingleInfo'] = array(
+            'function' => 'soaFunctions::getProductAllSingleInfo',
+            'docstring'=> 'getProductAllSingleInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.deleteStockSectionPorduct'] = array(
+            'function' => 'soaFunctions::deleteStockSectionPorduct',
+            'docstring'=> 'deleteStockSectionPorduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getInventoryOrderSoring'] = array(
+            'function' => 'soaFunctions::getInventoryOrderSoring',
+            'docstring'=> 'getInventoryOrderSoring($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addOrderInvComment'] = array(
+            'function' => 'soaFunctions::addOrderInvComment',
+            'docstring'=> 'addOrderInvComment($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getAllotDoOrder'] = array(
+            'function' => 'soaFunctions::getAllotDoOrder',
+            'docstring'=> 'getAllotDoOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getDoOrderStatus'] = array(
+            'function' => 'soaFunctions::getDoOrderStatus',
+            'docstring'=> 'getDoOrderStatus($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addDoOrderRelevant'] = array(
+            'function' => 'soaFunctions::addDoOrderRelevant',
+            'docstring'=> 'addDoOrderRelevant($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getRelevantInfoByCount'] = array(
+            'function' => 'soaFunctions::getRelevantInfoByCount',
+            'docstring'=> 'getRelevantInfoByCount($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.confirmDoRelevant'] = array(
+            'function' => 'soaFunctions::confirmDoRelevant',
+            'docstring'=> 'confirmDoRelevant($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.confirmDoRelevantC'] = array(
+            'function' => 'soaFunctions::confirmDoRelevantC',
+            'docstring'=> 'confirmDoRelevantC($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addConsolidatedRelevant'] = array(
+            'function' => 'soaFunctions::addConsolidatedRelevant',
+            'docstring'=> 'addConsolidatedRelevant($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getRelevantInfoByProduct'] = array(
+            'function' => 'soaFunctions::getRelevantInfoByProduct',
+            'docstring'=> 'getRelevantInfoByProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addConsolidatedDoInfo'] = array(
+            'function' => 'soaFunctions::addConsolidatedDoInfo',
+            'docstring'=> 'addConsolidatedDoInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.updateDoRelevantC'] = array(
+            'function' => 'soaFunctions::updateDoRelevantC',
+            'docstring'=> 'updateDoRelevantC($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.updateDoRelevant'] = array(
+            'function' => 'soaFunctions::updateDoRelevant',
+            'docstring'=> 'updateDoRelevant($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.updateDoStatus'] = array(
+            'function' => 'soaFunctions::updateDoStatus',
+            'docstring'=> 'updateDoStatus($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+	
+	 $services['soa.getAutoOrders'] = array(
+            'function' => 'soaFunctions::getAutoOrders',
+            'docstring'=> 'getAutoOrders($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        待合单查询*/
+        $services['soa.get_merge_order_status'] = array(
+            'function' => 'soaFunctions::get_merge_order_status',
+            'docstring'=> 'get_merge_order_status($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.mergeDeliverOrder'] = array(
+            'function' => 'soaFunctions::mergeDeliverOrder',
+            'docstring'=> 'mergeDeliverOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.deleteOrderSorting'] = array(
+            'function' => 'soaFunctions::deleteOrderSorting',
+            'docstring'=> 'deleteOrderSorting($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.checkContainerId'] = array(
+            'function' => 'soaFunctions::checkContainerId',
+            'docstring'=> 'checkContainerId($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.addWarehouseContainer'] = array(
+            'function' => 'soaFunctions::addWarehouseContainer',
+            'docstring'=> 'addWarehouseContainer($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getProductDeliver'] = array(
+            'function' => 'soaFunctions::getProductDeliver',
+            'docstring'=> 'getProductDeliver($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getContainerDeliver'] = array(
+            'function' => 'soaFunctions::getContainerDeliver',
+            'docstring'=> 'getContainerDeliver($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+
+        //新调拨单申请 Alex 20180310 开始
+        $services['soa.getTransferBoxes'] = array(
+            'function' => 'soaFunctions::getTransferBoxes',
+            'docstring'=> 'getTransferBoxes($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.addTransferOrder'] = array(
+            'function' => 'soaFunctions::addTransferOrder',
+            'docstring'=> 'addTransferOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getTransferOrder'] = array(
+            'function' => 'soaFunctions::getTransferOrder',
+            'docstring'=> 'getTransferOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.cancelTransferOrder'] = array(
+            'function' => 'soaFunctions::cancelTransferOrder',
+            'docstring'=> 'cancelTransferOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getOrderContainerHistory'] = array(
+            'function' => 'soaFunctions::getOrderContainerHistory',
+            'docstring'=> 'getOrderContainerHistory($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        //新调拨单申请 Alex 20180310 结束
+
+
+        //分拣缺货手工返还可售库存
+        $services['soa.getInventorySortingReturn'] = array(
+            'function' => 'soaFunctions::getInventorySortingReturn',
+            'docstring'=> 'getInventorySortingReturn($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.addInventorySortingReturn'] = array(
+            'function' => 'soaFunctions::addInventorySortingReturn',
+            'docstring'=> 'addInventorySortingReturn($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.updateInvComment'] = array(
+            'function' => 'soaFunctions::updateInvComment',
+            'docstring'=> 'updateInvComment($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.deleteContainerProduct'] = array(
+            'function' => 'soaFunctions::deleteContainerProduct',
+            'docstring'=> 'deleteContainerProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+    /*
+         * zx
+         * 班组长核查任务
+         * */
+        $services['soa.getOrderCheckInformation'] = array(
+            'function' => 'soaFunctions::getOrderCheckInformation',
+            'docstring'=> 'getOrderCheckInformation($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getCheckOrderInformation'] = array(
+            'function' => 'soaFunctions::getCheckOrderInformation',
+            'docstring'=> 'getCheckOrderInformation($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getDeliverOrderToCheck'] = array(
+            'function' => 'soaFunctions::getDeliverOrderToCheck',
+            'docstring'=> 'getDeliverOrderToCheck($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getCheckOrderInStockArea'] = array(
+            'function' => 'soaFunctions::getCheckOrderInStockArea',
+            'docstring'=> 'getCheckOrderInStockArea($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+根据商品条码获取商品信息*/
+        $services['soa.getProductsInformation'] = array(
+            'function' => 'soaFunctions::getProductsInformation',
+            'docstring'=> 'getProductsInformation($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        根据商品条码获取商品信息*/
+        $services['soa.submitCheckProductInformation'] = array(
+            'function' => 'soaFunctions::submitCheckProductInformation',
+            'docstring'=> 'submitCheckProductInformation($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        根据商品条码获取商品信息*/
+        $services['soa.submitCheckProductResult'] = array(
+            'function' => 'soaFunctions::submitCheckProductResult',
+            'docstring'=> 'submitCheckProductResult($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*zx
+        根据商品条码获取商品信息*/
+        $services['soa.cancelCheckOrderProduct'] = array(
+            'function' => 'soaFunctions::cancelCheckOrderProduct',
+            'docstring'=> 'cancelCheckOrderProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.submitCheckOrderResult'] = array(
+            'function' => 'soaFunctions::submitCheckOrderResult',
+            'docstring'=> 'submitCheckOrderResult($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        /*
+         * zx
+         * 班组长核查任务
+         * 结束
+         * */
+
+        /*
+         * zx
+         * 外仓发过来的do单与本仓合单
+         * 开始
+         * */
+        $services['soa.getRelevantInfoByInput'] = array(
+            'function' => 'soaFunctions::getRelevantInfoByInput',
+            'docstring'=> 'getRelevantInfoByInput($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.get_order_information_to_merge'] = array(
+            'function' => 'soaFunctions::get_order_information_to_merge',
+            'docstring'=> 'get_order_information_to_merge($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.catOrderProductInfo'] = array(
+            'function' => 'soaFunctions::catOrderProductInfo',
+            'docstring'=> 'catOrderProductInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.submitReturnProduct'] = array(
+            'function' => 'soaFunctions::submitReturnProduct',
+            'docstring'=> 'submitReturnProduct($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+	$services['soa.getBoxBatchInfo'] = array(
+            'function' => 'soaFunctions::getBoxBatchInfo',
+            'docstring'=> 'getBoxBatchInfo($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.getBoxBatchOrders'] = array(
+            'function' => 'soaFunctions::getBoxBatchOrders',
+            'docstring'=> 'getBoxBatchOrders($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.addBoxBatchOrder'] = array(
+            'function' => 'soaFunctions::addBoxBatchOrder',
+            'docstring'=> 'addBoxBatchOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.updateBoxBatchOrder'] = array(
+            'function' => 'soaFunctions::updateBoxBatchOrder',
+            'docstring'=> 'updateBoxBatchOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.cancelBoxBatchOrder'] = array(
+            'function' => 'soaFunctions::cancelBoxBatchOrder',
+            'docstring'=> 'cancelBoxBatchOrder($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+
+        $services['soa.getBoxBatchOrderItem'] = array(
+            'function' => 'soaFunctions::getBoxBatchOrderItem',
+            'docstring'=> 'getBoxBatchOrderItem($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        $services['soa.submit_box_product_batch'] = array(
+            'function' => 'soaFunctions::submit_box_product_batch',
+            'docstring'=> 'submit_box_product_batch($data)',
+            'signature'=> array(
+                array(
+                    $xmlrpcString, //Result
+                    $xmlrpcString, //Request JSON data
+                    $xmlrpcInt,    //Origin ID
+                    $xmlrpcString  //Key
+                )
+            )
+        );
+        return $services;
 
     }
 }
@@ -2179,7 +4263,28 @@ class soaFunctions{
 
         return $oldwarehouse->getStation($id, $station_id, $language_id, $origin_id);
     }
+    /*xya
+    */
+    function getAutoOrders($id, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
 
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getAutoOrders($id, $station_id, $language_id, $origin_id);
+    }
+    /*zx
+    待合单查询*/
+    function get_merge_order_status($id, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->get_merge_order_status($id, $station_id, $language_id, $origin_id);
+    }
 
 
     function getOrders($data, $station_id, $language_id, $origin_id, $key){
@@ -2252,6 +4357,18 @@ class soaFunctions{
 
         return $oldwarehouse->orderdistr($data, $station_id, $language_id, $origin_id,$key);
     }
+    /*zx
+    自动领单*/
+    function auto_order_distr($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->auto_order_distr($data, $station_id, $language_id, $origin_id,$key);
+    }
+
 
     function orderRedistr($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2393,6 +4510,14 @@ class soaFunctions{
 
         return $oldwarehouse->addPurchaseOrderProductToInv($data, $station_id, $language_id, $origin_id);
     }
+    function updateStockSectionProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $oldwarehouse->updateStockSectionProduct($data, $station_id, $language_id, $origin_id);
+    }
 
     function delOrderProductToInv($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2412,6 +4537,16 @@ class soaFunctions{
         }
 
         return $oldwarehouse->delPurchaseOrderProductToInv($data, $station_id, $language_id, $origin_id);
+    }
+    //删除调拨单中间表数据
+    function delPurchaseOrderRelevantToInv($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->delPurchaseOrderRelevantToInv($data, $station_id, $language_id, $origin_id);
     }
 
 
@@ -2552,6 +4687,15 @@ class soaFunctions{
 
         return $oldwarehouse->checkFrameCanIn($data, $station_id, $language_id, $origin_id);
     }
+    function checkFrameCanInput($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->checkFrameCanInput($data, $station_id, $language_id, $origin_id);
+    }
 
     function addCheckFrameIn($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2665,6 +4809,35 @@ class soaFunctions{
 
         return $oldwarehouse->addReturnDeliverProduct($data, $station_id, $language_id, $origin_id);
     }
+   //盘点
+    function submitStockChecksProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $oldwarehouse->submitStockChecksProduct($data, $station_id, $language_id, $origin_id);
+    }
+
+
+    function addReturnDeliverBadProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $oldwarehouse->addReturnDeliverBadProduct($data, $station_id, $language_id, $origin_id);
+    }
+
+
 
     function disableReturnDeliverProduct($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2676,6 +4849,15 @@ class soaFunctions{
         return $oldwarehouse->disableReturnDeliverProduct($data, $station_id, $language_id, $origin_id);
     }
 
+    function disableReturnBadDeliverProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->disableReturnBadDeliverProduct($data, $station_id, $language_id, $origin_id);
+    }
 
     function confirmReturnDeliverProduct($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2859,6 +5041,24 @@ class soaFunctions{
 
         return $oldwarehouse->getOrderSortingList($data, $station_id, $language_id, $origin_id);
     }
+    function getOrderAreaList($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->getOrderAreaList($data, $station_id, $language_id, $origin_id);
+    }
+    function updateStockSectionArea($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->updateStockSectionArea($data, $station_id, $language_id, $origin_id);
+    }
 
     function getPurchaseOrderSortingList($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2868,6 +5068,14 @@ class soaFunctions{
         }
 
         return $oldwarehouse->getPurchaseOrderSortingList($data, $station_id, $language_id, $origin_id);
+    }
+    function getWarehouseTransferArea($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->getWarehouseTransferArea($data, $station_id, $language_id, $origin_id);
     }
     function getUserInfoByUid($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -2973,7 +5181,15 @@ class soaFunctions{
 
         return $oldwarehouse->addOrderProductStation($data, $station_id, $language_id, $origin_id);
     }
+function addOrderProductStationes($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
 
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->addOrderProductStationes($data, $station_id, $language_id, $origin_id);
+    }
     function addPurchaseOrderProductStation($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
 
@@ -2993,7 +5209,16 @@ class soaFunctions{
 
         return $oldwarehouse->getSkuProductInfo($data, $station_id, $language_id, $origin_id);
     }
+    //仓库盘点
+    function getStockChecksProductInfo($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
 
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->getStockChecksProductInfo($data, $station_id, $language_id, $origin_id);
+    }
     function changeProductSection($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
 
@@ -3045,7 +5270,28 @@ class soaFunctions{
 
         return $oldwarehouse->getAddedReturnDeliverProduct($data, $station_id, $language_id, $origin_id);
     }
+    //盘点
+    function getAddedStcokChecksProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
 
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->getAddedStcokChecksProduct($data, $station_id, $language_id, $origin_id);
+    }
+
+
+   //报损当面
+    function getAddedBadReturnDeliverProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->getAddedBadReturnDeliverProduct($data, $station_id, $language_id, $origin_id);
+    }
     function inventory_login($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
 
@@ -3101,6 +5347,17 @@ class soaFunctions{
         }
 
         return $oldwarehouse->getInventoryCheckSingle($data, $station_id, $language_id, $origin_id);
+    }
+
+    //根据日期获取盘盈盘库结果
+    function getinventoryCheckSingleDate($data, $station_id, $language_id, $origin_id, $key){
+        global $oldwarehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $oldwarehouse->getinventoryCheckSingleDate($data, $station_id, $language_id, $origin_id);
     }
     function getInventoryVegCheck($data, $station_id, $language_id, $origin_id, $key){
         global $oldwarehouse;
@@ -3538,6 +5795,16 @@ class soaFunctions{
 
         return $warehouse->getWarehouseId(json_decode($data, true));
     }
+    //获取正在使用的仓库
+    function getUseWarehouseId($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getUseWarehouseId(json_decode($data, true));
+    }
 
 
     //出库单
@@ -3550,6 +5817,133 @@ class soaFunctions{
 
         return $warehouse->getWarehouseRequisition(json_decode($data, true));
     }
+    //调拨单显示
+    function relevantViewItem($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->relevantViewItem(json_decode($data, true));
+    }
+    //调拨单提交
+    function addPurchaseOrderRelevantToInv($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->addPurchaseOrderRelevantToInv(json_decode($data, true));
+    }
+    //苏州调拨单
+    function getNewWarehouseRequisition($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getNewWarehouseRequisition(json_decode($data, true));
+    }
+    //调拨单面单打印
+    function print_relevants_merge($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->print_relevants_merge(json_decode($data, true));
+    }
+    /*zx
+    *调拨单合并*/
+    function merge_relevant_orders($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->merge_relevant_orders(json_decode($data, true));
+    }
+    /*zx
+    *删除合并的调拨单*/
+    function delete_merge_relevant_orders($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->delete_merge_relevant_orders(json_decode($data, true));
+    }
+    /*zx
+    *调拨单取消*/
+    function update_relevant_orders($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->update_relevant_orders(json_decode($data, true));
+    }
+    //获取订单状态历史
+    function get_order_deliver_status_history($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->get_order_deliver_status_history(json_decode($data, true));
+    }
+    /*zx
+    根据商品条码获取商品信息*/
+    function getProductInformation($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getProductInformation(json_decode($data, true));
+    }
+    /*zx
+    获取周转筐的货位号*/
+    function getContainerInformation($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getContainerInformation(json_decode($data, true));
+    }
+    /*zx
+    获取do单信息*/
+    function get_frame_vg_list_status($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->get_frame_vg_list_status(json_decode($data, true));
+    }
+    /*zx
+    检验货位号是否唯一*/
+    function get_frame_vg_list_unique($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->get_frame_vg_list_unique(json_decode($data, true));
+    }
     function searchRequisition($data, $station_id, $language_id, $origin_id, $key){
         global $warehouse;
 
@@ -3558,6 +5952,19 @@ class soaFunctions{
         }
 
         return $warehouse->searchRequisition(json_decode($data, true));
+    }
+    /*
+     * zx
+     * 仓内调拨单查询
+     * */
+    function searchRequisitionNew($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->searchRequisitionNew(json_decode($data, true));
     }
     function viewItem($data, $station_id, $language_id, $origin_id, $key){
         global $warehouse;
@@ -3589,6 +5996,30 @@ class soaFunctions{
         return $warehouse->startShipment(json_decode($data, true));
     }
 
+    /*
+     * zx
+     * 仓内调拨单内容
+     *
+     * */
+    function startShipmentNew($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->startShipmentNew(json_decode($data, true));
+    }
+    function makeGetReadyLists($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->makeGetReadyLists(json_decode($data, true));
+    }
+
     function submitProduct($data, $station_id, $language_id, $origin_id, $key){
         global $warehouse;
 
@@ -3597,6 +6028,29 @@ class soaFunctions{
         }
 
         return $warehouse->submitProduct(json_decode($data, true));
+    }
+    /*
+     * zx
+     * 仓内调拨单中间表提交
+     * */
+    function submitProductNew($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->submitProductNew(json_decode($data, true));
+    }
+    //苏州调拨中间表提交
+    function submitRelevantProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->submitRelevantProduct(json_decode($data, true));
     }
 
     function submitProducts($data, $station_id, $language_id, $origin_id, $key){
@@ -3607,6 +6061,32 @@ class soaFunctions{
         }
 
         return $warehouse->submitProducts(json_decode($data, true));
+    }
+
+    /*
+     * zx
+     * 仓内调拨单提交
+     *
+     * */
+    function submitProductsNew($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->submitProductsNew(json_decode($data, true));
+    }
+
+    //调拨单状态修改
+    function submitProductsLists($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->submitProductsLists(json_decode($data, true));
     }
 
 
@@ -3629,6 +6109,17 @@ class soaFunctions{
 
         return $warehouse->showOrderDetail(json_decode($data, true));
     }
+
+    function selectContainer($data, $station_id, $language_id, $origin_id, $key){
+        global $warehouse;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->selectContainer(json_decode($data, true));
+    }
+
     function showDeliverConfirm($data, $station_id, $language_id, $origin_id, $key){
         global $warehouse;
 
@@ -3658,7 +6149,1225 @@ class soaFunctions{
         return $warehouse->warehouseConfirmReturnProduct(json_decode($data, true));
     }
 
+    function getinventoryname($data,$origin_id,$key){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
 
+        global $warehouse;
+        return $warehouse->getinventoryname(json_decode($data, true));
+    }
+
+
+    function getperms($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->getperms(json_decode($data, true));
+    }
+
+
+    //缺货提醒
+    function shortReminder($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->shortReminder(json_decode($data, true));
+    }
+
+    function getReminderList($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->getReminderList(json_decode($data, true));
+    }
+
+    function confirmReminder($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->confirmReminder(json_decode($data, true));
+    }
+
+    function confirmReplenishment($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->confirmReplenishment(json_decode($data, true));
+    }
+
+    function getInfo($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->getInfo(json_decode($data, true));
+    }
+
+    //物流退货按商品ID排序
+    function getAddedOrderReturnDeliverProduct($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->getAddedOrderReturnDeliverProduct(json_decode($data, true));
+    }
+ // 缺货单个确认
+
+
+    function confirmReturnSingleProduct($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->confirmReturnSingleProduct(json_decode($data, true));
+    }
+
+
+    //报损当面
+    function confirmReturnBadSingleProduct($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->confirmReturnBadSingleProduct(json_decode($data, true));
+    }
+    //出库基础信息录入
+    function submitCorrectionOutOrder($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->submitCorrectionOutOrder(json_decode($data, true));
+    }
+
+
+
+    //出库订单商品信息核对
+    function showOrderProducts($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->showOrderProducts(json_decode($data, true));
+    }
+
+    //采购单信息
+    function  getPurchaseInfo($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->getPurchaseInfo(json_decode($data, true));
+    }
+
+    function  getPurchaseTypeOrders($data,$origin_id,$key ){
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        global $warehouse;
+        return $warehouse->getPurchaseTypeOrders(json_decode($data, true));
+    }
+
+
+    //更新分拣码
+
+    /**
+     * @param $data
+     * @param $origin_id
+     * @param $key
+     * @return string
+     */
+    function  changeProductSku($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->changeProductSku(json_decode($data, true));
+    }
+
+    // 货架上货
+    function  confirmReturnShelves($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmReturnShelves(json_decode($data, true));
+    }
+    // 移库操作
+
+    function  getTransferInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getTransferInfo(json_decode($data, true));
+    }
+
+    function  addTranserMission($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addTranserMission(json_decode($data, true));
+    }
+
+    function  addTranserMission1($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addTranserMission1(json_decode($data, true));
+    }
+
+
+    function  getTransferMission($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getTransferMission(json_decode($data, true));
+    }
+    function  changeTransferValuse($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->changeTransferValuse(json_decode($data, true));
+    }
+    function  getTransferProductInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getTransferProductInfo(json_decode($data, true));
+    }
+
+    function  addChangeProductTransfer($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addChangeProductTransfer(json_decode($data, true));
+    }
+
+    function  ChangeProductTransferStatus($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->ChangeProductTransferStatus(json_decode($data, true));
+    }
+
+    //盘点
+    function  confirmCheckSingleProduct($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmCheckSingleProduct(json_decode($data, true));
+    }
+
+    function  changeCheckSingleProduct($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->changeCheckSingleProduct(json_decode($data, true));
+    }
+    // 回收篮框
+    function  getOrderByFrame($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getOrderByFrame(json_decode($data, true));
+    }
+    function  submitFrameInStatus($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->submitFrameInStatus(json_decode($data, true));
+    }
+    function  confirmFrameInStatus($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmFrameInStatus(json_decode($data, true));
+    }
+
+    function  checkContainer($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->checkContainer(json_decode($data, true));
+    }
+
+    function  getAbnormalSort($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->getAbnormalSort(json_decode($data, true));
+    }
+
+
+    function  getTransfer($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getTransfer(json_decode($data, true));
+    }
+
+    //分区分拣
+    function  getOrderSpareSortingUser($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getOrderSpareSortingUser(json_decode($data, true));
+    }
+
+    function  insertOrderDistrSpare($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->insertOrderDistrSpare(json_decode($data, true));
+    }
+    function  getOrderInfoByCount($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getOrderInfoByCount(json_decode($data, true));
+    }
+    function  confirmOrderInfoByCount($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmOrderInfoByCount(json_decode($data, true));
+    }
+    function  addOrderInfoByCount($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addOrderInfoByCount(json_decode($data, true));
+    }
+    function  getinventorynamerepack($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getinventorynamerepack(json_decode($data, true));
+
+    }function  submit_foreman_check_product($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->submit_foreman_check_product(json_decode($data, true));
+
+    }function  foreman_check_product($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->foreman_check_product(json_decode($data, true));
+
+    }function  get_foreman_check_product($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->get_foreman_check_product(json_decode($data, true));
+
+    }function  get_foreman_check_results($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->get_foreman_check_results(json_decode($data, true));
+
+    }function  checkTail($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->checkTail(json_decode($data, true));
+
+    }
+    function  getOrderInfoBySpareComment($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getOrderInfoBySpareComment(json_decode($data, true));
+
+    }
+    function  addInvComment($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addInvComment(json_decode($data, true));
+
+    }
+    function  palletMove($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->palletMove(json_decode($data, true));
+
+    }
+    function  updateStocksChecks($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->updateStocksChecks(json_decode($data, true));
+
+    }
+    function  getAccomplishFrame($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getAccomplishFrame(json_decode($data, true));
+
+    }
+    function  delOneProductInv($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->delOneProductInv(json_decode($data, true));
+
+    }
+    function  getFrameProductNumber($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->getFrameProductNumber(json_decode($data, true));
+
+    }
+    function  getStockChecks($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getStockChecks(json_decode($data, true));
+
+    }
+    function  deleteStockChecks($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->deleteStockChecks(json_decode($data, true));
+
+    }
+    function  getWarehouseSection($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getWarehouseSection(json_decode($data, true));
+
+    }
+    function  updateStockChecks($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->updateStockChecks(json_decode($data, true));
+
+    }
+    function  addStockInventory($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addStockInventory(json_decode($data, true));
+
+    }
+    function  getStockChecksMove($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getStockChecksMove(json_decode($data, true));
+
+    }
+    function  addStockMove($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addStockMove(json_decode($data, true));
+
+    }
+    function  getStockChecksIn($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getStockChecksIn(json_decode($data, true));
+
+    }
+    function  delectStockMOve($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->delectStockMOve(json_decode($data, true));
+
+    }
+    function  addStockIn($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addStockIn(json_decode($data, true));
+
+    }
+    function  addStockMoveTransfer($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addStockMoveTransfer(json_decode($data, true));
+
+    }
+    function  confirmTransfer($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmTransfer(json_decode($data, true));
+
+    }
+    function  getTransferMissionNUM($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getTransferMissionNUM(json_decode($data, true));
+
+    }
+    function  manualAddTransfer($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->manualAddTransfer(json_decode($data, true));
+
+    }
+
+    function  getWarehouseTransferInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getWarehouseTransferInfo(json_decode($data, true));
+
+    }
+
+    function  getProductSectionType($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getProductSectionType(json_decode($data, true));
+
+    }
+
+    function  confirmOut($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmOut(json_decode($data, true));
+
+    }
+    function  confirmIn($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmIn(json_decode($data, true));
+
+    }
+
+    function  getStockSectionProduct($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getStockSectionProduct(json_decode($data, true));
+
+    }
+    function  getSkuProductId($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getSkuProductId(json_decode($data, true));
+
+    }
+    function  getProductAllSingleInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getProductAllSingleInfo(json_decode($data, true));
+
+    }
+    function  deleteStockSectionPorduct($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->deleteStockSectionPorduct(json_decode($data, true));
+
+    }
+
+    function  getInventoryOrderSoring($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getInventoryOrderSoring(json_decode($data, true));
+
+    }
+
+    function  addOrderInvComment($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addOrderInvComment(json_decode($data, true));
+
+    }
+    function  getAllotDoOrder($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getAllotDoOrder(json_decode($data, true));
+
+    }
+
+    function  getDoOrderStatus($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getDoOrderStatus(json_decode($data, true));
+
+    }
+
+    function  addDoOrderRelevant($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addDoOrderRelevant(json_decode($data, true));
+
+    }
+    function  getRelevantInfoByCount($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getRelevantInfoByCount(json_decode($data, true));
+
+    }
+    function  confirmDoRelevant($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmDoRelevant(json_decode($data, true));
+
+    }
+    function  confirmDoRelevantC($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->confirmDoRelevantC(json_decode($data, true));
+
+    }
+    function  addConsolidatedRelevant($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addConsolidatedRelevant(json_decode($data, true));
+
+    }
+    function  getRelevantInfoByProduct($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getRelevantInfoByProduct(json_decode($data, true));
+
+    }
+    function  addConsolidatedDoInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->addConsolidatedDoInfo(json_decode($data, true));
+
+    }
+    function  updateDoRelevantC($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->updateDoRelevantC(json_decode($data, true));
+
+    }
+    function  updateDoRelevant($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->updateDoRelevant(json_decode($data, true));
+
+    }
+    function  updateDoStatus($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->updateDoStatus(json_decode($data, true));
+
+    }
+    function  mergeDeliverOrder($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->mergeDeliverOrder(json_decode($data, true));
+
+    }
+
+        function  deleteOrderSorting($data, $origin_id, $key ){
+            global $warehouse;
+            if ( !soaHelper::auth($origin_id, $key) ){
+                return 'ERROR, NO AUTHORIZED.';
+            }
+
+
+            return $warehouse->deleteOrderSorting(json_decode($data, true));
+
+        }
+
+        function  checkContainerId($data, $origin_id, $key ){
+            global $warehouse;
+            if ( !soaHelper::auth($origin_id, $key) ){
+                return 'ERROR, NO AUTHORIZED.';
+            }
+
+
+            return $warehouse->checkContainerId(json_decode($data, true));
+
+        }
+        function  addWarehouseContainer($data, $origin_id, $key ){
+            global $warehouse;
+            if ( !soaHelper::auth($origin_id, $key) ){
+                return 'ERROR, NO AUTHORIZED.';
+            }
+
+
+            return $warehouse->addWarehouseContainer(json_decode($data, true));
+
+        }
+
+    function  getProductDeliver($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getProductDeliver(json_decode($data, true));
+
+    }
+    function  getContainerDeliver($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getContainerDeliver(json_decode($data, true));
+
+    }
+
+
+    //新调拨单申请 Alex 20180310 开始
+    function  getTransferBoxes($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getTransferBoxes(json_decode($data, true));
+    }
+
+
+    function  addTransferOrder($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->addTransferOrder(json_decode($data, true));
+    }
+
+    function  getTransferOrder($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getTransferOrder(json_decode($data, true));
+    }
+
+    function  cancelTransferOrder($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->cancelTransferOrder(json_decode($data, true));
+    }
+    //新调拨单申请 Alex 20180310 结束
+
+    function  getOrderContainerHistory($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getOrderContainerHistory(json_decode($data, true));
+    }
+
+
+    //可售库存仓库手工返还
+    function getInventorySortingReturn($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getInventorySortingReturn(json_decode($data, true));
+    }
+
+    function addInventorySortingReturn($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->addInventorySortingReturn(json_decode($data, true));
+    }
+    function updateInvComment($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->updateInvComment(json_decode($data, true));
+    }
+
+    function deleteContainerProduct($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->deleteContainerProduct(json_decode($data, true));
+    }
+	 /*
+     *zx
+     *班组长核查任务
+     * */
+    function  getOrderCheckInformation($data, $origin_id, $key){
+        global $locationverifi;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->getOrderCheckInformation(json_decode($data, true));
+    }
+    function  getCheckOrderInformation($data, $origin_id, $key){
+        global $locationverifi;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->getCheckOrderInformation(json_decode($data, true));
+    }
+    function  getDeliverOrderToCheck($data, $origin_id, $key){
+        global $locationverifi;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->getDeliverOrderToCheck(json_decode($data, true));
+    }
+    function  getCheckOrderInStockArea($data, $origin_id, $key){
+        global $locationverifi;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->getCheckOrderInStockArea(json_decode($data, true));
+    }
+    /*zx
+根据商品条码获取商品信息*/
+    function getProductsInformation($data, $station_id, $language_id, $origin_id, $key){
+        global $locationverifi;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->getProductsInformation(json_decode($data, true));
+    }
+    /*zx
+    根据商品条码获取商品信息*/
+    function submitCheckProductInformation($data, $station_id, $language_id, $origin_id, $key){
+        global $locationverifi;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->submitCheckProductInformation(json_decode($data, true));
+    }
+    /*zx
+    根据商品条码获取商品信息*/
+    function submitCheckProductResult($data, $station_id, $language_id, $origin_id, $key){
+        global $locationverifi;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->submitCheckProductResult(json_decode($data, true));
+    }
+    /*zx
+    根据商品条码获取商品信息*/
+    function cancelCheckOrderProduct($data, $station_id, $language_id, $origin_id, $key){
+        global $locationverifi;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->cancelCheckOrderProduct(json_decode($data, true));
+    }
+    function submitCheckOrderResult($data, $station_id, $language_id, $origin_id, $key){
+        global $locationverifi;
+
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $locationverifi->submitCheckOrderResult(json_decode($data, true));
+    }
+    /*
+     * zx
+     * 班组长核查任务
+     * 结束
+     * */
+
+    /*
+     * zx
+     * 外仓发过来的do单与本仓合单
+     * 开始
+     * */
+    function  getRelevantInfoByInput($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->getRelevantInfoByInput(json_decode($data, true));
+
+    }
+    function  get_order_information_to_merge($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->get_order_information_to_merge(json_decode($data, true));
+
+    }
+    function  catOrderProductInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->catOrderProductInfo(json_decode($data, true));
+
+    }
+    function  submitReturnProduct($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+
+        return $warehouse->submitReturnProduct(json_decode($data, true));
+
+    }
+    /*
+     * zx
+     * 外仓发过来的do单与本仓合单
+     * 结束
+     * */
+     //整件批次
+    function  getBoxBatchInfo($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->getBoxBatchInfo(json_decode($data, true));
+
+    }
+
+    function  getBoxBatchOrders($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->getBoxBatchOrders(json_decode($data, true));
+
+    }
+
+    function  addBoxBatchOrder($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->addBoxBatchOrder(json_decode($data, true));
+
+    }
+
+    function  updateBoxBatchOrder($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->updateBoxBatchOrder(json_decode($data, true));
+
+    }
+
+    function  cancelBoxBatchOrder($data, $origin_id, $key ){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+        return $warehouse->cancelBoxBatchOrder(json_decode($data, true));
+
+    }
+    function getBoxBatchOrderItem($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->getBoxBatchOrderItem(json_decode($data, true));
+    }
+    function submit_box_product_batch($data, $origin_id, $key){
+        global $warehouse;
+        if ( !soaHelper::auth($origin_id, $key) ){
+            return 'ERROR, NO AUTHORIZED.';
+        }
+
+        return $warehouse->submit_box_product_batch(json_decode($data, true));
+    }
 }
 
 

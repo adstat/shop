@@ -1,0 +1,12 @@
+2017-11-10 12:44:17 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-10 12:45:13 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-10 12:46:11 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-10 12:58:04 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-10 13:01:46 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+
+2017-11-10 13:57:47 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '347630'
+

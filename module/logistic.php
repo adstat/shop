@@ -174,7 +174,7 @@ class LOGISTIC{
     function getCustomerInfo(array $data){
 
         global $db;
-
+//return 131;
 
         $uid = isset($data['uid']) && $data['uid'] ? $data['uid'] : false;
         $code = isset($data['code']) && $data['code'] ? $data['code'] : false;
@@ -220,7 +220,7 @@ LEFT JOIN oc_order C on B.order_id = C.order_id
                    $customerSql.=" and B.order_id = '".$keyword."'";
                }
            }
-
+return $customerSql;
             $queryCustomers = $db->query($customerSql);
 
             if(sizeof($queryCustomers->rows)){

@@ -25,20 +25,54 @@ define('DOMAIN','@xianshiji.com');
 
 define('DB_PREFIX', 'oc_');
 //Master: Insert, Update
-define('DB_DRIVER', 'mysql');
-define('DB_HOSTNAME', '127.0.0.1');
-define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '123456');
-define('DB_DATABASE', 'xsjb2b');
+//define('DB_DRIVER', 'mysql');
+//define('DB_HOSTNAME', '10.66.158.182');
+//define('DB_USERNAME', 'zhangxiao');
+//define('DB_PASSWORD', '23mewjesdm2');
+//define('DB_DATABASE', 'xsjb2b');
 
+
+
+//
+ define('DB_DRIVER', 'mysql');
+ define('DB_HOSTNAME', '139.129.213.223');
+ define('DB_USERNAME', 'qinerjun');
+ define('DB_PASSWORD', 'dsl23lksdmml2');
+ define('DB_DATABASE', 'xsjb2b_lastday');
+ define('DB_DRIVER_SLAVE', 'mysql');
+ define('DB_HOSTNAME_SLAVE', '139.129.213.223');
+ define('DB_USERNAME_SLAVE', 'qinerjun');
+ define('DB_PASSWORD_SLAVE', 'dsl23lksdmml2');
+ define('DB_DATABASE_SLAVE', 'xsjb2b_lastday');
+
+
+//define('DB_DRIVER', 'mysql');
+//define('DB_HOSTNAME', 'localhost');
+//define('DB_USERNAME', 'root');
+//define('DB_PASSWORD', 'root');
+//define('DB_DATABASE', 'test');
+//
+//define('DB_DRIVER_SLAVE', 'mysql');
+//define('DB_HOSTNAME_SLAVE', 'localhost');
+//define('DB_USERNAME_SLAVE', 'root');
+//define('DB_PASSWORD_SLAVE', 'root');
+//define('DB_DATABASE_SLAVE', 'test');
 //Slave: Select
-define('DB_DRIVER_SLAVE', 'mysql');
-define('DB_HOSTNAME_SLAVE', '127.0.0.1');
-define('DB_USERNAME_SLAVE', 'root');
-define('DB_PASSWORD_SLAVE', '123456');
-define('DB_DATABASE_SLAVE', 'xsjb2b');
+//define('DB_DRIVER_SLAVE', 'mysql');
+//define('DB_HOSTNAME_SLAVE', 'localhost');
+//define('DB_USERNAME_SLAVE', 'root');
+//define('DB_PASSWORD_SLAVE', 'root');
+//define('DB_DATABASE_SLAVE', 'xsjb2b_local');
+//define('DB_DRIVER', 'mysql');
+//define('DB_HOSTNAME', 'localhost');
+//define('DB_USERNAME', 'root');
+//define('DB_PASSWORD', 'root');
+//define('DB_DATABASE', 'xsjb2b_local');
+//Slave: Select
+
 
 ////DB: Last Day
+
 define('DB_LASTDAY_DRIVER', 'mysql');
 //define('DB_LASTDAY_HOSTNAME', '10.26.174.99'); //内网地址
 define('DB_LASTDAY_HOSTNAME', '139.129.213.223'); //外网地址
@@ -90,7 +124,7 @@ define('CREDIT_REFUND_ORDER_STATUS',5);
 //array('api method'=>array(inventory_type_id, operation))
 //define('INVENTORY_TYPE_OP',serialize(array('inventoryInit'=>array(1,1), 'inventoryIn'=>array(2,1), 'inventoryBreakage'=>array(3,-1), 'inventoryOut'=>array(4,-1), 'stationRetail'=>array(5,-1), 'inventoryLoss'=>array(6,-1), 'inventoryProfit'=>array(7,1), 'inventoryReturn'=>array(8,1), 'inventoryOverdue'=>array(9,-1))));
 define('INVENTORY_TYPE_OP',serialize(array('inventoryInit'=>array(1,1), 'inventoryIn'=>array(2,1), 'inventoryBreakage'=>array(3,-1), 'inventoryOut'=>array(4,-1), 'stationRetail'=>array(5,-1), 'inventoryLoss'=>array(6,-1), 'inventoryProfit'=>array(7,1), 'inventoryReturn'=>array(8,1), 'inventoryOverdue'=>array(9,-1), 'inventoryCancelOrder'=>array(10,1),'inventoryInProduct'=>array(11,1),'inventoryOrderIn'=>array(12,-1),'inventoryOutProduct'=>array(13,-1),'inventoryCheck'=>array(14,1),'inventoryChange'=>array(15,-1),'inventoryAdjust'=>array(16,1),'inventoryVegCheck'=>array(17,1),'inventoryInProductPreset'=>array(18,1),'inventoryMissing'=>array(19,-1),'inventoryMissingRecover'=>array(20,1),'inventoryReturnCancel'=>array(21,-1))));
-define('INVENTORY_TYPE_AUTO_SYNC', serialize(array(8,16)));
+define('INVENTORY_TYPE_AUTO_SYNC', serialize(array(8,13)));
 //退货入库,8,inventoryReturn
 //暂不处理  //采购入库,11,inventoryInProduct 其他方法中已处理
 //暂不处理  //商品报损,13,inventoryOutProduct

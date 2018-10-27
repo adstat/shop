@@ -1,0 +1,8 @@
+2017-12-12 15:23:35 - 取消退货[disableReturnDeliverProduct]：update oc_return_deliver_product set status = 0 where confirmed = 0 and confirm_user_id = '0' and return_deliver_product_id = '49488'
+
+2017-12-12 15:33:26 - 取消退货[disableReturnDeliverProduct]：update oc_return_deliver_product set status = 0 where confirmed = 0 and confirm_user_id = '0' and return_deliver_product_id = '49489'
+
+2017-12-12 15:49:52 - 取消退货[disableReturnDeliverProduct]：update oc_return_deliver_product set status = 0 where confirmed = 0 and confirm_user_id = '0' and return_deliver_product_id = '49486'
+
+2017-12-12 15:49:57 - 取消退货[disableReturnDeliverProduct]：update oc_return_deliver_product set status = 0 where confirmed = 0 and confirm_user_id = '0' and return_deliver_product_id = '49487'
+

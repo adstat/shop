@@ -21,7 +21,7 @@ require_once './xmlrpc_wrappers.php';
 
 
 class soaXMLRPC{
-    function onGetWebServices(){
+    static function onGetWebServices(){
         global $xmlrpcI4, $xmlrpcInt, $xmlrpcBoolean, $xmlrpcDouble, $xmlrpcString, $xmlrpcDateTime, $xmlrpcBase64, $xmlrpcArray, $xmlrpcStruct, $xmlrpcValue;
         $services = array();
 

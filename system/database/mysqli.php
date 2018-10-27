@@ -22,9 +22,9 @@ final class MySQLi {
 
 		if ($this->mysqli->errno) {
 		//$mysqli->errno
-		}
+//		}
 		
-			if (is_resource($resource)) {
+			if (is_resource($result)) {
 				$i = 0;
     	
 				$data = array();

@@ -1,0 +1,3 @@
+2017-12-21 10:29:48 - a:10:{s:10:"station_id";i:0;s:7:"station";a:2:{s:4:"from";i:1;s:2:"to";i:1;}s:8:"order_id";s:0:"";s:9:"timestamp";i:1513823387;s:13:"add_user_name";s:9:"xiangyiao";s:4:"date";s:10:"2017-12-21";s:10:"sorting_id";s:5:"15233";s:12:"warehouse_id";s:4:" 14 ";s:10:"api_method";s:15:"inventoryAdjust";s:8:"products";a:1:{i:0;a:8:{s:13:"product_batch";N;s:8:"due_date";s:10:"0000-00-00";s:10:"product_id";s:4:"4567";s:13:"special_price";s:7:"15.0000";s:3:"qty";i:-5;s:14:"product_weight";N;s:6:"sku_id";s:4:"5835";s:10:"station_id";s:1:"2";}}}
+2017-12-21 10:29:49 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryAdjust
+2017-12-21 10:29:58 - update oc_x_inventory_check_single_sorting set move_flag = 1, subtime = NOW() where inventory_sorting_id in (15233)

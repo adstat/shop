@@ -1,0 +1,12 @@
+2018-04-24 18:13:43 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='11', inv_comment='12', frame_count='0', frame_vg_list= '' where deliver_order_id = '189103'
+
+2018-04-24 18:15:05 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='11', inv_comment='12', frame_count='0', frame_vg_list= '' where deliver_order_id = '189103'
+
+2018-04-24 18:15:05 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 6 where order_id = '635330' 
+
+2018-04-24 18:17:03 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='11', inv_comment='12', frame_count='0', frame_vg_list= '' where deliver_order_id = '189103'
+
+2018-04-24 18:17:43 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='11', inv_comment='12', frame_count='0', frame_vg_list= '' where deliver_order_id = '189103'
+
+2018-04-24 18:17:44 - [分拣]提交订单为待审核[addFastMoveSortingToInv]select xsm.order_id from oc_x_stock_move as xsm where xsm.inventory_type_id = 12 and xsm.order_id = '635330'
+

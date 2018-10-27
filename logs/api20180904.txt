@@ -1,0 +1,2 @@
+2018-09-04 10:33:54 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_x_deliver_order_inv set  date_modified = now(), box_count='6', inv_comment='731', frame_count='1', frame_vg_list= '166910' where deliver_order_id = '326138'
+

@@ -60,6 +60,7 @@ class OLDWAREHOUSE {
     function deCodeProductBatch2($products) {
         //Expect format: json_decode('{"products":{"150612001002003450":1,"150612001028001480":2}}', 2) => array()
         //Output: $product_info
+        global  $log;
 
         $product_ids = array();
         $sub_total = 0;
@@ -356,10 +357,15 @@ class OLDWAREHOUSE {
         //TODO Update inventory / Redis
     }
 
-    function addInventoryMoveOrder($data, $station_id,$warehouse_id) {
+    function addInventoryMoveOrder($data, $station_id,$warehouse_id,$order_type) {
         global $db, $dbm, $log;
 
         //$log->write('INFO:['.__FUNCTION__.']'.': '.serialize($data)."\n\r");
+
+        //TODO, Hardcode
+        //Alex20180902 商品报损处station_id 传值错误，目前所有station均为2
+        $station_id = 2;
+
 
         if (!is_array($data) || !sizeof($data) || !$station_id) {
             $log->write('ERR:[' . __FUNCTION__ . ']' . ': 参数错误' . "\n\r");
@@ -379,6 +385,14 @@ class OLDWAREHOUSE {
             $log->write('ERR:[' . __FUNCTION__ . ']' . ': 缺少库存计算关键配置数据[INVENTORY_TYPE_OP]' . "\n\r");
             return false;
         }
+        if($warehouse_id == 10){
+            $sql  = "select order_id  from  oc_x_deliver_order where   deliver_order_id = '". $data['order_id'] ."' ";
+
+            $query = $dbm->query($sql);
+            $result2 = $query->row;
+            $data['order_id'] =  $result2['order_id'];
+        }
+
 
         //Check timestamp
         $sql = "select inventory_move_id from oc_x_stock_move where station_id = '" . $station_id . "' and timestamp = '" . $data['timestamp'] . "';";
@@ -407,9 +421,13 @@ class OLDWAREHOUSE {
 
 
 
+
         //Get Inventory Type Opration From config
         $inventory_type_op = unserialize(INVENTORY_TYPE_OP); //array('api method'=>array(inventory_type_id, operation))
         $inventory_op = $inventory_type_op[$data['api_method']][1];
+        if($order_type == 2){
+            $inventory_op = $inventory_op*-1;
+        }
         $inventory_type = $inventory_type_op[$data['api_method']][0];
 
         if (!$inventory_type) {
@@ -455,10 +473,11 @@ class OLDWAREHOUSE {
         //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 插入库存表' . "\n\r");
 
         if(!empty($data['products'])){
-            $sql = "INSERT INTO `oc_x_stock_move_item` (`inventory_move_id`, `station_id`, `due_date`, `product_id`, `price`, `product_batch`, `quantity`, `box_quantity`, `weight`, `is_gift`, `checked`, `status`, `sku_id`,`warehouse_id`) VALUES ";
+            $sql = "INSERT INTO `oc_x_stock_move_item` (`inventory_move_id`, `station_id`, `due_date`, `product_id`, `price`, `product_batch`, `quantity`, `box_quantity`, `weight`, `is_gift`, `checked`, `status`, `sku_id`) VALUES ";
             $m = 0;
             foreach ($data['products'] as $product) {
-                $sql .= "(" . $inventory_move_id . ", " . $station_id . ", '" . (isset($product['due_date']) ? $product['due_date'] : '0000-00-00') . "', '" . $product['product_id'] . "', '" . $product['special_price'] . "', '" . (isset($product['product_batch']) ? $product['product_batch'] : '') . "', " . $product['qty'] * $inventory_op . ", '".(isset($product['box_quantity']) ? $product['box_quantity'] : 1)."', " . (isset($product['product_weight']) ? $product['product_weight'] : 0) . "," . (isset($product['is_gift']) ? $product['is_gift'] : 0) . ", " . (isset($product['checked']) ? $product['checked'] : 0) . "," . (isset($product['status']) ? $product['status'] : 1) . "," . (isset($product['sku_id']) ? $product['sku_id'] : 0) . ",'". $warehouse_id ."')";
+                $sql .= "(" . $inventory_move_id . ", " . $station_id . ", '" . (isset($product['due_date']) ? $product['due_date'] : '0000-00-00') . "', '" . $product['product_id'] . "', '" . $product['special_price'] . "', '" . (isset($product['product_batch']) ? $product['product_batch'] : '') . "', " . $product['qty'] * $inventory_op . ", '".(isset($product['box_quantity']) ? $product['box_quantity'] : 1)."', " . (isset($product['product_weight']) ? $product['product_weight'] : 0) . "," . (isset($product['is_gift']) ? $product['is_gift'] : 0) . ", " . (isset($product['checked']) ? $product['checked'] : 0) . "," . (isset($product['status']) ? $product['status'] : 1) . "," . (isset($product['sku_id']) ? $product['sku_id'] : 0) . ")";
+
                 if (++$m < sizeof($data['products'])) {
                     $sql .= ', ';
                 } else {
@@ -517,7 +536,6 @@ class OLDWAREHOUSE {
             $dbm->commit();
             return true;
         }
-
         //TODO Update inventory / Redis
     }
 
@@ -741,8 +759,8 @@ class OLDWAREHOUSE {
         $sql = "SELECT
 	op.product_id,p.weight,p.weight_range_least,p.weight_range_most
 FROM
-	oc_order_product AS op
-LEFT JOIN oc_order AS o ON o.order_id = op.order_id
+	oc_x_deliver_order_product AS op
+LEFT JOIN oc_x_deliver_order AS o ON o.deliver_order_id = op.deliver_order_id
 left join oc_product as p on p.product_id = op.product_id
 WHERE
 	op.weight_inv_flag = 1
@@ -791,7 +809,7 @@ group by op.product_id";
     }
 
 
-    public function adjust_post($data_inv,$warehouse_id){
+    public function adjust_post($data_inv,$warehouse_id,$order_type,$purchase_order_id){
 
         global $db, $dbm, $log;
 
@@ -871,11 +889,11 @@ group by imi.product_id";
             $dbm->query("INSERT INTO oc_x_inventory_move (`station_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`,`warehouse_id`) VALUES('2', '{$date}', '{$time}', '1', '" . INVENTORY_TYPE_PRESET . "', '{$date_added}', '{$user_id}', '{$user_name}', '重置预设库存为0','{$warehouse_id}')");
             $inventory_move_id = $dbm->getLastId();
 
-            $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`,`warehouse_id`) VALUES';
+            $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`,`warehouse_id`,`purchase_order_id`) VALUES';
 
             foreach($preset_fastpin_product_arr as $key=>$product){
                 if(in_array($key, $fastpin_arr_in)){
-                    $sql .= "('{$inventory_move_id}', '2', '{$key}', '{$product}','{$warehouse_id}'),";
+                    $sql .= "('{$inventory_move_id}', '2', '{$key}', '{$product}','{$warehouse_id}','{$purchase_order_id}'),";
 
                 }
             }
@@ -889,11 +907,16 @@ group by imi.product_id";
 
         $dbm->query("INSERT INTO oc_x_inventory_move (`station_id`, `date`, `timestamp`, `from_station_id`, `inventory_type_id`, `date_added`, `added_by`, `add_user_name`, `memo`,`warehouse_id`) VALUES('2', '{$date}', '{$time}', '1', '" . INVENTORY_TYPE_STOCK_IN . "', '{$date_added}', '{$user_id}', '{$user_name}', '{$comment}','{$warehouse_id}')");
         $inventory_move_id = $dbm->getLastId();
-        $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`,`warehouse_id`) VALUES';
+        $sql = 'INSERT INTO oc_x_inventory_move_item(`inventory_move_id`, `station_id`, `product_id`, `quantity`,`warehouse_id`,`purchase_order_id`) VALUES';
+
+
 
         foreach($products as $key=>$product){
+            if($order_type == 2){
+                $product = $product*-1;
+            }
             if(in_array($key, $fastpin_arr_in)){
-                $sql .= "('{$inventory_move_id}', '2', '{$key}', '{$product}','{$warehouse_id}'),";
+                $sql .= "('{$inventory_move_id}', '2', '{$key}', '{$product}','{$warehouse_id}','{$purchase_order_id}'),";
 
             }
         }
@@ -905,8 +928,8 @@ group by imi.product_id";
 
         $dbm->query($sql);
 
-        $dbm->query("update oc_product set status = 1 where product_id in (" . $fastpin_id_str . ")");
-
+        $dbm->query("update oc_product set status = 1,can_modify = 0 where product_id in (" . $fastpin_id_str . ")");
+        $dbm->query("update oc_product_to_warehouse set status = 1 where product_id in (" . $fastpin_id_str . ") and warehouse_id = '".$warehouse_id ."' ");
         $dbm->query('COMMIT');
 
 
@@ -1035,7 +1058,60 @@ group by imi.product_id";
         $data_inv = json_decode($data, 2);
         $date = $data_inv['date'];
         $warehouse_id = $data_inv['warehouse_id'];
-        $sql = "insert into oc_x_inventory_check_single_sorting (product_id,inv_quantity,quantity,uptime,added_by,remark,remark_2,move_flag,warehouse_id) "
+        foreach ($data_inv['products'] as $product_id => $product_quantity) {
+            $productid = $product_id;
+        };
+
+
+        //获取最早盘点值
+        $sql_move  = " select   max(inventory_move_id) inventory_move_id  from oc_x_stock_move  WHERE  inventory_type_id = 14  and warehouse_id = '".$warehouse_id ."'  ";
+
+        $query = $dbm->query($sql_move);
+        $result_move = $query->row;
+
+        //获取该商品最早的盘点值
+        $sql_move_item = "select smi.quantity item_quantity  from  oc_x_stock_move_item  smi WHERE  smi.inventory_move_id   = '". $result_move['inventory_move_id'] ."'  and  smi.product_id = '".$productid ."'";
+
+
+        $query = $dbm->query($sql_move_item);
+        $result_move_item = $query->row;
+
+        //获取该商品从最早的盘点值到提交时候的库存值
+
+        $sql_real = "select  sum(smi.quantity) real_quantity from  oc_x_stock_move sm LEFT join oc_x_stock_move_item smi on sm.inventory_move_id = smi.inventory_move_id WHERE  smi.product_id = '".$productid."'and  sm.inventory_move_id >= '". $result_move['inventory_move_id'] . "' and  sm.warehouse_id = '".$warehouse_id ."' ";
+
+        $query = $dbm->query($sql_real);
+        $result_real = $query->row;
+
+
+        //获取分拣占用的数量包括分拣中，跟待审核的订单
+        $sql_occupy  = "SELECT
+	sum(iso.quantity) occupy_quantity
+FROM
+	oc_order o
+LEFT JOIN oc_x_deliver_order odo ON o.order_id = odo.order_id
+LEFT JOIN oc_x_inventory_order_sorting iso ON odo.deliver_order_id = iso.deliver_order_id
+LEFT JOIN oc_x_stock_move sm ON o.order_id = sm.order_id
+WHERE
+	iso.product_id = '".$product_id."'
+AND iso.move_flag = 0
+AND o.order_status_id != 3
+AND o.order_deliver_status_id = 1
+AND odo.do_warehouse_id = '".$warehouse_id."'
+AND iso. STATUS = 1
+AND sm.order_id IS NULL ";
+
+
+        $query = $dbm->query($sql_occupy);
+        $result_occupy = $query->row;
+
+//        //获取下单未分拣的值
+//        $sql_order = " select  sum(op.quantity) order_quantity  from   oc_order o LEFT JOIN  oc_order_product op on o.order_id = op.order_id where o.warehouse_id = '".$warehouse_id ."' and o.order_status_id in (1,2,5,8) and op.product_id = '".$product_id ."' group by op.product_id  ";
+//        $query = $dbm->query($sql_order);
+//        $result_order = $query->row;
+
+
+        $sql = "insert into oc_x_inventory_check_single_sorting (product_id,inv_quantity,quantity,uptime,added_by,remark,remark_2,move_flag,warehouse_id,occupy_quantity) "
             . "values ";
         $i = 1;
         $error = 0;
@@ -1053,14 +1129,14 @@ group by imi.product_id";
             }
 
             $move_flag = 0;
-            if($data_inv['products_inv'][$product_id] == $product_quantity){
-                $move_flag = 1;
+            if($data_inv['products_inv'][$product_id] == ($product_quantity + $result_occupy['occupy_quantity'])){
+                $move_flag = 0;
             }
 
             if ($i == count($data_inv['products'])) {
-                $sql .= "(" . $product_id . "," . $data_inv['products_inv'][$product_id] . "," . $product_quantity . ",now(),'" . $data_inv['add_user_name'] . "','" . $data_inv['remark'] . "','" . $data_inv['remark_2'] . "'," . $move_flag . " , '". $warehouse_id."')";
+                $sql .= "(" . $product_id . ",'" . $result_real['real_quantity'] . "'," . $product_quantity . ",now(),'" . $data_inv['add_user_name'] . "','" . $data_inv['remark'] . "','" . $data_inv['remark_2'] . "'," . $move_flag . " , '". $warehouse_id."','".$result_occupy['occupy_quantity'] ."')";
             } else {
-                $sql .= "(" . $product_id . "," . $data_inv['products_inv'][$product_id] . "," . $product_quantity . ",now(),'" . $data_inv['add_user_name'] . "','" . $data_inv['remark'] . "','" . $data_inv['remark_2'] . "'," . $move_flag . " , '". $warehouse_id."'),";
+                $sql .= "(" . $product_id . ",'" . $result_real['real_quantity'] . "'," . $product_quantity . ",now(),'" . $data_inv['add_user_name'] . "','" . $data_inv['remark'] . "','" . $data_inv['remark_2'] . "'," . $move_flag . " , '". $warehouse_id."','".$result_occupy['occupy_quantity'] ."'),";
             }
             $i++;
         }
@@ -1793,11 +1869,30 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
         //$date = isset($data['date']) ? $data['date'] : false;
         $order_id = isset($data['order_id']) ? $data['order_id'] : false;
+        $user_group_id = isset($data['user_group_id']) ? $data['user_group_id'] : false;
+        $repack = isset($data['repack']) ? $data['repack'] : false;
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : 0;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : 0;
+        $frame_num = isset($data['frame_num']) ? $data['frame_num'] : 0;
+//return $data;
         if (!$order_id) {
             return false;
         }
 
-        $sql = "select station_id from oc_order where order_id = '".$order_id."'";
+//        $sql = "select  order_status_id from oc_order where order_id = '". $order_id ."'" ;
+//
+//        $query = $db->query($sql);
+//        $orderStatus = $query->row;
+
+        $orderStatus = $this->getDeliverOrderInfo($order_id) ;
+
+
+        if($orderStatus['order_status_id'] == 3){
+            return false;
+        }
+
+        $sql = "select station_id  , do_warehouse_id  , warehouse_id  from oc_x_deliver_order where deliver_order_id = '".$order_id."'";
+
         $query = $db->query($sql);
         $stationInfo = $query->row;
 
@@ -1806,16 +1901,17 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
         //获取订单的所有商品
         $sql = "SELECT
-            op.order_product_id, op.order_id, op.product_id, op.weight_inv_flag, op.name, op.model, op.quantity, op.price, op.total, op.tax, op.reward, op.price_ori, op.retail_price, op.is_gift, op.shipping, op.status,
-            lpp.barcode,p.repack,p.station_id,p.inv_class,p.sku,p.inv_class_sort,p.storage_mode_id,ptc.category_id,p.product_type,p.product_type_id
+            op. deliver_order_product_id, op.order_id, op.product_id, op.weight_inv_flag, op.name,  op.quantity, op.price, op.total,  op.is_gift,  op.status,
+            lpp.barcode,p.repack,p.station_id,p.inv_class,ptw.sku_barcode sku,ptw.stock_area inv_class_sort,p.storage_mode_id,ptc.category_id,p.product_type,p.product_type_id
         FROM
-            oc_order_product AS op
+            oc_x_deliver_order_product AS op
         LEFT JOIN oc_product AS p ON p.product_id = op.product_id
         left join oc_product_to_category as ptc on p.product_id = ptc.product_id
         left join labelprinter.productlist as lpp on lpp.product_id = op.product_id
+        LEFT JOIN oc_product_to_warehouse  ptw ON  op.product_id = ptw.product_id
         WHERE
-            op.order_id = " . $order_id . "
-
+            op.deliver_order_id = " . $order_id . "
+             and ptw.warehouse_id = '". $stationInfo['warehouse_id']."' and ptw.do_warehouse_id = '".$stationInfo['do_warehouse_id'] ."'
         ORDER BY
             p.inv_class ASC,
                 p.inv_class_sort ASC,
@@ -1824,19 +1920,47 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
         //TODO 快消品重新排序
         if($stationInfo['station_id'] == 2){
             $sql = "SELECT
-                        op.order_product_id, op.order_id, op.product_id, op.weight_inv_flag, op.name, op.model, op.quantity, op.price, op.total, op.tax, op.reward, op.price_ori, op.retail_price, op.is_gift, op.shipping, op.status,
-                        '' barcode,p.repack,p.station_id,p.inv_class,p.sku,p.inv_class_sort,p.storage_mode_id,ptc.category_id,p.product_type,p.product_type_id
+                        op.deliver_order_product_id, op.order_id, op.product_id, op.weight_inv_flag, op.name,  sum(op.quantity) quantity , op.price, op.total, op.is_gift,  op.status,
+                        '' barcode,p.repack,p.station_id,p.is_repack,p.inv_class,ptw.sku_barcode sku, ptw.stock_area inv_class_sort, p.storage_mode_id,ptc.category_id,p.product_type,p.product_type_id,group_concat(psb.sku_barcode) sku1,
+                        left(ptw.stock_area, 3) shortsort
                     FROM
-                        oc_order_product AS op
+                        oc_x_deliver_order_product AS op
                     LEFT JOIN oc_product AS p ON p.product_id = op.product_id
                     left join oc_product_to_category as ptc on p.product_id = ptc.product_id
-                    WHERE
-                        op.order_id = " . $order_id . "
+                    LEFT JOIN oc_product_to_warehouse ptw ON op.product_id = ptw.product_id
+                    LEFT JOIN oc_product_sku_barcode psb ON  op.product_id = psb.product_id and psb.warehouse_id = '". $data['warehouse_id']."'
+                    
+                  
+                     ";
 
+            if($frame_num > 0 ){
+                $sql .= " left join oc_x_inventory_order_sorting ios on ios.deliver_order_id = op.deliver_order_id and ios.product_id = op.product_id and ios.status =1  ";
+            }
+            $sql .= "   WHERE
+                        op.deliver_order_id = " . $order_id . "
+                        and ptw.warehouse_id = '". $data['warehouse_id']."' ";
+            if($frame_num > 0 ){
+                $sql .= "  and ios.container_id = '".$frame_num ."'";
+            }
+
+            if($data['warehouse_id'] == 12){
+                $sql  .= " group by op.product_id
+                    ORDER BY field(shortsort, 'A02','A03','A26','A27','A04','A05','A28','A29','A06','A07','A30','A31','A08','A09','A32','A33','A10','A11','A34','A35','A12','A13','A36','A37','A14','A15','A38','A39','A16','A17','A40','A41','A18','A19','A42','A43','A20','A21','A44','A45','A22','A23','A46','A47','A24','A25','A48','A49','A50','A51','A52','A53','A54','A55','A56','A57','A58'), ptw.stock_area asc
+                    ";
+            }
+            else if($data['warehouse_id'] == 14){
+                $sql  .= " group by op.product_id
+                    ORDER BY ptw.stock_area_sort asc, ptw.stock_area asc
+                    ";
+            }
+            else{
+                $sql  .= "     group by op.product_id
                     ORDER BY
-                        p.inv_class_sort_order asc,
-                        p.inv_class_sort asc";
+                        ptw.stock_area asc,
+                        ptw.stock_area_sort asc";
+            }
         }
+
 
         $query = $db->query($sql);
 
@@ -1861,8 +1985,12 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
         //获取入库中间表中已入库的商品，并从计划入库的商品中减去已入库的商品
 
-        $sql = "SELECT xis.* FROM oc_x_inventory_order_sorting AS xis where xis.order_id = '" . $order_id . "' ";
+        $sql = "SELECT xis.* FROM oc_x_inventory_order_sorting AS xis  left join oc_product p on p.product_id = xis.product_id where  xis.status = 1 and xis.deliver_order_id = '" . $order_id . "'   ";
 
+        if($frame_num > 0){
+            $sql .= " and xis.container_id = '".$frame_num."'";
+        }
+//        return $sql;
         $query = $db->query($sql);
         $result = $query->rows;
 
@@ -1971,7 +2099,7 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
         if ($data['is_view'] != 1) {
 
-            $sql = "select * from oc_order where order_id = " . $order_id;
+            $sql = "select * from oc_x_deliver_order where deliver_order_id = " . $order_id;
             $query = $db->query($sql);
             $order_status = $query->row;
 
@@ -1980,9 +2108,124 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
                 return array("status" => 6);
             }
 
-            $sql = "update oc_order set order_status_id = 5 where order_id = " . $order_id;
-            $dbm->query($sql);
+            if($user_group_id == 15){
+                $sql = "update oc_x_deliver_order set order_status_id = 5,repack_status_id = 5 where deliver_order_id = " . $order_id;
+                $dbm->query($sql);
+
+                $sql = "update oc_order set order_status_id = 5 where order_id = '".$orderStatus['order_id']."'" ;
+                $dbm->query($sql);
+            }
+
+
+
         }
+
+
+        return $return_arr;
+    }
+    public function getOrderAreaList($data, $station_id, $language_id = 2, $origin_id) {
+        //Expect Data: $data= '{"data":"2015-09-02","station_id":"2"}';
+        //Expect Data: $data= '{"station_id":"2"}';
+        global $db;
+        global $dbm;
+        global $log;
+
+        $data = json_decode($data, 2);
+
+        //$date = isset($data['date']) ? $data['date'] : false;
+        $order_id = isset($data['order_id']) ? $data['order_id'] : false;
+        $repack = isset($data['repack']) ? $data['repack'] : false;
+        $warehouse_transfer_area_id = $data['warehouse_transfer_area_id'];
+        $warehouse_id = $data['warehouse_id'];
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : 0;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : 0;
+        if (!$order_id) {
+            return false;
+        }
+
+        $sql = "select  order_status_id from oc_order where order_id = '". $order_id ."'" ;
+
+        $query = $db->query($sql);
+        $orderStatus = $query->row;
+
+        if($orderStatus['order_status_id'] == 3){
+            return false;
+        }
+
+        $sql = "select station_id from oc_order where order_id = '".$order_id."'";
+        $query = $db->query($sql);
+        $stationInfo = $query->row;
+
+
+        $return = array();
+        $return['data'] = array();
+
+
+
+        //获取入库中间表中已入库的商品，并从计划入库的商品中减去已入库的商品
+
+        $sql = "SELECT xis.*,oss.name as areaname,oss.stock_section_id FROM oc_x_inventory_purchase_order_sorting AS xis  
+left join oc_product p on p.product_id = xis.product_id 
+left join oc_x_stock_section oss on oss.stock_section_id = xis.stock_section_id
+where xis.area_status =1 and xis.order_id = '" . $order_id . "' ORDER BY oss.stock_section_id";
+
+
+        $query = $db->query($sql);
+        $result = $query->rows;
+
+        $return['data'] = $result;
+        $sql1 = 'SELECT count(stock_section_id) as count ,stock_section_id FROM `oc_x_inventory_purchase_order_sorting`  WHERE area_status = 1 GROUP BY stock_section_id';
+        $query1 = $db->query($sql1);
+        $count = $query1->rows;
+        $warehouse_transfer_area_id = $data['warehouse_transfer_area_id'];
+        $warehouse_id = $data['warehouse_id'];
+        $sql2 = "SELECT oss.name as areaname,oss.stock_section_id FROM oc_x_stock_section oss  WHERE oss.stock_section_type_id ='".$warehouse_transfer_area_id."' AND oss.warehouse_id = '".$warehouse_id."' GROUP BY oss.stock_section_id";
+        $query2 = $db->query($sql2);
+        $result2 = $query2->rows;
+        $sql3 = "SELECT oss.name as areaname,oss.stock_section_id FROM oc_x_inventory_purchase_order_sorting AS xis  
+left join oc_x_stock_section oss on oss.stock_section_id = xis.stock_section_id
+where xis.area_status =0 and xis.order_id = '" . $order_id . "'";
+        $query3 = $db->query($sql3);
+        $result3 = $query3->rows;
+        $sql4 = "SELECT oss.name as areaname,oss.stock_section_id FROM oc_x_inventory_purchase_order_sorting AS xis  
+left join oc_x_stock_section oss on oss.stock_section_id = xis.stock_section_id
+where xis.order_id = '" . $order_id . "' GROUP BY xis.stock_section_id";
+        $query4 = $db->query($sql4);
+        $result4 = $query4->rows;
+
+        $return_arr = array();
+        $return_arr['status'] = 1;
+        $return_arr['data'] = array();
+        $return_arr['count'] = array();
+        $return_arr['areas1'] = array();
+        $return_arr['areas2'] = array();
+        $return_arr['areas3'] = array();
+        //商品根据inv_class分组显示
+        /*
+          foreach($return['data'] as $k => $v){
+          $return_arr['data'][$v['inv_class']]['inv_class_name'] = $v['inv_class_name'];
+          $return_arr['data'][$v['inv_class']]['product'][$k]['name'] =  $v['name'];
+          $return_arr['data'][$v['inv_class']]['product'][$k]['quantity'] =  $v['quantity'];
+          $return_arr['data'][$v['inv_class']]['product'][$k]['plan_quantity'] =  $v['plan_quantity'];
+          }
+         */
+        $return_arr['count'] = $count;
+        $return_arr['areas1'] = $result2;
+        $return_arr['areas2'] = $result3;
+        $return_arr['areas3'] = $result4;
+        $return_arr['data'] = $return['data'];
+
+//        if($stationInfo['station_id'] == 2){
+//            $return_arr['data'] = array();
+//            foreach($return['data'] as $m){
+//                $return_arr['data'][] = $m;
+//            }
+//        }
+
+
+
+
+
 
 
         return $return_arr;
@@ -2001,8 +2244,46 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
         return $results;
     }
 
+    public  function updateStockSectionArea($data, $station_id, $language_id = 2, $origin_id){
+        global $dbm;
+        global $db;
+        global $log;
+        $data = json_decode($data, 2);
+        $sql1 = "SELECT xis.* FROM oc_x_inventory_purchase_order_sorting AS xis  
+where xis.warehouse_id = '".$data['warehouse_id']."' and xis.order_id = '" . $data['order_id'] . "' AND xis.stock_section_id ='".$data['stock_section_ids']."'";
+        $query1 = $db->query($sql1);
+        $result1 = $query1->rows;
+        if ($data['status'] == 0) {
+            foreach ($result1 as $value) {
+                $sql = "UPDATE oc_x_inventory_purchase_order_sorting SET area_status = 1 WHERE warehouse_id = '".$data['warehouse_id']."' AND order_id = '" . $data['order_id']."' AND product_id = '".$value['product_id']."'";
+//                return $sql;
+                $dbm->query($sql);
+            }
+        } else if ($data['status'] == 1) {
+            foreach ($result1 as $value) {
+                $sql = "UPDATE oc_x_inventory_purchase_order_sorting SET area_status = 0 WHERE warehouse_id = '".$data['warehouse_id']."' AND order_id = '" . $data['order_id']."' AND product_id = '".$value['product_id']."'";
+                $dbm->query($sql);
+            }
+        } else if ($data['status'] == 2) {
+            $sql = "UPDATE oc_x_inventory_purchase_order_sorting SET stock_section_id = '".$data['stock_section_id']."' WHERE warehouse_id = '".$data['warehouse_id']."' AND order_id = '" . $data['order_id']."' AND product_id = '".$data['product_id']."'";
+//            return $sql;
+            $dbm->query($sql);
+        }
 
+        return array('status' => 1);
+    }
 
+    public function getWarehouseTransferArea($data, $station_id, $language_id = 2, $origin_id){
+        global $db;
+        global $dbm;
+        global $log;
+        $data = json_decode($data, 2);
+        //区域详情
+        $sql2s = "SELECT * FROM oc_x_stock_section where stock_section_type_id ='".$data['warehouse_transfer_area_id']."' and warehouse_id = '".$data['warehouse_id']."'";
+        $query2s = $db->query($sql2s);
+        $transfer_item = $query2s->rows;
+        return $transfer_item;
+    }
 
     public function getPurchaseOrderSortingList($data, $station_id, $language_id = 2, $origin_id) {
         //Expect Data: $data= '{"data":"2015-09-02","station_id":"2"}';
@@ -2015,6 +2296,7 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
         //$date = isset($data['date']) ? $data['date'] : false;
         $order_id = isset($data['order_id']) ? $data['order_id'] : false;
+        $warehouse_id = isset($data['warehouse_id']) ? $data['warehouse_id'] : false;
         if (!$order_id) {
             return false;
         }
@@ -2025,11 +2307,12 @@ where A.station_user_id = "' . $data['station_user_id'] . '" and A.logined = 1';
 
 //获取订单的所有商品
         $sql = "SELECT
-	op.*,lpp.barcode,p.inv_class,p.sku,p.inv_class_sort,p.storage_mode_id,ptc.category_id,p.product_type
+	op.*,lpp.barcode,p.inv_class,ptw.sku_barcode sku,ptw.stock_area inv_class_sort,p.storage_mode_id,ptc.category_id,p.product_type
 FROM
 	oc_x_pre_purchase_order_product AS op
 LEFT JOIN oc_product AS p ON p.product_id = op.product_id
--- left join (select * from oc_product_to_category group by product_id) as ptc on p.product_id = ptc.product_id
+LEFT JOIN oc_product_to_warehouse ptw ON op.product_id = ptw.product_id  and ptw.warehouse_id = '".$warehouse_id."'
+
 left join oc_product_to_category as ptc on p.product_id = ptc.product_id
 left join labelprinter.productlist as lpp on lpp.product_id = op.product_id
 WHERE
@@ -2058,7 +2341,7 @@ ORDER BY
 
         //获取入库中间表中已入库的商品，并从计划入库的商品中减去已入库的商品
 
-        $sql = "SELECT xis.* FROM oc_x_inventory_purchase_order_sorting AS xis where xis.order_id = '" . $order_id . "' ";
+        $sql = "SELECT xis.*,ss.name as areaname ,ss.stock_section_id FROM oc_x_inventory_purchase_order_sorting AS xis left join oc_x_stock_section ss on ss.stock_section_id = xis.stock_section_id where xis.order_id = '" . $order_id . "' order by xis.stock_section_id";
 
         $query = $db->query($sql);
         $result = $query->rows;
@@ -2066,6 +2349,8 @@ ORDER BY
             foreach ($result as $rk => $rv) {
                 $return_move_p = array();
                 $return['data'][$rv['product_id']]['quantity'] -= $rv['quantity'];
+                $return['data'][$rv['product_id']]['areaname'] = $rv['areaname'];
+                $return['data'][$rv['product_id']]['areaid'] = $rv['stock_section_id'];
                 if (empty($return['data'][$rv['product_id']]['product_barcode_arr'])) {
                     $return['data'][$rv['product_id']]['product_barcode_arr'] = json_decode($rv['product_barcode']);
                 } else {
@@ -2085,6 +2370,14 @@ ORDER BY
         $return_arr = array();
         $return_arr['status'] = 1;
         $return_arr['data'] = array();
+
+
+
+        //区域分类
+        $sql1s = "select * from oc_x_product_section_type order by station_section_type_id";
+        $query1s = $db->query($sql1s);
+        $transfer = $query1s->rows;
+
         //商品根据inv_class分组显示
         /*
           foreach($return['data'] as $k => $v){
@@ -2095,7 +2388,7 @@ ORDER BY
           }
          */
         $return_arr['data'] = $return['data'];
-
+        $return_arr['transfer'] = $transfer;
 
 
 
@@ -2263,7 +2556,7 @@ ORDER BY
                     'due_date' => $due_date,
                     'retail_price' => round((int) substr($product, 1 - (12 - strlen($product)) + 5, 5) / 100, 2)
                 );
-            } elseif (strlen($product) == 4) {
+            } elseif (strlen($product) <= 6) {
 
                 $product_id = $product;
             } else {
@@ -2275,7 +2568,7 @@ ORDER BY
 
         $sql = "select
             A.product_id,
-            IF ( A.unit_size IS NULL, B.name, concat( B.name,'[',cast(A.unit_size AS signed),']')) AS name,
+            IF ( A.inv_size IS NULL || A.is_repack = 1  , B.name, concat( B.name,'[',cast(A.inv_size AS signed),']')) AS name,
             B.abstract,
             PC.print_name inv_class,
             round(A.price,2) ori_price,
@@ -2286,12 +2579,12 @@ ORDER BY
             concat(round(A.weight,0), C.title) unit,
             A.shelf_life,
             now() checktime
-            from xsjb2b.oc_product A
-            left join xsjb2b.oc_product_description B on A.product_id = B.product_id and B.language_id = 2
-            left join xsjb2b.oc_weight_class_description C on A.weight_class_id = C.weight_class_id and C.language_id = 2
-            left join  xsjb2b.oc_product_special D on (A.product_id = D.product_id and now() between D.date_start and D.date_end)
-            left join xsj.oc_product_promo E on A.product_id = E.product_id
-            left join xsjb2b.oc_product_inv_class PC on A.inv_class = PC.product_inv_class_id
+            from oc_product A
+            left join oc_product_description B on A.product_id = B.product_id and B.language_id = 2
+            left join oc_weight_class_description C on A.weight_class_id = C.weight_class_id and C.language_id = 2
+            left join oc_product_special D on (A.product_id = D.product_id and now() between D.date_start and D.date_end)
+            left join oc_product_promo E on A.product_id = E.product_id
+            left join oc_product_inv_class PC on A.inv_class = PC.product_inv_class_id
             where A.product_id in (" . implode(',', $product_ids) . ")";
 
         $query = $db->query($sql);
@@ -2320,11 +2613,17 @@ ORDER BY
         //Expect Data: $data= '{"station_id":"2"}';
         global $dbm;
         global $log;
+        global $db;
 
         $data = json_decode($data, 2);
 
         //$date = isset($data['date']) ? $data['date'] : false;
         $product_id = isset($data['product_id']) ? $data['product_id'] : false;
+        $container_id = isset($data['container_id']) ? $data['container_id'] : false;
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : false;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : false;
+        $frame_vg_list  = isset($data['frame_vg_list']) ? $data['frame_vg_list'] : false;
+        $frame_count  = isset($data['frame_count']) ? $data['frame_count'] : false;
         if (!$product_id) {
             return false;
         }
@@ -2335,63 +2634,345 @@ ORDER BY
         }
 
 
-        /*
-          //判断今天是否已经提交过了
-          $sql = "select count(xim.inventory_move_id) as count_move_t from oc_x_inventory_move as xim left join oc_x_station_group as sg on sg.station_id = xim.station_id where date(xim.date_added) = date(now()) and sg.name = '" . $data['inventory_group'] . "'";
-          $query = $dbm->query($sql);
-          $result_move_flag = $query->row;
 
-          //已经提交过了
-          if($result_move_flag['count_move_t'] > 0){
-          $return['status'] = 0;
-          return $return;
-          }
-         */
 
-        //默认返回状态0，成功返回状态1
-        $return['status'] = 0;
+        $orderStatus =  $this->getDeliverOrderInfo($order_id);
 
-        $sql = "insert into oc_x_inventory_order_sorting (product_id,order_id,quantity,uptime,added_by,product_barcode) "
-            . "values (" . $product_id . "," . $order_id . "," . $data['product_quantity'] . ",now(),'" . $data['inventory_user'] . "','" . json_encode($data['product_barcode_arr']) . "')";
-        $result = $dbm->query($sql);
-
-        //$log->write($sql."\n\r");
-        if($result){
-            $return['status'] = 1;
-
-            //HARD CODE!!!
-            $bomProduct = array(
-                '5661'=>6,
-                '5662'=>3,
-                '5663'=>3,
-                '5664'=>6,
-                '5665'=>2,
-                '5797'=>2,
-                '5798'=>3,
-                '5799'=>2,
-                '5800'=>1,
-
-                '6751'=>3,
-                '6753'=>3
-            );
-
-            //添加分拣中间库记录后返回分拣的整箱数量
-            //TOOD HardCode
-            $sql = "select sum(if(p.product_id in (6751,6753), ios.quantity*3, ios.quantity)) qtyCount, sum(if(p.repack=0,if(p.product_id in (6751,6753), ios.quantity*3, ios.quantity),0)) boxCount, sum(if(p.repack=1,ios.quantity,0)) repackCount
-            from oc_x_inventory_order_sorting ios
-            left join oc_product p on ios.product_id = p.product_id
-            where ios.order_id = '".$order_id."'";
-            $query = $dbm->query($sql);
-            $result = $query->row;
-
-            $return['qtyCount'] = $result['qtyCount'];
-            $return['boxCount'] = $result['boxCount'];
-            $return['repackCount'] = $result['repackCount'];
+        if(in_array($orderStatus['order_status_id'],[3,6,12])){
+            return false;
         }
 
-        return $return;
-    }
+        $sql = " select SUM(quantity) AS quantity   from  oc_x_deliver_order_product    where deliver_order_id = '". $order_id ."' and  product_id = '".$product_id ."'  ";
+        $query = $db->query($sql);
+        $order_quantity  = $query->row;
 
+
+        $sql = " select SUM(quantity) AS quantity   from  oc_x_inventory_order_sorting    where deliver_order_id = '". $order_id ."' and  product_id = '".$product_id ."' and status = 1   ";
+        $query = $db->query($sql);
+        $sorting_quantity  = $query->row;
+
+        if($order_quantity['quantity'] <= $sorting_quantity['quantity'] ){
+            $return['memo']  =  '入库数量不能大于订单数量';
+            return $return;
+        }else {
+
+
+            //默认返回状态0，成功返回状态1
+            $return['status'] = 0;
+
+            $sql_product_repack = " select repack  from oc_product where product_id = '". $product_id ."'";
+
+            $query = $db->query($sql_product_repack);
+            $result_product_repack  = $query->row;
+            if($result_product_repack['repack'] == 0 ){
+                $container_id = 0 ;
+            }
+
+            $sql_inventory_product_id = "select quantity ,product_id   from oc_x_inventory_order_sorting where deliver_order_id = '".$order_id ."' and product_id = '".$product_id ."' and status = 1 group by  order_id , product_id   ";
+
+            $query  = $dbm->query($sql_inventory_product_id);
+            $result_inventory_product  = $query->row;
+
+            if($result_inventory_product['quantity'] > 0 ){
+                $sorting_quantity =  $result_inventory_product['quantity'] + $data['product_quantity'];
+                $sql = " update   oc_x_inventory_order_sorting set  quantity = '".$sorting_quantity ."'  where deliver_order_id = '".$order_id ."' and product_id = '".$product_id ."' and status = 1 ";
+                $result = $dbm->query($sql);
+            }else{
+                $sql = "insert into oc_x_inventory_order_sorting (order_id , product_id,deliver_order_id,quantity,uptime,added_by,product_barcode,warehouse_repack,user_repack ,container_id) "
+                    . "values ( '".$orderStatus['order_id']."' ," . $product_id . "," . $order_id . "," . $data['product_quantity'] . ",now(),'" . $data['inventory_user'] . "','" . json_encode($data['product_barcode_arr']) . "','".$warehouse_repack."' , '".$user_repack."' , '".$container_id."')";
+
+                $result = $dbm->query($sql);
+            }
+
+
+//            //判断表中数据是否存在
+//            $sql_order_return_quantity = " select  inventory_sorting_id , sorting_quantity ,order_quantity  from  oc_x_inventory_order_return_quantity  where deliver_order_id = '".$order_id ."' and product_id = '".$product_id ."' and status = 1 ";
+//
+//            $query  = $dbm->query($sql_order_return_quantity);
+//            $result_order_return_quantity = $query->row;
+
+
+
+//            if($result_product_repack['repack'] == 1){
+//                $sql = "select deliver_order_id  order_id  from oc_x_deliver_order_inv where deliver_order_id = '".$order_id."'";
+//                $query = $dbm->query($sql);
+//
+//
+//                if($query->num_rows) {
+//                    $sql = "update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '".$frame_vg_list."' ,frame_count= '".$frame_count."' where deliver_order_id = '".$order_id."'";
+//
+//
+//
+//                }
+//                else{
+//                    $sql="insert into oc_x_deliver_order_inv(deliver_order_id, frame_vg_list, inv_status, uptime, order_id ,frame_count) values ('".$order_id."','".$frame_vg_list."',1 , now() ,'".$orderStatus['order_id']."', '".$frame_count."' )";
+//
+//
+//
+//                }
+//
+//                $log->write('[分拣]记录或更新货位号[' . __FUNCTION__ . ']'.$sql."\n\r");
+//                $dbm->query($sql);
+//
+//
+//            }
+
+            //更改 oc_x_stock_section_product 中的货位库存
+            $sql_warehouse = " select quantity , product_id  , stock_section_id  from oc_x_stock_section_product  WHERE  warehouse_id = '".$data['warehouse_id']."' and product_id = '".$product_id ."' and stock_section_type_id = 1  ";
+
+
+            $query = $dbm->query($sql_warehouse);
+            $result_warehouse = $query->row;
+
+
+            if($result_warehouse['product_id'] >= 0 ){
+
+
+                $real_quantity =$result_warehouse['quantity'] - $data['product_quantity'];
+                if($real_quantity <0 ){
+                    $real_quantity =0;
+                }
+
+                $sql_change = "  update   oc_x_stock_section_product set  quantity = '" .$real_quantity ."' WHERE  warehouse_id = '".$data['warehouse_id']."' and product_id = '".$product_id ."'  and stock_section_type_id  = 1  and stock_section_id = '".$result_warehouse['stock_section_id']."'  ";
+
+
+                $query = $dbm->query($sql_change);
+                $result_change = $query->row;
+
+
+                $sql = "insert into oc_x_stock_section_product_move ( `stock_section_id` , `section_move_type_id` , `product_id` , `quantity` , `date_added` , `added_name` , `order_id` , `warehouse_id` ) VALUES  ('".$result_warehouse['stock_section_id']."' , '2' ,'".$product_id ."' ,  '".$data['product_quantity']*(-1)."' ,NOW() ,  '".$data['inventory_user']."' , '".$order_id ."' , '". $data['warehouse_id'] ."' )";
+
+                $query = $dbm->query($sql);
+
+            }
+
+
+
+
+            $log->write($sql."\n\r");
+            if($result){
+                $return['status'] = 1;
+
+                //HARD CODE!!!
+                $bomProduct = array(
+                    '5661'=>6,
+                    '5662'=>3,
+                    '5663'=>3,
+                    '5664'=>6,
+                    '5665'=>2,
+                    '5797'=>2,
+                    '5798'=>3,
+                    '5799'=>2,
+                    '5800'=>1,
+
+                    '6751'=>3,
+                    '6753'=>3
+                );
+
+                //添加分拣中间库记录后返回分拣的整箱数量
+                //TOOD HardCode
+                $sql = "select sum(if(p.product_id in (6751,6753), ios.quantity*3, ios.quantity)) qtyCount, sum(if(p.repack=0,if(p.product_id in (6751,6753), ios.quantity*3, ios.quantity),0)) boxCount, sum(if(p.repack=1,ios.quantity,0)) repackCount
+            from oc_x_inventory_order_sorting ios
+            left join oc_product p on ios.product_id = p.product_id
+            where ios.deliver_order_id = '".$order_id."' and ios.status = 1 ";
+                $query = $dbm->query($sql);
+                $result = $query->row;
+
+                $return['qtyCount'] = $result['qtyCount'];
+                $return['boxCount'] = $result['boxCount'];
+                $return['repackCount'] = $result['repackCount'];
+            }
+
+            return $return;
+        }
+    }
+public function addOrderProductStationes($data, $station_id, $language_id = 2, $origin_id) {
+        //Expect Data: $data= '{"data":"2015-09-02","station_id":"2"}';
+        //Expect Data: $data= '{"station_id":"2"}';
+        global $dbm;
+        global $log;
+        global $db;
+
+        $data = json_decode($data, 2);
+
+        $date = isset($data['date']) ? $data['date'] : false;
+//        return $data;
+        $product_id = isset($data['product_id']) ? $data['product_id'] : false;
+        $container_id = isset($data['container_id']) ? $data['container_id'] : false;
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : false;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : false;
+        $frame_vg_list  = isset($data['frame_vg_list']) ? $data['frame_vg_list'] : false;
+        $frame_count  = isset($data['frame_count']) ? $data['frame_count'] : false;
+//        return $container_id;
+        if (!$product_id) {
+            return false;
+        }
+//        return $container_id;
+        $order_id = isset($data['order_id']) ? $data['order_id'] : false;
+//        return $order_id;
+        if (!$order_id) {
+            return false;
+        }
+
+
+
+//        return 1234567;
+        $orderStatus =  $this->getDeliverOrderInfo($order_id);
+//        return $orderStatus;
+        if(in_array($orderStatus['order_status_id'],[3,6,12])){
+            return false;
+        }
+        //查分拣明细商品的数量
+        $sql = " select quantity   from  oc_x_deliver_order_product    where deliver_order_id = '". $order_id ."' and  product_id = '".$product_id ."'  ";
+
+        $query = $db->query($sql);
+        $order_quantity  = $query->row;
+
+        //查分拣中间表的数量
+        $sql = " select quantity   from  oc_x_inventory_order_sorting    where deliver_order_id = '". $order_id ."' and  product_id = '".$product_id ."' and status = 1   ";
+//        return $sql;
+        $query = $db->query($sql);
+        $sorting_quantity  = $query->row;
+//        return $sorting_quantity;
+        //数量对比
+        if($order_quantity['quantity'] < ((isset($sorting_quantity['quantity'])?(int)$sorting_quantity['quantity']:'0')+intval($data['product_quantity']))){
+            $return['memo']  =  '入库数量不能大于订单数量';
+            return $return;
+        }else {
+
+            //默认返回状态0，成功返回状态1
+            $return['status'] = 0;
+            //查商品表的整/散
+            $sql_product_repack = " select repack  from oc_product where product_id = '". $product_id ."'";
+//            return $sql_product_repack;
+            $query = $db->query($sql_product_repack);
+            $result_product_repack  = $query->row;
+            /*if($result_product_repack['repack'] == 0 ){
+                $container_id = 0 ;
+            }*/
+            //查分拣中间表的数量
+            $sql_inventory_product_id = "select quantity ,product_id,container_id   from oc_x_inventory_order_sorting where deliver_order_id = '".$order_id ."' and product_id = '".$product_id ."' and container_id = '".$container_id ."'  and status = 1 group by  order_id , product_id   ";
+//            return $sql_inventory_product_id;
+
+            $query  = $dbm->query($sql_inventory_product_id);
+            $result_inventory_product  = $query->row;
+
+            isset($result_inventory_product)?$result_inventory_product:'0';
+            /*
+             * 分拣数量+已分拣数量<=商品数量
+             * */
+        if ($data['product_quantity'] >0){
+            if($result_inventory_product['quantity'] > 0){
+                $sorting_quantity =  intval($result_inventory_product['quantity']) + intval($data['product_quantity']);
+                $sql = " update   oc_x_inventory_order_sorting set  quantity = '".$sorting_quantity ."'  where deliver_order_id = '".$order_id ."' and product_id = '".$product_id ."' and container_id='".$container_id ."' and status = 1";
+                $result = $dbm->query($sql);
+            }else{
+                $sql = "insert into oc_x_inventory_order_sorting (order_id , product_id,deliver_order_id,quantity,uptime,added_by,container_id) "
+                    . "values ( '".$orderStatus['order_id']."' ," . $product_id . "," . $order_id . "," . $data['product_quantity'] . ",now(),'" . $data['inventory_user'] . "', '".$container_id."')";
+                $result = $dbm->query($sql);
+            }
+        }
+//            //判断表中数据是否存在
+//            $sql_order_return_quantity = " select  inventory_sorting_id , sorting_quantity ,order_quantity  from  oc_x_inventory_order_return_quantity  where deliver_order_id = '".$order_id ."' and product_id = '".$product_id ."' and status = 1 ";
+//
+//            $query  = $dbm->query($sql_order_return_quantity);
+//            $result_order_return_quantity = $query->row;
+
+
+//            if ($result_product_repack['repack'] == 1) {
+//                $sql = "select deliver_order_id  order_id  from oc_x_deliver_order_inv where deliver_order_id = '" . $order_id . "'";
+//                $query = $dbm->query($sql);
+//
+//
+//                if ($query->num_rows) {
+//                    $sql = "update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '" . $frame_vg_list . "' ,frame_count= '" . $frame_count . "' where deliver_order_id = '" . $order_id . "'";
+//
+//
+//                } else {
+//                    $sql = "insert into oc_x_deliver_order_inv(deliver_order_id, frame_vg_list, inv_status, uptime, order_id ,frame_count) values ('" . $order_id . "','" . $frame_vg_list . "',1 , now() ,'" . $orderStatus['order_id'] . "', '" . $frame_count . "' )";
+//
+//
+//                }
+//
+//                $log->write('[分拣]记录或更新货位号[' . __FUNCTION__ . ']' . $sql . "\n\r");
+//                $dbm->query($sql);
+//
+//
+//            }
+
+            //更改 oc_x_stock_section_product 中的货位库存
+            $sql_warehouse = " select quantity , product_id  , stock_section_id  from oc_x_stock_section_product  WHERE  warehouse_id = '".$data['warehouse_id']."' and product_id = '".$product_id ."' and stock_section_type_id = 1  ";
+
+
+            $query = $dbm->query($sql_warehouse);
+            $result_warehouse = $query->row;
+
+
+            if($result_warehouse['product_id'] >= 0 ){
+
+
+                $real_quantity =$result_warehouse['quantity'] - $data['product_quantity'];
+                if($real_quantity <0 ){
+                    $real_quantity =0;
+                }
+
+                $sql_change = "  update   oc_x_stock_section_product set  quantity = '" .$real_quantity ."' WHERE  warehouse_id = '".$data['warehouse_id']."' and product_id = '".$product_id ."'  and stock_section_type_id  = 1  and stock_section_id = '".$result_warehouse['stock_section_id']."'  ";
+
+
+                $query = $dbm->query($sql_change);
+                $result_change = $query->row;
+
+
+                $sql = "insert into oc_x_stock_section_product_move ( `stock_section_id` , `section_move_type_id` , `product_id` , `quantity` , `date_added` , `added_name` , `order_id` , `warehouse_id` ) VALUES  ('".$result_warehouse['stock_section_id']."' , '2' ,'".$product_id ."' ,  '".$data['product_quantity']*(-1)."' ,NOW() ,  '".$data['inventory_user']."' , '".$order_id ."' , '". $data['warehouse_id'] ."' )";
+
+                $query = $dbm->query($sql);
+
+            }
+
+
+
+
+            //$log->write($sql."\n\r");
+//            if($result){
+                $return['status'] = 1;
+//
+//                //HARD CODE!!!
+//                $bomProduct = array(
+//                    '5661'=>6,
+//                    '5662'=>3,
+//                    '5663'=>3,
+//                    '5664'=>6,
+//                    '5665'=>2,
+//                    '5797'=>2,
+//                    '5798'=>3,
+//                    '5799'=>2,
+//                    '5800'=>1,
+//
+//                    '6751'=>3,
+//                    '6753'=>3
+//                );
+//
+//                //添加分拣中间库记录后返回分拣的整箱数量
+//                //TOOD HardCode
+//                $sql = "select sum(if(p.product_id in (6751,6753), ios.quantity*3, ios.quantity)) qtyCount, sum(if(p.repack=0,if(p.product_id in (6751,6753), ios.quantity*3, ios.quantity),0)) boxCount, sum(if(p.repack=1,ios.quantity,0)) repackCount
+//            from oc_x_inventory_order_sorting ios
+//            left join oc_product p on ios.product_id = p.product_id
+//            where ios.deliver_order_id = '".$order_id."' and ios.status = 1 ";
+//                $query = $dbm->query($sql);
+//                $result = $query->row;
+//
+//                $return['qtyCount'] = $result['qtyCount'];
+//                $return['boxCount'] = $result['boxCount'];
+//                $return['repackCount'] = $result['repackCount'];
+//                $sql_all="SELECT SUM(quantity ) as allNumber FROM oc_x_inventory_order_sorting WHERE  product_id = $product_id  AND deliver_order_id = $order_id and status = 1";
+//                $query = $dbm->query($sql_all);
+//                $resultAll = $query->row;
+//                $return['allNumber'] = $resultAll['allNumber'];
+//            }
+
+            return $return;
+        }
+    }
 
     public function addPurchaseOrderProductStation($data, $station_id, $language_id = 2, $origin_id) {
         //Expect Data: $data= '{"data":"2015-09-02","station_id":"2"}';
@@ -2403,6 +2984,8 @@ ORDER BY
 
         //$date = isset($data['date']) ? $data['date'] : false;
         $product_id = isset($data['product_id']) ? $data['product_id'] : false;
+        $transfer_area = isset($data['transfer_area']) ? $data['transfer_area'] : false;
+        $transfer_area_item = isset($data['transfer_area_item']) ? $data['transfer_area_item'] : false;
         if (!$product_id) {
             return false;
         }
@@ -2411,6 +2994,11 @@ ORDER BY
         if (!$order_id) {
             return false;
         }
+
+        $sql_type = "select order_type  from oc_x_pre_purchase_order  where purchase_order_id = '".$order_id ."' ";
+
+        $query = $dbm->query($sql_type);
+        $order_type  = $query->row;
 
 
         /*
@@ -2425,65 +3013,148 @@ ORDER BY
           return $return;
           }
          */
-
-
-        $sql = "insert into oc_x_inventory_purchase_order_sorting (product_id,order_id,quantity,uptime,added_by,product_barcode,warehouse_id) "
-            . "values (" . $product_id . "," . $order_id . "," . $data['product_quantity'] . ",now(),'" . $data['inventory_user'] . "','" . json_encode($data['product_barcode_arr']) . "','". $data['warehouse_id']."')";
-
-
-        //$log->write($sql."\n\r");
+        $sql = " select quantity   from  oc_x_pre_purchase_order_product    where purchase_order_id = '". $order_id ."' and  product_id = '".$product_id ."'  ";
 
         $query = $dbm->query($sql);
-        $return['status'] = 1;
-        return $return;
+        $order_quantity  = $query->row;
+
+
+        $sql = " select SUM(quantity) AS quantity   from  oc_x_inventory_purchase_order_sorting    where order_id = '". $order_id ."' and  product_id = '".$product_id ."' GROUP BY product_id ";
+        $query = $dbm->query($sql);
+        $sorting_quantity  = $query->row;
+
+
+        if($order_type['order_type'] == 2 ){
+            $sql = "SELECT
+	ppo.purchase_order_id,
+	ppo.related_order,
+	sm.purchase_order_id,
+	if(smi.product_id is null , 0 , smi.product_id) product_id , 
+	if(smi.quantity is null , 0 , smi.quantity) quantity 
+FROM
+	oc_x_pre_purchase_order ppo
+LEFT JOIN oc_x_stock_move sm ON ppo.related_order = sm.purchase_order_id
+LEFT JOIN oc_x_stock_move_item smi ON sm.inventory_move_id = smi.inventory_move_id
+WHERE
+	ppo.purchase_order_id = '".$order_id ."' and smi.product_id = '".$product_id."'";
+
+            $query = $dbm->query($sql);
+            $result  = $query->row;
+
+            if($result['product_id'] ==0 || $result['product_id'] == '' ){
+                $return['memo'] = '此商品没有入库不能做退货操作';
+                return $return;
+            }
+        }
+
+
+        $sorting_quantitys = empty($sorting_quantity['quantity']) ? 0 : intval($sorting_quantity['quantity']) ;
+        if($order_quantity['quantity'] < ($sorting_quantitys+intval($data['product_quantity']))){
+            $return['memo'] = "入库数量不能大于订单数量";
+            return $return;
+
+        }else {
+            $sql = 'SELECT * FROM oc_x_inventory_purchase_order_sorting WHERE order_id = "'.$order_id.'" and warehouse_id = "'.$data['warehouse_id'].'" AND stock_section_type_id = "'.$data['transfer_area'].'" AND product_id = "'.$product_id.'"';
+//           return $sql;
+            $query = $dbm->query($sql);
+            $result = $query->rows;
+//            return $result;
+            if ($result) {
+                if ($result[0]['area_status'] == 1) {
+                    $return['status'] = 2;
+                    return $return;
+                } else {
+                    $quantity = $data['product_quantity']+$result[0]['quantity'];
+                    $sql_pur = "select purchase_order_id  from  oc_x_stock_move where purchase_order_id = '".$order_id ."'  ";
+                    $query = $dbm->query($sql_pur);
+                    $result_pur  = $query->row;
+                    if($result_pur['purchase_order_id'] > 0 ){
+                        $return['memo'] = "已提交入库不能再提交";
+                        return $return;
+                    }else {
+                        $sql1 = 'UPDATE oc_x_inventory_purchase_order_sorting SET quantity = "' . $quantity . '" , stock_section_id = "' . $data['transfer_area_item'] . '" , uptime = now() WHERE inventory_sorting_id = "' . $result[0]['inventory_sorting_id'] . '"';
+                        $dbm->query($sql1);
+                    }
+                }
+            } else {
+
+                $sql_pur = "select purchase_order_id  from  oc_x_stock_move where purchase_order_id = '".$order_id ."'  ";
+                $query = $dbm->query($sql_pur);
+                $result_pur  = $query->row;
+
+                if($result_pur['purchase_order_id'] > 0 ){
+                    $return['memo'] = "已提交入库不能再提交";
+                    return $return;
+                }else{
+                    $sql1 = "insert into oc_x_inventory_purchase_order_sorting (product_id,order_id,quantity,uptime,added_by,product_barcode,warehouse_id,stock_section_type_id,stock_section_id) "
+                        . "values ('" . $product_id . "','" . $order_id . "'," . $data['product_quantity'] . ",now(),'" . $data['inventory_user'] . "','" . json_encode($data['product_barcode_arr']) . "','" . $data['warehouse_id'] ."','".$data['transfer_area']."','".$data['transfer_area_item']."')";
+
+                    $dbm->query($sql1);
+                }
+
+
+            }
+
+
+            //$log->write($sql."\n\r");
+
+            $return['status'] = 1;
+            return $return;
+        }
     }
 
     public function addOrderProductToInv_pre($data, $station_id, $language_id = 2, $origin_id) {
         global $db;
 
         $data = json_decode($data, 2);
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : 0;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : 0;
+        $warehouse_id = isset($data['warehouse_id']) ? trim($data['warehouse_id']) : 0;
+        $go_warehouse_id = isset($data['go_warehouse_id']) ? trim($data['go_warehouse_id']) : 0;
+        $sql =  "select order_status_id , order_id   from oc_x_deliver_order WHERE  deliver_order_id = '".$data['order_id'] ."'";
+        $query = $db->query($sql);
+        $result = $query->row;
+
+        if($result['order_status_id'] == 3){
+            $return['status'] = 2;
+            return $return;
+        }
+
+
+        $sql_move = " select order_id  from  oc_x_stock_move where  order_id = '".$result['order_id']."'  ";
+
+        $query = $db->query($sql_move);
+        $result_move = $query->row;
+        if($result_move['order_id'] == $result['order_id']){
+            $return['status'] = 3;
+            return $return ;
+        }
 
         //判断中间库中的商品数量是否满足95% 如果不满足则不能提交
-        $sql = "SELECT sum(quantity) as quantity FROM oc_x_inventory_order_sorting AS xis where xis.move_flag = 0 and xis.order_id = '" . $data['order_id'] . "' ";
+        $sql = "SELECT sum(quantity) as quantity FROM oc_x_inventory_order_sorting AS xis where xis.move_flag = 0 and xis.deliver_order_id = '" . $data['order_id'] . "' and xis.status = 1  ";
         $query = $db->query($sql);
         $result = $query->row;
 
 
         $sql = "SELECT
-                    o.order_id,os.`name`,SUM(op.quantity) as quantity
+                    o.deliver_order_id order_id,os.`name`,SUM(op.quantity) as quantity
                 FROM
-                    oc_order_product AS op
-                LEFT JOIN oc_order AS o ON o.order_id = op.order_id
-                LEFT JOIN oc_order_status AS os ON os.order_status_id = o.order_status_id
-                AND o.language_id = os.language_id
-                WHERE op.order_id = " . $data['order_id'];
+                    oc_x_deliver_order_product AS op
+                LEFT JOIN oc_x_deliver_order AS o ON o.deliver_order_id = op.deliver_order_id
+                LEFT JOIN oc_x_deliver_order_status AS os ON os.order_status_id = o.order_status_id
+               
+                WHERE op.deliver_order_id = '" . $data['order_id']."'
+                group by op.deliver_order_id  ";
+
+
+
         $query = $db->query($sql);
         $result_plan = $query->row;
 
-        /*
-          //判断今天是否已经提交过了
-          $sql = "select count(xim.inventory_move_id) as count_move_t from oc_x_inventory_move as xim left join oc_x_station_group as sg on sg.station_id = xim.station_id where date(xim.date_added) = date(now()) and sg.name = '" . $data['inventory_group'] . "'";
-          $query = $db->query($sql);
-          $result_move_flag = $query->row;
 
-          //已经提交过了
-          if($result_move_flag['count_move_t'] > 0){
-          $return['status'] = 0;
-          return $return;
-          }
-         */
         $return = array();
 
-        //中间表中没有要入库的商品
-        /*
-        if ($result['quantity'] <= 0) {
-            $return['status'] = 2;
-            return $return;
-        }
-         *
-         */
 
-        //if($result['sum_quantity'] / $result_plan['sum_quantity'] >= 0.95){
         $return['status'] = 1;
         $return['plan_quantity'] = $result_plan['quantity'];
         $return['do_quantity'] = $result['quantity'] ? $result['quantity'] : 0;
@@ -2562,8 +3233,11 @@ ORDER BY
         $data_inv = json_decode($data, 2);
         $data_inv['api_method'] = 'inventoryOrderIn'; //Up
 
-        $order_id = isset($data_inv['order_id']) ? $data_inv['order_id'] : false;
-        if (!$order_id) {
+        $order_id_do = isset($data_inv['order_id']) ? $data_inv['order_id'] : false;
+
+        $warehouse_id = isset($data_inv['warehouse_id']) ? $data_inv['warehouse_id'] : false;
+
+        if (!$order_id_do) {
             return false;
         }
 
@@ -2572,26 +3246,10 @@ ORDER BY
         $inv_comment = isset($data_inv['invComment']) ? (int)$data_inv['invComment'] : false;
         $box_count= isset($data_inv['boxCount']) ? (int)$data_inv['boxCount'] : false;
 
-//        if($inv_comment){
-//            $sql = "select order_id from oc_order_inv where order_id = '".$order_id."'";
-//            $query = $dbm->query($sql);
-//            if($query->num_rows) {
-//                $sql="insert into oc_order_inv(order_id, inv_comment, inv_status, uptime)
-//                    values ('".$order_id."','".$inv_comment."',9 , now())";
-//                if($box_count){
-//                    $sql="insert into oc_order_inv(order_id, box_count, inv_comment, inv_status, uptime)
-//                    values ('".$order_id."','".$box_count."','".$inv_comment."',9 , now())";
-//                }
-//            }
-//            else{
-//                $sql = "update oc_order_inv set inv_comment='".$inv_comment."' where order_id = '".$order_id."'";
-//                if($box_count){
-//                    $sql = "update oc_order_inv set box_count='".$box_count."', inv_comment='".$inv_comment."' where order_id = '".$order_id."'";
-//                }
-//            }
-//            //$log->write('[分拣]记录或更新货位号[' . __FUNCTION__ . ']'.$sql."\n\r");
-//            $dbm->query($sql);
-//        }
+        $sql  = "select order_id  from  oc_x_deliver_order where   deliver_order_id = '". $order_id_do ."' ";
+        $query = $dbm->query($sql);
+        $result2 = $query->row;
+        $order_id =  $result2['order_id'];
 
         //提交订单为待审核
         $userPendingCheck = isset($data_inv['userPendingCheck']) ? $data_inv['userPendingCheck'] : false;
@@ -2601,20 +3259,11 @@ ORDER BY
             return array('status' => 8, 'timestamp' => $sql);
         }
 
-        /*
-          $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where order_id = " . $data_inv['order_id'];
-          $query = $dbm->query($sql);
 
-
-          $sql = "update oc_order set order_status_id = 6 where order_id = " . $data_inv['order_id'];
-          $dbm->query($sql);
-
-          return array('status'=>1,'timestamp'=>$data_inv['timestamp']);
-          exit;
-         */
 
         //验证订单分拣是否已提交
         $sql = "select xsm.order_id,o.station_id from oc_x_stock_move as xsm left join oc_order as o on o.order_id = xsm.order_id where xsm.inventory_type_id = 12 and xsm.order_id = " . $order_id;
+
         $query = $dbm->query($sql);
         $result_exists = $query->row;
 
@@ -2623,11 +3272,15 @@ ORDER BY
             $sql = "update oc_order set order_status_id = 6 where order_id = '".$order_id."' and order_status_id in (5,8)";
             $dbm->query($sql);
 
+            $sql = "update oc_x_deliver_order set order_status_id = 6 ,repack_status_id = 6 where deliver_order_id = '".$order_id_do."' and order_status_id in (5,8)";
+            $dbm->query($sql);
+
             return array('status' => 4, 'timestamp' => $data_inv['timestamp']);
         }
 
 
-        $sql = "select xis.*,lpp.barcode,op.price,op.weight_inv_flag,p.sku_id from oc_x_inventory_order_sorting as xis left join labelprinter.productlist as lpp on xis.product_id = lpp.product_id left join oc_order_product as op on op.order_id = xis.order_id and op.product_id = xis.product_id left join oc_product as p on p.product_id = xis.product_id where xis.move_flag=0 and xis.order_id = " . $order_id;
+        $sql = "select xis.*,lpp.barcode,op.price,op.weight_inv_flag,p.sku_id from oc_x_inventory_order_sorting as xis left join labelprinter.productlist as lpp on xis.product_id = lpp.product_id left join oc_order_product as op on op.order_id = xis.order_id and op.product_id = xis.product_id left join oc_product as p on p.product_id = xis.product_id where xis.status = 1 and   xis.move_flag=0 and xis.order_id = " . $order_id;
+
         $query = $dbm->query($sql);
         $result = $query->rows;
 
@@ -2758,12 +3411,13 @@ ORDER BY
 
             $log->write($data_inv);
 
-            $result = $this->addInventoryMoveOrder($data_inv, 1);
+            $result = $this->addInventoryMoveOrder($data_inv, 1 , $warehouse_id);
+
             if ($result && !empty($update_sorting_id_arr)) {
                 $update_sorting_id_str = implode(",", $update_sorting_id_arr);
-                $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where inventory_sorting_id in (" . $update_sorting_id_str . ")";
-                $log->write($sql);
-                $query = $dbm->query($sql);
+//                $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where status = 1 and  inventory_sorting_id in (" . $update_sorting_id_str . ")";
+//                $log->write($sql);
+//                $query = $dbm->query($sql);
             }
         }
 
@@ -2773,18 +3427,11 @@ ORDER BY
 
         if ($result || $no_sorting) {
 
-            $sql = "update oc_order set order_status_id = 6 where order_id = " . $data_inv['order_id'];
+            $sql = "update oc_order set order_status_id = 6 where order_id = " . $order_id;
             $dbm->query($sql);
 
-            /*
-              $sql = "update oc_order_inv set inv_status = 0 where order_id = " . $data_inv['order_id'];
-              $dbm->query($sql);
-
-              $data_inv['frame_count'] = $data_inv['frame_count'] ? $data_inv['frame_count'] : 0;
-              $data_inv['incubator_count'] = $data_inv['incubator_count'] ? $data_inv['incubator_count'] : 0;
-              $sql = "insert into oc_order_inv(order_id,frame_count,incubator_count,inv_comment) values(" . $data_inv['order_id'] . "," . $data_inv['frame_count'] . "," . $data_inv['incubator_count'] . ",'" . $data_inv['inv_comment'] . "');";
-              $dbm->query($sql);
-             */
+            $sql = "update oc_x_deliver_order set order_status_id = 6 ,repack_status_id =6  where deliver_order_id = " . $order_id_do;
+            $dbm->query($sql);
 
 
             return array('status' => 1, 'timestamp' => $data_inv['timestamp']);
@@ -2800,51 +3447,175 @@ ORDER BY
         global $dbm;
         global $log;
 
+
         $data_inv = json_decode($data, 2);
         $warehouse_id = $data_inv['warehouse_id'];
 
         $data_inv['api_method'] = 'inventoryOrderIn'; //Up
 
-        //无订单信息，不可提交
+        //无订单信息，不可提交DO_单
         $order_id = isset($data_inv['order_id']) ? $data_inv['order_id'] : false;
         if (!$order_id) {
             return false;
         }
 
+        // 获取订单的仓库信息
+
+        $result_warehouse = $this->getDeliverOrderInfo($order_id);
+
+
+
+        // SO_单
+        $data_inv['order_id'] = $result_warehouse['order_id'] ;
+
+        $sql_order_status  = "select order_status_id  from oc_order where order_id = '".$data_inv['order_id']."' ";
+     
+        $query = $dbm->query($sql_order_status);
+        $result_order_status = $query->row;
+        
+        if($result_order_status['order_status_id']  == 6){
+            return false ;
+        }
+        
+
+//        $sql_order_id = " select  order_id from oc_x_stock_move where order_id = '".$order_id."'";
+//        $query = $dbm->query($sql_order_id);
+//         $result = $query->row;
+//         if($sql_order_id['order_id'] >0 ){
+//             return false ;
+//         }
+
         //TODO 待强制验证货位号
         //在快消仓提交订单时先写入整箱和货位号
+        $warehouse_repack = isset($data_inv['warehouse_repack']) ? (int)$data_inv['warehouse_repack'] : 0;
+        $user_repack = isset($data_inv['user_repack']) ? (int)$data_inv['user_repack'] : 0;
+
+
         $inv_comment = isset($data_inv['invComment']) ? (int)$data_inv['invComment'] : false;
+
+
+        $sql_dan = "select count(order_id) num  from oc_x_deliver_order where order_id =  '". $data_inv['order_id']."' ";
+
+
+        $query = $dbm->query($sql_dan);
+        $result_dan = $query->row;
+
+
+
+
         $box_count= isset($data_inv['boxCount']) ? (int)$data_inv['boxCount'] : 0;
         $frame_count= isset($data_inv['frame_count']) ? (int)$data_inv['frame_count'] : 0;
-        $frame_vg_list= isset($data_inv['frame_vg_list']) ? $data_inv['frame_vg_list'] : '';
+        $frame_vg_list= isset($data_inv['frame_vg_list']) ? $data_inv['frame_vg_list'] : 0;
+        $frame_vg_list_arr = explode(',',$frame_vg_list);
+
+
+        $warehouse_repack= isset($data_inv['warehouse_repack']) ? $data_inv['warehouse_repack'] : 0;
+        $user_repack= isset($data_inv['user_repack']) ? $data_inv['user_repack'] : 0;
+        $add_name_id= isset($data_inv['add_user_name_id']) ? $data_inv['add_user_name_id'] : 0;
+
+        if($frame_vg_list == 0 || $frame_vg_list == ''){
+            $sql_container_ids = " select GROUP_CONCAT(DISTINCT(container_id)) container_ids  from oc_x_inventory_order_sorting where deliver_order_id = '".$order_id ."' and status = 1  group by deliver_order_id ";
+
+
+            $query = $dbm->query($sql_container_ids);
+
+            $result_container_ids  = $query->row;
+        }
+//        if($box_count == 0 || $box_count == ''){
+            $sql_box_bums = " select  SUM(ios.quantity) AS box_count from oc_x_inventory_order_sorting ios LEFT  JOIN oc_product op ON op.product_id = ios.product_id where ios.deliver_order_id = '".$order_id ."' and ios.status = 1  AND ios.container_id = 0 AND op.repack = 0 group by ios.deliver_order_id ";
+
+
+            $box_count = $dbm->query($sql_box_bums)->row['box_count'];
+//            $result_container_ids  = $query->row;
+            if (empty($box_count)) {
+                $box_count = 0;
+            }
+//        }
+
+        if($result_container_ids['container_ids'] != '' && intval($result_container_ids['container_ids']) != 0){
+            $frame_vg_list = $result_container_ids['container_ids'];
+            $frame_vg_list_arr = explode(',',$frame_vg_list);
+            foreach($frame_vg_list_arr as $k=>$v){
+                if($v == '0'){
+                    unset($frame_vg_list_arr[$k]);
+                }
+            }
+
+
+           $frame_count = sizeof($frame_vg_list_arr);
+         
+            $frame_vg_list = implode(',',$frame_vg_list_arr);
+           
+        }
 
         //默认先记录货位号
         if($inv_comment){
-            $sql = "select order_id from oc_order_inv where order_id = '".$order_id."'";
+            $sql = "select deliver_order_id  order_id  from oc_x_deliver_order_inv where deliver_order_id = '".$order_id."'";
             $query = $dbm->query($sql);
+
+
             if($query->num_rows) {
-                $sql = "update oc_order_inv set box_count='".$box_count."', inv_comment='".$inv_comment."', frame_count='".$frame_count."', frame_vg_list= '".$frame_vg_list."' where order_id = '".$order_id."'";
+                $sql = "update oc_x_deliver_order_inv set  date_modified = now(), box_count='".$box_count."', inv_comment='".$inv_comment."', frame_count='".$frame_count."', frame_vg_list= '".$frame_vg_list."' where deliver_order_id = '".$order_id."'";
+
+
+
             }
             else{
-                $sql="insert into oc_order_inv(order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime) values ('".$order_id."','".$box_count."','".$inv_comment."','".$frame_count."','".$frame_vg_list."',1 , now())";
+                $sql="insert into oc_x_deliver_order_inv(deliver_order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime, order_id) values ('".$order_id."','".$box_count."','".$inv_comment."','".$frame_count."','".$frame_vg_list."',1 , now() ,'".$result_warehouse['order_id']."' )";
+
+
+
             }
+
             $log->write('[分拣]记录或更新货位号[' . __FUNCTION__ . ']'.$sql."\n\r");
             $dbm->query($sql);
         }
 
+
+
+        if($frame_vg_list != 0 && !empty($frame_vg_list)){
+
+            $sql_update_container = " update oc_x_container  set  occupy = 1  where container_id in (".$frame_vg_list.") ";
+
+            $query = $dbm->query($sql_update_container);
+
+        }
+
+        $sql1="insert into oc_order_inv_log(order_id, box_count, inv_comment, frame_count, frame_vg_list, inv_status, uptime,added_by) values ('".$result_warehouse['order_id']."','".$box_count."','".$inv_comment."','".$frame_count."','".$frame_vg_list."',1 , now(),'".$add_name_id."')";
+       
+        $query = $dbm->query($sql1);
+
+        $set_occupy = explode(',',$frame_vg_list);
+        if (!empty($set_occupy)) {
+//
+            $sql_order = " insert into oc_x_order_container (`deliver_order_id` , `container_id` , `date_added` , `added_by` , `warehouse_id` , `status`) VALUES ";
+            foreach ($set_occupy as $container_occupy_ids) {
+                $sql_order .= "( '" . $order_id . "','" . $container_occupy_ids . "', NOW(),  '" . $data_inv['add_user_name_id'] . "',  '" . $data_inv['warehouse_id'] . "' , '1'), ";
+            }
+            $sql_order = rtrim($sql_order, ',');
+            $query = $dbm->query($sql_order);
+
+            $sql_occupy = " update oc_x_container set occupy = 1 where container_id IN(" . $frame_vg_list . ") ";
+
+            $query = $dbm->query($sql_occupy);
+
+            $sql_history = "  insert into oc_x_container_history  (`container_id` , `status`, `type` ,`instore` , `warehouse_id` , `occupy`,`date_added` , `added_by`) (select container_id , status , type , instore ,warehouse_id , occupy , NOW() ,  '" . $data_inv['add_user_name_id'] . "' from  oc_x_container  where container_id IN(" . $frame_vg_list . ")) ";
+            $query = $dbm->query($sql_history);
+
+        }
         //验证订单分拣是否已提交, inventory_type_id=12为分拣出库，
         //TODO 可能有退货问题
-        $sql = "select xsm.order_id from oc_x_stock_move as xsm where xsm.inventory_type_id = 12 and xsm.order_id = '".$order_id."'";
+        $sql = "select xsm.order_id from oc_x_stock_move as xsm where xsm.inventory_type_id = 12 and xsm.order_id = '".$data_inv['order_id']."'";
         $query = $dbm->query($sql);
         $query->row;
         if($query->num_rows){
             //若订单已有出货库存扣减数据且状态为分拣中或待审核，将状态改为已拣完
-            $sql = "update oc_order set order_status_id = 6 where order_id = '".$order_id."' and order_status_id in (5,8)";
+            $sql = "update oc_x_deliver_order set order_status_id = 6,repack_status_id = 6 where deliver_order_id = '".$order_id."' and order_status_id in (5,8)";
             if($dbm->query($sql)){
                 $log->write('[分拣]已扣减库存更新订单状态为已分拣[' . __FUNCTION__ . ']'.$sql."\n\r");
             }
 
-            $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where move_flag=0 and order_id = '".$order_id."'";
+            $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where move_flag=0 and deliver_order_id = '".$order_id."'  and status = 1 ";
             if($dbm->query($sql)){
                 $log->write('[分拣]已扣减库存提交分拣数据[' . __FUNCTION__ . ']'.$sql."\n\r");
             }
@@ -2852,81 +3623,622 @@ ORDER BY
             return array('status' => 4, 'timestamp' => $data_inv['timestamp']);
         }
 
+
         //提交订单为待审核
         $userPendingCheck = isset($data_inv['userPendingCheck']) ? $data_inv['userPendingCheck'] : false;
         if($userPendingCheck){
-            $sql = "update oc_order set order_status_id = 8 where order_id = '".$order_id."'";
+            $sql = "update oc_x_deliver_order set order_status_id = 8,repack_status_id = 8 where deliver_order_id = '".$order_id."' AND order_status_id != 12 ";
             if($dbm->query($sql)){
                 $log->write('[分拣]提交订单为待审核[' . __FUNCTION__ . ']'.$sql."\n\r");
 
                 //添加订单历史记录
-                $this->addOrderSortingHistory($order_id);
+                $this->addDeliverOrderSortingHistory($order_id,$add_name_id);
+                $this->addOrderSortingHistory($result_warehouse['order_id']);
+
 
             }
             return array('status' => 8, 'timestamp' => $sql);
         }
 
-        //获取库存数据，准备扣减库存
-        $sql = "select xis.product_id, xis.quantity, op.price, op.quantity order_quantity, op.weight_inv_flag, p.sku_id
-            from oc_x_inventory_order_sorting as xis
-            left join oc_order_product as op on op.order_id = xis.order_id and op.product_id = xis.product_id
-            left join oc_product as p on p.product_id = xis.product_id
-            where xis.move_flag=0 and xis.order_id = '".$order_id."'";
-        $query = $dbm->query($sql);
-        $result = $query->rows;
 
-        $stationProductMove = array();
-        if(sizeof($result)) {
-            foreach ($result as $k => $v) {
-                $stationProductMove[] = array(
-                    'product_batch' => '',
-                    'due_date' => '0000-00-00', //There is a bug till year 2099.
-                    'product_id' => $v['product_id'],
-                    'special_price' => $v['price'],
-                    'qty' => abs(min($v['quantity'],$v['order_quantity'])),
-                    'product_weight' => 0,
-                    'sku_id' => $v['sku_id']
-                );
-            }
+        if ($result_dan['num'] == 1 && $result_warehouse['do_warehouse_id'] == $result_warehouse['warehouse_id'] && intval($result_warehouse['is_repack'])==0) {
+            $dbm->begin();
+            $bool = true ;
 
-            $data_inv['products'] = $stationProductMove;
+            $sql_inv = " insert into oc_order_inv (`order_id` , `frame_count` ,`incubator_count` ,`foam_count` ,`frame_mi_count` ,`incubator_mi_count` ,`frame_ice_count` ,`frame_meat_count` ,`foam_ice_count` ,`frame_vg_list` ,`frame_mi_list` ,`frame_meat_list` ,`frame_ice_list` ,`box_count` ,`inv_comment` , `inv_status` ,`uptime` ,`date_modified` ,`check_status` ,`frame_carton_list` ,`frame_carton_count` ,`status` ) (select `order_id` , `frame_count` ,`incubator_count` ,`foam_count` ,`frame_mi_count` ,`incubator_mi_count` ,`frame_ice_count` ,`frame_meat_count` ,`foam_ice_count` ,`frame_vg_list` ,`frame_mi_list` ,`frame_meat_list` ,`frame_ice_list` ,`box_count` ,`inv_comment` , `inv_status` ,`uptime` ,`date_modified` ,`check_status` ,`frame_carton_list` ,`frame_carton_count` ,`status` from oc_x_deliver_order_inv   where order_id = '" . $result_warehouse['order_id'] . "' )";
 
-            // $log->write('[分拣]整理库存数据[' . __FUNCTION__ . ']'.serialize($data_inv)."\n\r");
-            $result = $this->addInventoryMoveOrder($data_inv, 1,$warehouse_id);
-            if($result){
-                $dbm->begin();
-                $bool = true;
+            $query  =  $dbm->query($sql_inv);
 
-                //添加分拣缺货至退货表
-                $this->addReturn(array($order_id));
 
-                $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where order_id = '". $order_id ."'";
-                // $log->write('[分拣]更新分拣数据提交状态[' . __FUNCTION__ . ']'.$sql."\n\r");
-                $bool = $bool && $dbm->query($sql);
+            $sql_deliver_status  = "update oc_x_deliver_order set order_status_id = 6,repack_status_id = 6 where deliver_order_id = '".$order_id."' AND order_status_id != 12 ";
+            $dbm->query($sql_deliver_status);
 
-                $sql = "update oc_order set order_status_id = 6 where order_id = '". $order_id ."'";
-                // $log->write('[分拣]更新订单状态为已拣完[' . __FUNCTION__ . ']'.$sql."\n\r");
-                $bool = $bool && $dbm->query($sql);
+            $sql =  "update oc_order set order_status_id = 6 where order_id = '".$data_inv['order_id']."' ";
+            if($dbm->query($sql)){
+
+
+                $log->write('[分拣]提交订单为待审核[' . __FUNCTION__ . ']'.$sql."\n\r");
 
                 //添加订单历史记录
-                $this->addOrderSortingHistory($order_id);
+                $this->addDeliverOrderSortingHistory($order_id,$add_name_id);
+                $this->addOrderSortingHistory($result_warehouse['order_id']);
 
+                //写入oc_x_inventory_order_return_quantity
+                $sql_return_quantity = " insert into oc_x_inventory_order_return_quantity ( `order_id` , `deliver_order_id` , `product_id` , `order_quantity` , `sorting_quantity` ,`return_quantity` , `uptime` , `added_by` )SELECT
+                ios.order_id , 
+                ios.deliver_order_id  , 
+	ios.product_id , 
+	sum(dop.quantity)  order_quantity , 
+  if(sum(dop.quantity) > SUM(ios.quantity) , SUM(ios.quantity) ,sum(dop.quantity)  ) sorting_quantity ,
+  (sum(dop.quantity) - sum(ios.quantity)) return_quantity  , 
+  NOW(),
+  '".$data_inv['add_user_name_id']."'
+FROM
+	oc_x_inventory_order_sorting ios
+LEFT JOIN oc_x_deliver_order_product dop ON ios.deliver_order_id = dop.deliver_order_id 
+and ios.product_id  =  dop.product_id
+where  ios.status = 1  and ios.deliver_order_id  = '".$order_id."'
+GROUP BY  ios.product_id ";
+                $bool =  $bool && $dbm->query($sql_return_quantity);
 
                 if(!$bool) {
                     //$log->write('[分拣]分拣提交失败[' . __FUNCTION__ . ']' . "\n\r");
                     $dbm->rollback();
-                    return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
+                    return array('status' => 0, 'timestamp' => $data['timestamp']);
                 }
                 else {
                     //$log->write('[分拣]分拣提交成功[' . __FUNCTION__ . ']' . "\n\r");
                     $dbm->commit();
-                    return array('status' => 1, 'timestamp' => $data_inv['timestamp']);
+                    // return array('status' => 1, 'timestamp' => $data['timestamp']);
                 }
-            }else {
-                return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
+            }
+
+
+        }
+//        else if ($result_dan['num'] > 1) {
+//            $sql = "update oc_x_deliver_order set order_status_id = 6,repack_status_id = 6 where deliver_order_id = '" . $order_id . "' AND order_status_id != 12 ";
+//            if ($dbm->query($sql)) {
+//                $log->write('[分拣]提交订单为待审核[' . __FUNCTION__ . ']' . $sql . "\n\r");
+//
+//                //添加订单历史记录
+//                $this->addDeliverOrderSortingHistory($order_id, $add_name_id);
+//
+//
+//            }
+//        }
+//        else if ($result_dan['num'] == 1 && $result_warehouse['do_warehouse_id'] != $result_warehouse['warehouse_id']) {
+
+        else {
+            $dbm->begin();
+            $bool = true ;
+
+//            $sql_inv = " insert into oc_order_inv (`order_id` , `frame_count` ,`incubator_count` ,`foam_count` ,`frame_mi_count` ,`incubator_mi_count` ,`frame_ice_count` ,`frame_meat_count` ,`foam_ice_count` ,`frame_vg_list` ,`frame_mi_list` ,`frame_meat_list` ,`frame_ice_list` ,`box_count` ,`inv_comment` , `inv_status` ,`uptime` ,`date_modified` ,`check_status` ,`frame_carton_list` ,`frame_carton_count` ,`status` ) (select `order_id` , `frame_count` ,`incubator_count` ,`foam_count` ,`frame_mi_count` ,`incubator_mi_count` ,`frame_ice_count` ,`frame_meat_count` ,`foam_ice_count` ,`frame_vg_list` ,`frame_mi_list` ,`frame_meat_list` ,`frame_ice_list` ,`box_count` ,`inv_comment` , `inv_status` ,`uptime` ,`date_modified` ,`check_status` ,`frame_carton_list` ,`frame_carton_count` ,`status` from oc_x_deliver_order_inv   where order_id = '" . $result_warehouse['order_id'] . "' )";
+//
+//            $query  =  $dbm->query($sql_inv);
+
+
+            $sql_deliver_status  = "update oc_x_deliver_order set order_status_id = 6,repack_status_id = 6 where deliver_order_id = '".$order_id."' AND order_status_id != 12 ";
+            $dbm->query($sql_deliver_status);
+
+            if($dbm->query($sql_deliver_status)){
+
+
+                $log->write('[分拣]提交订单为待审核[' . __FUNCTION__ . ']'.$sql."\n\r");
+
+                //添加订单历史记录
+                $this->addDeliverOrderSortingHistory($order_id,$add_name_id);
+                $this->addOrderSortingHistory($result_warehouse['order_id']);
+//            if (intval($result_warehouse['warehouse_id']) != 17) {
+//                //写入oc_x_inventory_order_return_quantity
+//                $sql_return_quantity = " insert into oc_x_inventory_order_return_quantity ( `order_id` , `deliver_order_id` , `product_id` , `order_quantity` , `sorting_quantity` ,`return_quantity` , `uptime` , `added_by` )SELECT
+//                ios.order_id ,
+//                ios.deliver_order_id  ,
+//	ios.product_id ,
+//  	sum(dop.quantity)  order_quantity ,
+//  if(sum(dop.quantity) > SUM(ios.quantity) , SUM(ios.quantity) ,sum(dop.quantity)  ) sorting_quantity ,
+//  (sum(dop.quantity) - sum(ios.quantity)) return_quantity  ,
+//  NOW(),
+//  '".$data_inv['add_user_name_id']."'
+//FROM
+//	oc_x_inventory_order_sorting ios
+//LEFT JOIN oc_x_deliver_order_product dop ON ios.deliver_order_id = dop.deliver_order_id
+//and ios.product_id  =  dop.product_id
+//where  ios.status = 1  and ios.deliver_order_id  = '".$order_id."'
+//GROUP BY  ios.product_id ";
+//                $bool =  $bool &&  $dbm->query($sql_return_quantity);
+//
+//            }
+
+                if(!$bool) {
+                    //$log->write('[分拣]分拣提交失败[' . __FUNCTION__ . ']' . "\n\r");
+                    $dbm->rollback();
+                    return array('status' => 0, 'timestamp' => $data['timestamp']);
+                }
+                else {
+                    //$log->write('[分拣]分拣提交成功[' . __FUNCTION__ . ']' . "\n\r");
+                    $dbm->commit();
+                    // return array('status' => 1, 'timestamp' => $data['timestamp']);
+                }
+            }
+
+
+
+        }
+
+
+        return array('status' => 1, 'timestamp' => $sql);
+
+
+    }
+
+
+    private function addWarehouseRequ($order_id,$add_user_nam){
+        global $dbm;
+        $sql  = "select deliver_order_id  from oc_x_warehouse_requisition where deliver_order_id = '".$order_id ."'";
+        $query = $dbm->query($sql);
+        $result = $query->rows;
+        if($result['deliver_order_id'] > 0 ){
+
+        }else{
+            $result =  $this->getDeliverOrderInfo($order_id);
+
+            $sql = " insert into  oc_x_warehouse_requisition (`relevant_status_id` , `from_warehouse` , `to_warehouse`, `date_added` , `added_by` ,`status` , `deliver_order_id` , `out_type` ) (select 2, do_warehouse_id , warehouse_id , NOW(),'".$add_user_nam."' , 
+            1 ,deliver_order_id , 'DO单调拨'  from  oc_x_deliver_order  where deliver_order_id = '".$order_id."' )";
+
+            $query = $dbm->query($sql);
+            $requ_id = $dbm->getLastId();
+
+            if($requ_id){
+
+                $sql = "select order_id , deliver_order_id , frame_vg_list  from  oc_x_deliver_order_inv  where deliver_order_id   =  '".$order_id ." ' ";
+                $query = $dbm->query($sql);
+                $result = $query->row;
+                $frame_vg_list = explode(',',$result['frame_vg_list']);
+
+                $sql_item  = "  insert into oc_x_warehouse_requisition_item (`relevant_id` ,`container_id` ,`comment` ) VALUES ";
+
+                $n= 0 ;
+                foreach ($frame_vg_list as $container_id) {
+
+                    $sql_item .= "(
+                    '".$requ_id."',
+                    
+                    '".$container_id."',
+
+                   'DO单调拨'
+                    )";
+                    if (++$n < sizeof($frame_vg_list)) {
+                        $sql_item .= ', ';
+                    } else {
+                        $sql_item .= ';';
+                    }
+                }
+
+                $query = $dbm->query($sql_item);
+
+
+            }
+
+        }
+
+    }
+
+    private function addOrderSortingHistory($order_id, $added_by=0){
+        global $dbm;
+        $sql = "INSERT INTO oc_order_history (`order_id`, `notify`, `comment`, `date_added`, `order_status_id`, `order_payment_status_id`, `order_deliver_status_id`, `modified_by`)
+                select order_id, 0, '[SYS]订单分拣', now(),  order_status_id, order_payment_status_id, order_deliver_status_id, '".$added_by."' from oc_order where order_id = '".$order_id."'
+                ";
+
+        return $dbm->query($sql);
+    }
+
+    private function  getDeliverOrderInfo($order_id){
+        global $dbm;
+        $sql = " select do.warehouse_id , do.do_warehouse_id , o.order_status_id , o.order_id ,o.station_id  , do.is_repack from  oc_x_deliver_order do  LEFT  JOIN  oc_order  o  on  do.order_id = o.order_id where do.deliver_order_id = '".$order_id ."'";
+        $query = $dbm->query($sql);
+        $result = $query->row;
+        return $result;
+    }
+
+    private function addDeliverOrderSortingHistory($order_id, $added_by=0){
+
+        global $dbm;
+        $sql = "INSERT INTO oc_x_deliver_order_history (`deliver_order_id`, `notify`, `comment`, `date_added`, `order_status_id`, `order_deliver_status_id`, `modified_by`)
+                select deliver_order_id, 0, '[SYS]订单分拣', now(),  order_status_id,  order_deliver_status_id, '".$added_by."' from oc_x_deliver_order where deliver_order_id = '".$order_id."'
+                ";
+
+
+        return   $dbm->query($sql);
+    }
+
+    private function addReturn($data , $warehouse_id) {
+        global $db, $dbm;
+        $date = date("Y-m-d");
+        if(!sizeof($data) || !is_array($data)){
+            return false; //为空直接返回
+        }
+
+        //$data = json_decode($data, 2);
+        // 期望的数据，需要添加退货的订单号: $data = array(10001,10002,...);
+        // 由分拣人员提交的数据将分拣人员信息写入备注
+
+        // 计算订单应收金额，缺货金额
+        // 计算缺货金额
+        // 应收金额 >= 缺货金额,  仅退货
+        // 应收金额 < 缺货金额,  退余额＝缺货金额－应收金额，实际应收为0，退余额
+        $targetOrdersString = implode(',',$data);
+
+        //查找订单应付
+        $sql = "select order_id, sum(if(accounting = 1, value, 0)) due_total,  sum(if((accounting = 1 and value<0) or code = 'credit_paid' , value, 0)) paid_total from oc_order_total where order_id in (".$targetOrdersString.") group by order_id";
+        $query = $db->query($sql);
+        $dueInfo = $query->rows;
+        $dueInfoList = array();
+        foreach($dueInfo as $m){
+            $dueInfoList[$m['order_id']] = $m;
+        }
+
+        //查找实际出库数据, 分拣数据为扣减库存，是负数，可能有多行，需合并计算
+        $sql = "select o.order_id, oi.product_id, sum(oi.quantity) quantity
+                from oc_x_stock_move o
+                left join oc_x_stock_move_item oi on o.inventory_move_id = oi.inventory_move_id
+                where o.order_id in (".$targetOrdersString.") and o.inventory_type_id = 12 group by o.order_id, oi.product_id";
+        $query = $db->query($sql);
+        $stockMoveInfo = $query->rows;
+        $stockMoveInfoList = array();
+        foreach($stockMoveInfo as $m){
+            $stockMoveInfoList[$m['order_id']][$m['product_id']] = $m['quantity'];
+        }
+
+        //查找订单数据, 仅处理分拣中或待审核，且未配送出库的订单，此步骤执行成功后订单将变为已分拣，防止重复执行
+        $sql = "select o.order_id, date(o.date_added) date_ordered, o.customer_id, op.product_id,
+                op.name, sum(op.quantity) quantity  ,round(sum(op.quantity * op.price) /sum(op.quantity),2 ) price ,  sum(op.quantity * op.price) total
+                from oc_order o
+                left join oc_order_product op on o.order_id = op.order_id
+                where o.order_id in (".$targetOrdersString.")   group by op.product_id ";
+        $query = $db->query($sql);
+        $orderInfo = array();
+        foreach($query->rows as $m){
+            $orderInfo[$m['order_id']][$m['product_id']] = $m;
+            $orderInfoList[$m['order_id']]['customer_id'] = $m['customer_id'];
+            $orderInfoList[$m['order_id']]['date_ordered'] = $m['date_ordered'];
+        }
+        $returnInfo = array();
+
+        //整理退货信息，$data为传入的订单号
+        foreach($data as $m){
+            //无订单或分拣信息跳过
+            if(!isset($stockMoveInfoList[$m]) || !isset($orderInfo[$m])){
+                continue;
+            }
+
+            //整理退货表信息
+            $returnInfo[$m]['order_id'] = $m;
+            $returnInfo[$m]['customer_id'] = $orderInfoList[$m]['customer_id'];
+            $returnInfo[$m]['date_ordered'] = $orderInfoList[$m]['date_ordered'];
+            $returnInfo[$m]['added_by'] = 0;
+            $returnInfo[$m]['comment'] = '[系统]分拣缺货';
+            $returnInfo[$m]['return_reason_id'] = 1; //TODO, 目前为缺货未出库，待处理其他类型
+            $returnInfo[$m]['return_action_id'] = 1; //TODO, 目前为无操作，若有退余额，更改类型
+            $returnInfo[$m]['return_status_id'] = 2; //默认未确认，这里设置已确认，分拣缺货将直接写入系统，无需再确认
+            $returnInfo[$m]['return_inventory_flag'] = 0; //分拣缺货不需要退库存
+            $returnInfo[$m]['credits_returned'] = 1; //分拣缺货不论是否退余额，该状态设置为已退
+
+            $returnInfo[$m]['due_total'] = $dueInfoList[$m]['due_total'];
+            $returnInfo[$m]['paid_total'] = $dueInfoList[$m]['paid_total'];
+            $returnInfo[$m]['return_credits'] = 0; //以下将重新计算退货金额，和订单应付比对作为余额退款依据
+            $returnInfo[$m]['return_total'] = 0; //退货合计金额
+            $returnInfo[$m]['return_qty_total'] = 0; //退货合计数量
+
+
+            //匹配分拣数量，分拣数据为扣减库存，是负数，这里转换为正数
+            foreach($orderInfo[$m] as $n){
+                $productStockMoveQty = 0;
+                if(isset($stockMoveInfoList[$m][$n['product_id']])){
+                    $productStockMoveQty = abs($stockMoveInfoList[$m][$n['product_id']]);
+                }
+
+                if($n['quantity'] > $productStockMoveQty){
+                    //$returnProductInfo[$n['product_id']] = $n;
+                    $returnInfo[$m]['products'][$n['product_id']]['product_id'] = $n['product_id'];
+                    $returnInfo[$m]['products'][$n['product_id']]['name'] = $n['name'];
+                    $returnInfo[$m]['products'][$n['product_id']]['price'] = $n['price'];
+                    $returnInfo[$m]['products'][$n['product_id']]['return_qty'] = $n['quantity'] - $productStockMoveQty;
+                    $returnInfo[$m]['products'][$n['product_id']]['return_total'] = ($n['quantity'] - $productStockMoveQty) * $n['price'];
+
+                    $returnInfo[$m]['return_total'] += $returnInfo[$m]['products'][$n['product_id']]['return_total'];
+                    $returnInfo[$m]['return_qty_total'] += $returnInfo[$m]['products'][$n['product_id']]['return_qty'];
+                }
             }
         }
+
+        //TODO 查找已退货且退余额数据
+//        $sql = "
+//                select R.order_id, sum(R.return_credits) return_total, sum(if(CT.amount is null, 0, CT.amount)) return_credits_total from oc_return R
+//                left join oc_customer_transaction CT on R.return_id = CT.return_id
+//                where R.order_id in (".$targetOrdersString.") and R.return_status_id != 3 and R.return_reason_id = 1
+//                and R.return_action_id = 3
+//                group by R.order_id
+//            ";
+//        $query = $db->query($sql);
+//        $returnedInfo = $query->rows;
+//        $returnedInfoList = array();
+//        foreach($returnedInfo as $m){
+//            $returnedInfoList[$m['order_id']] = $m;
+//        }
+
+        //依次处理多个退货信息
+        $bool = true;
+
+
+//        file_put_contents('./log.txt', json_encode($stockMoveInfoList), FILE_APPEND);
+//        file_put_contents('./log.txt', json_encode($orderInfo), FILE_APPEND);
+        foreach($returnInfo as $m){
+
+            //若退货数量为0，跳过
+            if($m['return_qty_total'] == 0){
+                continue;
+            }
+
+            // 应退余额 ＝ 缺货值 > 应付值 ? (缺货值-应付值) : 0
+            // 应退余额 = 支付金额 > 应退余额 ? 应退余额 : 支付金额;
+            // TODO 问题，出库金额小于优惠金额时，白送？
+            $dueTotal = $returnInfo[$m['order_id']]['due_total'];
+            $paidTotal = abs($returnInfo[$m['order_id']]['paid_total']);
+            $returnTotal = $returnInfo[$m['order_id']]['return_total'];
+
+            $returnCredits = ($returnTotal > $dueTotal) ? ($returnTotal - $dueTotal) : 0;
+            $returnCredits = ($paidTotal > $returnCredits) ? $returnCredits : $paidTotal; //退货金额不大于支付金额（微信＋余额支付合计）
+            $returnActionId = ($returnCredits > 0) ? $m['return_action_id'] : 3;
+
+            //写入退货表
+            $sql = "INSERT INTO `oc_return` (`order_id`, `customer_id`, `return_reason_id`, `return_action_id`, `return_status_id`, `comment`, `date_ordered`, `date_added`, `date_modified`, `add_user`, `return_credits`, `return_inventory_flag`, `credits_returned`)
+                    VALUES(
+                        '".$m['order_id']."',
+                        '".$m['customer_id']."',
+                        '".$m['return_reason_id']."',
+                        '".$returnActionId."',
+                        '".$m['return_status_id']."',
+                        '".$m['comment']."',
+                        '".$m['date_ordered']."',
+                        NOW(),
+                        NOW(),
+                        '".$m['added_by']."',
+                        '".$returnCredits."',
+                        '".$m['return_inventory_flag']."',
+                        '".$m['credits_returned']."')";
+
+            $bool = $bool && $dbm->query($sql);
+            $return_id = $dbm->getLastId();
+
+
+
+
+            $sql = "INSERT INTO `oc_return_product` (`return_id`, `product_id`, `product`,  `quantity`, `in_part`, `box_quantity`, `price`, `total`, `return_product_credits`) VALUES";
+            $n = 0;
+            //TODO, 目前仅处理出库缺货，in_part＝0， box_quantity＝1
+            foreach ($returnInfo[$m['order_id']]['products'] as $product) {
+                $sql .= "(
+                    '".$return_id."',
+                    '".$product['product_id']."',
+                    '".$product['name']."',
+                    '".$product['return_qty']."',
+                    '0',
+                    '1',
+                    '".$product['price']."',
+                    '".$product['return_total']."',
+                    '".$product['return_total']."'
+                    )";
+                if (++$n < sizeof($returnInfo[$m['order_id']]['products'])) {
+                    $sql .= ', ';
+                } else {
+                    $sql .= ';';
+                }
+            }
+            $bool = $bool && $dbm->query($sql);
+
+
+            //退余额
+            if($returnCredits > 0 ){
+                $sql = "INSERT INTO oc_customer_transaction SET added_by = '".$m['added_by']."', customer_id = '" . $m['customer_id'] . "', order_id = '" . $m['order_id'] . "', description = '[系统]分拣缺货退款', amount = '" . $returnCredits . "', customer_transaction_type_id = '9', date_added = NOW(), return_id = '" . $return_id . "'";
+                $bool = $bool && $dbm->query($sql);
+            }
+        }
+
+        return $bool;
     }
+
+    private  function   addDeliverOrderReturn($data , $warehouse_id ){
+        global $db, $dbm;
+        $date = date("Y-m-d");
+        if(!sizeof($data) || !is_array($data)){
+            return false; //为空直接返回
+        }
+
+        //$data = json_decode($data, 2);
+        // 期望的数据，需要添加退货的订单号: $data = array(10001,10002,...);
+        // 由分拣人员提交的数据将分拣人员信息写入备注
+
+        // 计算订单应收金额，缺货金额
+        // 计算缺货金额
+        // 应收金额 >= 缺货金额,  仅退货
+        // 应收金额 < 缺货金额,  退余额＝缺货金额－应收金额，实际应收为0，退余额
+        $targetOrdersString = implode(',',$data);
+
+
+//        //查找实际出库数据, 分拣数据为扣减库存，是负数，可能有多行，需合并计算
+//        $sql = "select o.order_id, oi.product_id, sum(oi.quantity) quantity
+//                from oc_x_stock_move o
+//                left join oc_x_stock_move_item oi on o.inventory_move_id = oi.inventory_move_id
+//                where o.order_id in (".$targetOrdersString.") and o.inventory_type_id = 12 group by o.order_id, oi.product_id";
+//        $query = $db->query($sql);
+//        $stockMoveInfo = $query->rows;
+//        $stockMoveInfoList = array();
+//        foreach($stockMoveInfo as $m){
+//            $stockMoveInfoList[$m['order_id']][$m['product_id']] = $m['quantity'];
+//        }
+
+        $sql  = " select deliver_order_id order_id  , product_id , sum(quantity) quantity  from  oc_x_inventory_order_sorting where deliver_order_id in ('".$targetOrdersString."') and status =1  group by deliver_order_id , product_id  ";
+
+        $query = $db->query($sql);
+        $stockMoveInfo = $query->rows;
+        $stockMoveInfoList = array();
+        foreach($stockMoveInfo as $m){
+            $stockMoveInfoList[$m['order_id']][$m['product_id']] = $m['quantity'];
+        }
+
+        //查找订单数据, 仅处理分拣中或待审核，且未配送出库的订单，此步骤执行成功后订单将变为已分拣，防止重复执行
+        $sql = "select o.deliver_order_id order_id , date(o.date_added) date_ordered, o.customer_id, op.product_id,
+                op.name, sum(op.quantity) quantity  ,round(sum(op.quantity * op.price) /sum(op.quantity),2 ) price ,  sum(op.quantity * op.price) total
+                from oc_x_deliver_order o
+                left join oc_x_deliver_order_product op on o.deliver_order_id = op.deliver_order_id
+                where o.deliver_order_id in (".$targetOrdersString.") and o.order_status_id in (5,8) and o.order_deliver_status_id = 1  group by op.product_id ";
+
+        $query = $db->query($sql);
+        $orderInfo = array();
+        foreach($query->rows as $m){
+            $orderInfo[$m['order_id']][$m['product_id']] = $m;
+            $orderInfoList[$m['order_id']]['customer_id'] = $m['customer_id'];
+            $orderInfoList[$m['order_id']]['date_ordered'] = $m['date_ordered'];
+        }
+
+        $returnInfo = array();
+
+        //整理退货信息，$data为传入的订单号
+
+        foreach($data as $m){
+            //无订单或分拣信息跳过
+
+            if(!isset($stockMoveInfoList[$m]) || !isset($orderInfo[$m])){
+                continue;
+            }
+
+            //整理退货表信息
+            $returnInfo[$m]['order_id'] = $m;
+            $returnInfo[$m]['customer_id'] = $orderInfoList[$m]['customer_id'];
+            $returnInfo[$m]['date_ordered'] = $orderInfoList[$m]['date_ordered'];
+            $returnInfo[$m]['added_by'] = 0;
+            $returnInfo[$m]['comment'] = '[系统]分拣缺货';
+            $returnInfo[$m]['return_reason_id'] = 1; //TODO, 目前为缺货未出库，待处理其他类型
+            $returnInfo[$m]['return_action_id'] = 1; //TODO, 目前为无操作，若有退余额，更改类型
+            $returnInfo[$m]['return_status_id'] = 2; //默认未确认，这里设置已确认，分拣缺货将直接写入系统，无需再确认
+            $returnInfo[$m]['return_inventory_flag'] = 0; //分拣缺货不需要退库存
+            $returnInfo[$m]['credits_returned'] = 1; //分拣缺货不论是否退余额，该状态设置为已退
+
+//            $returnInfo[$m]['due_total'] = $dueInfoList[$m]['due_total'];
+//            $returnInfo[$m]['paid_total'] = $dueInfoList[$m]['paid_total'];
+            $returnInfo[$m]['return_credits'] = 0; //以下将重新计算退货金额，和订单应付比对作为余额退款依据
+            $returnInfo[$m]['return_total'] = 0; //退货合计金额
+            $returnInfo[$m]['return_qty_total'] = 0; //退货合计数量
+
+
+            //匹配分拣数量，分拣数据为扣减库存，是负数，这里转换为正数
+            foreach($orderInfo[$m] as $n){
+                $productStockMoveQty = 0;
+                if(isset($stockMoveInfoList[$m][$n['product_id']])){
+                    $productStockMoveQty = abs($stockMoveInfoList[$m][$n['product_id']]);
+                }
+
+                if($n['quantity'] > $productStockMoveQty){
+                    //$returnProductInfo[$n['product_id']] = $n;
+                    $returnInfo[$m]['products'][$n['product_id']]['product_id'] = $n['product_id'];
+                    $returnInfo[$m]['products'][$n['product_id']]['name'] = $n['name'];
+                    $returnInfo[$m]['products'][$n['product_id']]['price'] = $n['price'];
+                    $returnInfo[$m]['products'][$n['product_id']]['return_qty'] = $n['quantity'] - $productStockMoveQty;
+                    $returnInfo[$m]['products'][$n['product_id']]['return_total'] = ($n['quantity'] - $productStockMoveQty) * $n['price'];
+
+                    $returnInfo[$m]['return_total'] += $returnInfo[$m]['products'][$n['product_id']]['return_total'];
+                    $returnInfo[$m]['return_qty_total'] += $returnInfo[$m]['products'][$n['product_id']]['return_qty'];
+                }
+            }
+        }
+
+        //TODO 查找已退货且退余额数据
+//        $sql = "
+//                select R.order_id, sum(R.return_credits) return_total, sum(if(CT.amount is null, 0, CT.amount)) return_credits_total from oc_return R
+//                left join oc_customer_transaction CT on R.return_id = CT.return_id
+//                where R.order_id in (".$targetOrdersString.") and R.return_status_id != 3 and R.return_reason_id = 1
+//                and R.return_action_id = 3
+//                group by R.order_id
+//            ";
+//        $query = $db->query($sql);
+//        $returnedInfo = $query->rows;
+//        $returnedInfoList = array();
+//        foreach($returnedInfo as $m){
+//            $returnedInfoList[$m['order_id']] = $m;
+//        }
+
+        //依次处理多个退货信息
+        $bool = true;
+
+
+        foreach($returnInfo as $m){
+
+            //若退货数量为0，跳过
+            if($m['return_qty_total'] == 0){
+                continue;
+            }
+
+            // 应退余额 ＝ 缺货值 > 应付值 ? (缺货值-应付值) : 0
+            // 应退余额 = 支付金额 > 应退余额 ? 应退余额 : 支付金额;
+            // TODO 问题，出库金额小于优惠金额时，白送？
+            $dueTotal = $returnInfo[$m['order_id']]['due_total'];
+            $paidTotal = abs($returnInfo[$m['order_id']]['paid_total']);
+            $returnTotal = $returnInfo[$m['order_id']]['return_total'];
+
+            $returnCredits = ($returnTotal > $dueTotal) ? ($returnTotal - $dueTotal) : 0;
+            $returnCredits = ($paidTotal > $returnCredits) ? $returnCredits : $paidTotal; //退货金额不大于支付金额（微信＋余额支付合计）
+            $returnActionId = ($returnCredits > 0) ? $m['return_action_id'] : 3;
+
+            //写入退货表
+            $sql = "INSERT INTO `oc_x_deliver_return` (`deliver_order_id`, `customer_id`, `return_reason_id`, `return_action_id`, `return_status_id`, `comment`, `date_ordered`, `date_added`, `date_modified`, `add_user`, `return_credits`, `return_inventory_flag`, `credits_returned`)
+                    VALUES(
+                        '".$m['order_id']."',
+                        '".$m['customer_id']."',
+                        '".$m['return_reason_id']."',
+                        '".$returnActionId."',
+                        '".$m['return_status_id']."',
+                        '".$m['comment']."',
+                        '".$m['date_ordered']."',
+                        NOW(),
+                        NOW(),
+                        '".$m['added_by']."',
+                        '".$returnCredits."',
+                        '".$m['return_inventory_flag']."',
+                        '".$m['credits_returned']."')";
+            $bool = $bool && $dbm->query($sql);
+            $return_id = $dbm->getLastId();
+
+            $sql = "INSERT INTO `oc_x_deliver_return_product` (`return_id`, `product_id`, `product`,  `quantity`, `in_part`, `box_quantity`, `price`, `total`, `return_product_credits`) VALUES";
+            $n = 0;
+            //TODO, 目前仅处理出库缺货，in_part＝0， box_quantity＝1
+            foreach ($returnInfo[$m['order_id']]['products'] as $product) {
+                $sql .= "(
+                    '".$return_id."',
+                    '".$product['product_id']."',
+                    '".$product['name']."',
+                    '".$product['return_qty']."',
+                    '0',
+                    '1',
+                    '".$product['price']."',
+                    '".$product['return_total']."',
+                    '".$product['return_total']."'
+                    )";
+                if (++$n < sizeof($returnInfo[$m['order_id']]['products'])) {
+                    $sql .= ', ';
+                } else {
+                    $sql .= ';';
+                }
+            }
+
+            $bool = $bool && $dbm->query($sql);
+
+
+        }
+
+        return $bool;
+    }
+
+
 
 
 
@@ -2948,19 +4260,12 @@ ORDER BY
             return false;
         }
 
+        $sql =  "select purchase_order_id ,order_type from oc_x_pre_purchase_order WHERE  purchase_order_id = '".$order_id ."'";
 
+        $query = $dbm->query($sql);
+        $result_type = $query->row;
+        $order_type = $result_type['order_type'];
 
-        /*
-          $sql = "update oc_x_inventory_order_sorting set move_flag = 1 where order_id = " . $data_inv['order_id'];
-          $query = $dbm->query($sql);
-
-
-          $sql = "update oc_order set order_status_id = 6 where order_id = " . $data_inv['order_id'];
-          $dbm->query($sql);
-
-          return array('status'=>1,'timestamp'=>$data_inv['timestamp']);
-          exit;
-         */
 
         $sql = "select xsm.order_id from oc_x_stock_move as xsm where xsm.inventory_type_id = 11 and xsm.purchase_order_id = " . $order_id;
 
@@ -3051,7 +4356,7 @@ ORDER BY
             $data_inv['order_id'] = 0;
 
 
-            $result = $this->addInventoryMoveOrder($data_inv, 1,$warehouse_id);
+            $result = $this->addInventoryMoveOrder($data_inv, 1,$warehouse_id,$order_type);
 
             if ($result && !empty($update_sorting_id_arr)) {
                 $update_sorting_id_str = implode(",", $update_sorting_id_arr);
@@ -3069,16 +4374,18 @@ ORDER BY
 
             $sql = "update oc_x_pre_purchase_order set status = 4 where purchase_order_id = " . $data_inv['purchase_order_id'];
             $dbm->query($sql);
-
-            //添加可售库存和商品上架
-            if(!empty($data_inv)){
-                foreach($data_inv['products'] as $key => $value){
-                    $data_inv['products'][$value['product_id']] += $value['qty'];
-                    unset($data_inv['products'][$key]);
+            if (!empty($result)) {
+                //添加可售库存和商品上架
+                if(!empty($data_inv)){
+                    foreach($data_inv['products'] as $key => $value){
+                        $data_inv['products'][$value['product_id']] += $value['qty'];
+                        unset($data_inv['products'][$key]);
+                    }
                 }
+
+                $this->adjust_post($data_inv,$warehouse_id,$order_type,$data_inv['purchase_order_id']);
             }
 
-            $this->adjust_post($data_inv,$warehouse_id);
 
 
             /*
@@ -3091,11 +4398,115 @@ ORDER BY
               $dbm->query($sql);
              */
 
+            //已支付采购入库金额写入
+            /*
+            $sql = "select checkout_status , checkout_type_id , added_by ,supplier_type  from oc_x_pre_purchase_order where purchase_order_id = '".$data_inv['purchase_order_id']."'";
+
+            $query = $dbm->query($sql);
+            $result_pur = $query->row;
+
+            if($result_pur['checkout_status'] == 2 && $result_pur['checkout_type_id'] == 3){
+
+                $sql_amount = "SELECT
+sum(smi.quantity*smi.price) amount
+FROM
+	oc_x_stock_move sm
+LEFT JOIN oc_x_stock_move_item smi ON sm.inventory_move_id = smi.inventory_move_id
+where sm.purchase_order_id = '".$data_inv['purchase_order_id']."'
+GROUP BY sm.inventory_move_id ";
+                $query = $dbm->query($sql_amount);
+                $result_amount = $query->row;
+
+
+                $sql = "insert into oc_x_supplier_transaction  (`supplier_id` ,`purchase_order_id` , `supplier_transaction_type_id` ,`description` , `amount`,`date_added`,`added_by`,`is_enabled`) VALUES ('".$result_pur['supplier_type']."','".$data_inv['purchase_order_id']."' , 2 , '预付款已支付采购单入库金额' ,'".$result_amount['amount']."' , NOW(),'".$data_inv['user_id']."'  , 1 )";
+                $query = $dbm->query($sql);
+
+            }
+            */
 
             return array('status' => 1, 'timestamp' => $data_inv['timestamp']);
         } else {
             return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
         }
+    }
+    //根据采购入库修改库存记录表
+    public function updateStockSectionProduct($data, $station_id, $language_id = 2, $origin_id){
+        global $dbm;
+        global $log;
+
+        $data_inv = json_decode($data, 2);
+        $order_id = isset($data_inv['order_id']) ? $data_inv['order_id'] : false;                          //订单编号
+//        $product_ids = isset($data_inv['product_ids']) ? $data_inv['product_ids'] : false;                //商品编号
+//        $areanames = isset($data_inv['areanames']) ? $data_inv['areanames'] : false;                       //区域编号
+        $warehouse_id = isset($data_inv['warehouse_id']) ? $data_inv['warehouse_id'] : false;
+//        $section_type = isset($data_inv['transfer_area']) ? $data_inv['transfer_area'] : false;           //区域类型
+//        $update_qunity = isset($data_inv['update_qunity']) ? $data_inv['update_qunity'] : false;          //计划量
+//        $update_section = isset($data_inv['update_section']) ? $data_inv['update_section'] : false;       //投篮量
+        $date_added = date('Y-m-d H:i:s',time());                                                      //时间
+//        $added_by = isset($data_inv['add_user_name']) ? $data_inv['add_user_name'] : false;               //修改人
+
+        $sql = "select xis.*,xpo.order_type from oc_x_inventory_purchase_order_sorting xis left join oc_x_pre_purchase_order xpo on xpo.purchase_order_id = xis.order_id where xis.order_id = " . $order_id . " and xis.move_flag = 1 and xis.warehouse_id = ".$warehouse_id;
+        $query = $dbm->query($sql);
+        $results = $query->rows;
+
+//        return $count;
+        foreach ($results as $productData) {
+            $product_id = $productData['product_id'];                 //商品编号
+            $areaname = $productData['stock_section_id'];            //区域编号
+            $section_type = $productData['stock_section_type_id'];           //区域类型
+//            $update_qunity = $productData['update_qunity'];          //计划量
+//            $update_section = $productData['update_section'];        //投篮量
+            $added_by = $productData['added_by'];                     //修改人
+            $quantity = $productData['quantity'] >=0 ? $productData['quantity'] : (0-$productData['quantity']);     //判断是否是退单表
+            $sql = 'SELECT * FROM oc_x_stock_section_product WHERE warehouse_id = "' . $warehouse_id . '" AND stock_section_id = "' . $areaname . '" AND stock_section_type_id = "' . $section_type . '" AND product_id = "' . $product_id . '"';
+//           return $sql;
+            $query = $dbm->query($sql);
+            $result = $query->rows;
+//            return $result;
+            if ($result) {
+                $quantity1 = $quantity + $result[0]['qunity'];
+                $sql1 = 'UPDATE oc_x_stock_section_product SET quantity = "' . $quantity1 . '" WHERE id = "' . $result[0]['id'] . '"';
+//                return $sql1;
+
+                $dbm->query($sql1);
+            } else {
+                $sql1 = 'INSERT INTO oc_x_stock_section_product (warehouse_id,stock_section_id,stock_section_type_id,product_id,quantity,date_added) VALUES ("' . $warehouse_id . '","' . $areaname . '","' . $section_type . '","' . $product_id . '","' . $quantity . '","' . $date_added . '")';
+//                return $sql1;
+                $dbm->query($sql1);
+            }
+            $sql2 = 'INSERT INTO oc_x_stock_section_product_move (warehouse_id,stock_section_id,section_move_type_id,product_id,quantity,date_added,added_by,purchase_order_id) VALUES ("' . $warehouse_id . '","' . $areaname . '","' . $section_type . '","' . $product_id . '","' . $quantity . '","' . $date_added . '","' . $added_by . '","' .$order_id.'")';
+//            return $sql2;
+            $dbm->query($sql2);
+        }
+//        } $count = count($product_ids);
+////        return $count;
+//        for ($i=0;$i<$count;$i++) {
+//            $product_id = $product_ids[$i];
+//            $areaname = $areanames[$i];
+//            $quantity = $update_qunity[$i] - $update_section[$i];
+//            $sql = 'SELECT * FROM oc_x_stock_section_product WHERE warehouse_id = "'.$warehouse_id.'" AND stock_section_id = "'.$areaname.'" AND stock_section_type_id = "'.$section_type.'" AND product_id = "'.$product_id.'"';
+////           return $sql;
+//            $query = $dbm->query($sql);
+//            $result = $query->rows;
+////            return $result;
+//            if ($result) {
+//                $quantity1 = $quantity + $result[0]['qunity'];
+//                $sql1 = 'UPDATE oc_x_stock_section_product SET quantity = "'.$quantity1.'" WHERE id = "'.$result[0]['id'].'"';
+////                return $sql1;
+//
+//                $dbm->query($sql1);
+//            } else {
+//                $sql1 = 'INSERT INTO oc_x_stock_section_product (warehouse_id,stock_section_id,stock_section_type_id,product_id,quantity,date_added) VALUES ("'.$warehouse_id.'","'.$areaname.'","'.$section_type.'","'.$product_id.'","'.$quantity.'","'.$date_added.'")';
+////                return $sql1;
+//                $dbm->query($sql1);
+//            }
+//            $sql2 = 'INSERT INTO oc_x_stock_section_product_move (warehouse_id,stock_section_id,section_move_type_id,product_id,quantity,date_added,added_by) VALUES ("'.$warehouse_id.'","'.$areaname.'","'.$section_type.'","'.$product_id.'","'.$quantity.'","'.$date_added.'","'.$added_by.'")';
+////            return $sql2;
+//            $dbm->query($sql2);
+//            return array('status' => 1);
+//        }
+        return array('status' => 1);
+
     }
 
 
@@ -3112,28 +4523,119 @@ ORDER BY
         $data_inv = json_decode($data, 2);
 
         $order_id = isset($data_inv['order_id']) ? $data_inv['order_id'] : false;
+        $add_user_name = isset($data_inv['add_user_name']) ? $data_inv['add_user_name'] : false;
+        $add_user_name_id = isset($data_inv['inventory_user_id']) ? $data_inv['inventory_user_id'] : false;
         if (!$order_id) {
             return false;
         }
 
+        $order_order_id = $this->getDeliverOrderInfo($order_id);
 
-        $sql = "select * from oc_x_inventory_order_sorting where order_id = " . $order_id . " and move_flag = 1";
+
+        $sql = "select * from oc_x_inventory_order_sorting where deliver_order_id = " . $order_id . " and move_flag = 1 and status =1 ";
         $query = $dbm->query($sql);
         $result_exists = $query->rows;
         if(!empty($result_exists)){
             return array('status' => 2, 'timestamp' => $data_inv['timestamp']);
         }
 
-        //Update order status back before sorting start
-        $sql = "update oc_order set order_status_id = 2 where order_status_id in (5,6,8) and order_id = '".$order_id."'";
-        $dbm->query($sql);
+        $sql_status =  "select order_status_id from oc_order where  order_id = '".$order_order_id['order_id'] ."'";
 
-        //Remove Order Inv
-        $sql = "delete from oc_order_inv where order_id = " . $order_id;
+        $query = $dbm->query($sql_status);
+        $result_status = $query->row;
+
+        if($result_status['order_status_id'] == 6){
+            return array('status' => 2, 'timestamp' => $data_inv['timestamp']);
+        }
+
+//        if($add_user_name_id != 527 && $add_user_name_id != 777 ) {
+
+
+            $sql_do_status = "select order_status_id from oc_x_deliver_order  where  deliver_order_id = '" . $order_id . "'";
+            $query = $dbm->query($sql_do_status);
+            $result_do_status = $query->row;
+ 
+            if ($result_do_status['order_status_id'] == 6 || $result_do_status['order_status_id'] == 12) {
+
+                return array('status' => 2, 'timestamp' => $data_inv['timestamp']);
+            }
+//        }
+        //Update order status back before sorting start
+//        $sql = "update oc_order set order_status_id = 2 where  order_id = '".$order_order_id['order_id']."'";
+
+//        $dbm->query($sql);
+
+        $sql = "update oc_x_deliver_order set order_status_id = 2,repack_status_id = 2 where  deliver_order_id = '".$order_id."'";
         $dbm->query($sql);
+        $this->addDeliverOrderSortingHistory($order_id,$add_user_name_id);
+        //Remove Order Inv
+        $sql_inv = "delete from oc_x_deliver_order_inv where deliver_order_id = " . $order_id;
+        $dbm->query($sql_inv);
+
+        $sql_distr = "delete from oc_order_distr where deliver_order_id = " . $order_id;
+        $dbm->query($sql_distr);
+
+        $sql_section =  "INSERT INTO oc_x_stock_section_product_move (
+	`warehouse_id`,
+	`stock_section_id`,
+	`section_move_type_id`,
+	`product_id`,
+	`quantity`,
+	`date_added`,
+	`added_name`,
+`order_id` 
+)
+(
+		SELECT
+			warehouse_id,
+			stock_section_id,
+			section_move_type_id,
+			product_id,
+			abs(quantity),
+			NOW(),
+			'".$add_user_name."' ,
+			order_id 
+		FROM
+			oc_x_stock_section_product_move
+		WHERE
+			order_id = '".$order_order_id['order_id']."' and status = 1 
+	)";
+
+
+        $dbm->query($sql_section);
+
+        $sql_section_quantity =  "UPDATE oc_x_stock_section_product ssp
+LEFT JOIN oc_x_stock_section_product_move spm ON ssp.stock_section_id = spm.stock_section_id
+AND ssp.product_id = spm.product_id
+SET ssp.quantity = abs(spm.quantity) + ssp.quantity
+WHERE
+	spm.order_id = '". $order_order_id['order_id'] . "'  and spm.status = 1 ";
+
+        $dbm->query($sql_section_quantity);
+
+        $sql_update =  "update oc_x_stock_section_product_move  set status = 2  where order_id  = '".$order_order_id['order_id']."' ";
+
+        $dbm->query($sql_update);
+
+        $sql_container = " select GROUP_CONCAT(container_id) container_id from oc_x_inventory_order_sorting  where deliver_order_id  =  '".$order_id ."' and status =1  group by deliver_order_id ";
+
+        $query = $dbm->query($sql_container);
+        $result_container = $query->row;
+        $container_id = $result_container['container_id'];
+        if(!empty($container_id)){
+            $sql_del_container = " update  oc_x_container  set occupy = 0  where container_id in ($container_id) ";
+
+            $query = $dbm->query($sql_del_container);
+        }
+
 
         //Remove Order Sorting Info
-        $sql = "delete from oc_x_inventory_order_sorting where order_id = " . $order_id;
+
+        $sql = "update   oc_x_inventory_order_return_quantity set status = 0   where deliver_order_id = " . $order_id;
+        $dbm->query($sql);
+            
+        $sql = "update   oc_x_inventory_order_sorting set status = 0   where deliver_order_id = " . $order_id;
+
         if ($dbm->query($sql)) {
             return array('status' => 1, 'timestamp' => $data_inv['timestamp']);
         } else {
@@ -3194,6 +4696,86 @@ ORDER BY
         } else {
             return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
         }
+    }
+    //删除调拨单中间表数据
+    public function delPurchaseOrderRelevantToInv($data, $station_id, $language_id = 2, $origin_id) {
+        //Expect Data: $data= '{"data":"2015-09-02","station_id":"2"}';
+        //Expect Data: $data= '{"station_id":"2"}';
+        global $dbm;
+        global $log;
+
+
+
+
+        $data_inv = json_decode($data, 2);
+
+        $warehouse_id = isset($data_inv['warehouse_id']) ? trim($data_inv['warehouse_id']) : false;
+        $date_added = isset($data_inv['date_added']) ? $data_inv['date_added'] : false;
+        $relevant_id = isset($data_inv['relevant_id']) ? $data_inv['relevant_id'] : false;
+        $product_id = isset($data_inv['product_id']) ? trim($data_inv['product_id']) : false;
+        $container_id = isset($data_inv['container_id']) ? trim($data_inv['container_id']) : false;
+//        return $data_inv;
+        if (!$relevant_id) {
+            return false;
+        }
+        if ($product_id) {
+            $relevant_id = $relevant_id[0];
+            if ($container_id != 0) {
+                $sql = "DELETE FROM oc_x_warehouse_requisition_temporary 
+WHERE relevant_id =". $relevant_id ." 
+AND warehouse_id =".$warehouse_id." 
+AND container_id =".$container_id;
+            } else {
+                $sql = "DELETE FROM oc_x_warehouse_requisition_temporary 
+WHERE relevant_id =". $relevant_id ." 
+AND warehouse_id =".$warehouse_id." 
+AND product_id =".$product_id."
+AND container_id =".$container_id;
+            }
+//        return $sql;
+            $dbm->query($sql);
+            return array('status'=>2);
+        } else {
+            $relevant_id = $relevant_id[0];
+            if ($container_id) {
+                $sql = "DELETE FROM oc_x_warehouse_requisition_temporary 
+WHERE relevant_id =". $relevant_id ." 
+AND warehouse_id =".$warehouse_id." 
+AND container_id =".$container_id;
+            } else {
+//        foreach ($relevant_id as $relevant) {
+                $sql = "DELETE FROM oc_x_warehouse_requisition_temporary WHERE relevant_id IN (" . $relevant_id . ") AND warehouse_id =" . $warehouse_id;
+            }
+//        return $sql;
+            $dbm->query($sql);
+            return array('status'=>1);
+        }
+//        }
+
+
+
+
+//        $sql = "select inventory_move_id from oc_x_stock_move where inventory_type_id = 11 and purchase_order_id = " . $order_id;
+//        $query = $dbm->query($sql);
+//        $result = $query->rows;
+//        if(!empty($result)){
+//            foreach($result as $key => $value){
+//                $sql = "delete from oc_x_stock_move where inventory_move_id = " . $value['inventory_move_id'];
+//                $dbm->query($sql);
+//                $sql = "delete from oc_x_stock_move_item where inventory_move_id = " . $value['inventory_move_id'];
+//                $dbm->query($sql);
+//            }
+//        }
+//
+//        $sql = "update oc_x_pre_purchase_order set status = 2 where purchase_order_id = " . $order_id;
+//
+//
+//        if ($dbm->query($sql)) {
+//
+//            return array('status' => 1, 'timestamp' => $data_inv['timestamp']);
+//        } else {
+//            return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
+//        }
     }
 
 
@@ -3278,107 +4860,102 @@ ORDER BY
 
 
 
-
-        $sql = "select inventory_move_id,date_added from oc_x_stock_move where inventory_type_id = 14 order by inventory_move_id desc limit 1";
-
-        $query = $dbm->query($sql);
-        $inventory_check = $query->row;
-
-        $inventory_check_id = $inventory_check['inventory_move_id'];
-        $inventory_check_time = $inventory_check['date_added'];
-        if($inventory_check_id){
-            $sql = "SELECT
-                    xsm.inventory_move_id,
-                    xsm.inventory_type_id,
-                    smi.product_id,
-                    sum(smi.quantity) as product_move_type_quantity,
-                    pd.name,
-                    smi.product_batch,
-                    smi.price,
-                    smi.sku_id
-            FROM
-                    oc_x_stock_move AS xsm
-            left JOIN oc_x_stock_move_item AS smi ON xsm.inventory_move_id = smi.inventory_move_id
-            left join oc_product as p on p.product_id = smi.product_id
-            -- left join (select * from oc_product_to_category group by product_id) as ptc on ptc.product_id = smi.product_id
-            -- left join (select * from oc_product_description where language_id = 2 group by product_id) as pd on pd.product_id=smi.product_id
-            left join oc_product_to_category as ptc on ptc.product_id = smi.product_id
-            left join oc_product_description as pd on pd.product_id=smi.product_id and pd.language_id = 2
-            WHERE
-                    xsm.inventory_move_id >= " . $inventory_check_id . "
-                and xsm.date_added >= '" . $inventory_check_time . "'
-            and p.station_id = 2
-            -- and (smi.product_id > 5000 or ptc.category_id in (72,74,157))
-            group by xsm.inventory_type_id,smi.product_id";
-
-            $query = $dbm->query($sql);
-            $inventory_arr = $query->rows;
-            $inventory_product_move_arr = array();
-            foreach($inventory_arr as $key=>$value){
-                $inventory_product_move_arr[$value['product_id']]['quantity'][$value['inventory_type_id']] = $value['product_move_type_quantity'];
-                $inventory_product_move_arr[$value['product_id']]['name'] = $value['name'];
-                $inventory_product_move_arr[$value['product_id']]['sum_quantity'] = 0;
-                $inventory_product_move_arr[$value['product_id']]['date_added'] = $inventory_check['date_added'];
-
-                $inventory_product_move_arr[$value['product_id']]['product_batch'] = $value['product_batch'];
-                $inventory_product_move_arr[$value['product_id']]['price'] = $value['price'];
-                $inventory_product_move_arr[$value['product_id']]['sku_id'] = $value['sku_id'];
-            }
-
-        }
-
-        if(!empty($inventory_product_move_arr)){
-
-
-            foreach($inventory_product_move_arr as $key=>$value){
-                foreach($value['quantity'] as $k=>$v){
-
-                    if($k == 15 && $product_to_promotion_arr[$key]){
-                        if(isset($inventory_product_move_arr[$product_to_promotion_arr[$key]])){
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['quantity']['15'] = abs($v);
-                        }
-                        else{
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]] = $value;
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['quantity'] = array();
-
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['name'] =  '';
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['sum_quantity'] = 0;
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['date_added'] = $value['date_added'];
-                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['quantity']['15'] = abs($v);
-
-
-                        }
-
-
-                    }
-
-                }
-            }
-
-            //echo "<pre>";print_r($inventory_product_move_arr);exit;
-            foreach($inventory_product_move_arr as $key1=>$value1){
-
-                foreach($value1['quantity'] as $k1=>$v1){
-                    $inventory_product_move_arr[$key1]['sum_quantity'] += $v1;
-                }
-
-                if(!isset($stationProductMove_ids[$key1])){
-                    $stationProductMove[] = array(
-                        'product_batch' => $value1['product_batch'],
-                        'due_date' => '0000-00-00', //There is a bug till year 2099.
-                        'product_id' => $key1,
-                        'special_price' => $value1['price'],
-                        'qty' => $inventory_product_move_arr[$key1]['sum_quantity'] >= 0 ? $inventory_product_move_arr[$key1]['sum_quantity'] : 0,
-                        'product_weight' => 0,
-                        'sku_id' => $value1['sku_id']
-                        //'qty' => '-'.$v['quantity']
-                    );
-                }
-
-            }
-
-            $data_inv['products'] = $stationProductMove;
-        }
+// 暂停计算快消库存
+//        $sql = "select inventory_move_id,date_added from oc_x_stock_move where inventory_type_id = 14 order by inventory_move_id desc limit 1";
+//
+//        $query = $dbm->query($sql);
+//        $inventory_check = $query->row;
+//
+//        $inventory_check_id = $inventory_check['inventory_move_id'];
+//        $inventory_check_time = $inventory_check['date_added'];
+//        if($inventory_check_id){
+//            $sql = "SELECT
+//                    xsm.inventory_move_id,
+//                    xsm.inventory_type_id,
+//                    smi.product_id,
+//                    sum(smi.quantity) as product_move_type_quantity,
+//                    pd.name,
+//                    smi.product_batch,
+//                    smi.price,
+//                    smi.sku_id
+//            FROM
+//                    oc_x_stock_move AS xsm
+//            left JOIN oc_x_stock_move_item AS smi ON xsm.inventory_move_id = smi.inventory_move_id
+//            left join oc_product as p on p.product_id = smi.product_id
+//            left join oc_product_to_category as ptc on ptc.product_id = smi.product_id
+//            left join oc_product_description as pd on pd.product_id=smi.product_id and pd.language_id = 2
+//            WHERE
+//                    xsm.inventory_move_id >= " . $inventory_check_id . "
+//                and xsm.date_added >= '" . $inventory_check_time . "'
+//            and p.station_id = 2  and xsm.warehouse_id in (0,10,11)
+//            group by xsm.inventory_type_id,smi.product_id";
+//
+//            $query = $dbm->query($sql);
+//            $inventory_arr = $query->rows;
+//            $inventory_product_move_arr = array();
+//            foreach($inventory_arr as $key=>$value){
+//                $inventory_product_move_arr[$value['product_id']]['quantity'][$value['inventory_type_id']] = $value['product_move_type_quantity'];
+//                $inventory_product_move_arr[$value['product_id']]['name'] = $value['name'];
+//                $inventory_product_move_arr[$value['product_id']]['sum_quantity'] = 0;
+//                $inventory_product_move_arr[$value['product_id']]['date_added'] = $inventory_check['date_added'];
+//
+//                $inventory_product_move_arr[$value['product_id']]['product_batch'] = $value['product_batch'];
+//                $inventory_product_move_arr[$value['product_id']]['price'] = $value['price'];
+//                $inventory_product_move_arr[$value['product_id']]['sku_id'] = $value['sku_id'];
+//            }
+//
+//        }
+//
+//        if(!empty($inventory_product_move_arr)){
+//            foreach($inventory_product_move_arr as $key=>$value){
+//                foreach($value['quantity'] as $k=>$v){
+//
+//                    if($k == 15 && $product_to_promotion_arr[$key]){
+//                        if(isset($inventory_product_move_arr[$product_to_promotion_arr[$key]])){
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['quantity']['15'] = abs($v);
+//                        }
+//                        else{
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]] = $value;
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['quantity'] = array();
+//
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['name'] =  '';
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['sum_quantity'] = 0;
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['date_added'] = $value['date_added'];
+//                            $inventory_product_move_arr[$product_to_promotion_arr[$key]]['quantity']['15'] = abs($v);
+//
+//
+//                        }
+//
+//
+//                    }
+//
+//                }
+//            }
+//
+//            //echo "<pre>";print_r($inventory_product_move_arr);exit;
+//            foreach($inventory_product_move_arr as $key1=>$value1){
+//
+//                foreach($value1['quantity'] as $k1=>$v1){
+//                    $inventory_product_move_arr[$key1]['sum_quantity'] += $v1;
+//                }
+//
+//                if(!isset($stationProductMove_ids[$key1])){
+//                    $stationProductMove[] = array(
+//                        'product_batch' => $value1['product_batch'],
+//                        'due_date' => '0000-00-00', //There is a bug till year 2099.
+//                        'product_id' => $key1,
+//                        'special_price' => $value1['price'],
+//                        'qty' => $inventory_product_move_arr[$key1]['sum_quantity'] >= 0 ? $inventory_product_move_arr[$key1]['sum_quantity'] : 0,
+//                        'product_weight' => 0,
+//                        'sku_id' => $value1['sku_id']
+//                        //'qty' => '-'.$v['quantity']
+//                    );
+//                }
+//
+//            }
+//
+//            $data_inv['products'] = $stationProductMove;
+//        }
 
 
 
@@ -3386,7 +4963,7 @@ ORDER BY
 
         if (sizeof($result)) {
 
-            $log->write($data_inv);
+            //$log->write($data_inv);
 
 
             //备份history
@@ -3406,12 +4983,6 @@ ORDER BY
 
               $this->db->query("COMMIT");
              */
-
-
-
-
-
-
 
 
 
@@ -3463,8 +5034,6 @@ ORDER BY
         $query = $dbm->query($sql);
         $result = $query->rows;
 
-
-
         $station_id = 1;
         $stationProductMove = array();
         $update_sorting_id_arr = array();
@@ -3485,7 +5054,7 @@ ORDER BY
                     'due_date' => '0000-00-00', //There is a bug till year 2099.
                     'product_id' => $v['product_id'],
                     'special_price' => $v['price'],
-                    'qty' => $v['quantity'] - $v['inv_quantity'],
+                    'qty' => $v['occupy_quantity'] + $v['quantity'] - $v['inv_quantity'],
                     'product_weight' => $product_weight,
                     'sku_id' => $v['sku_id'],
                     'station_id' => $v['station_id']
@@ -3512,8 +5081,85 @@ ORDER BY
             $log->write(serialize($data_inv));
 
             $result = $this->addInventoryMoveOrder($data_inv, $station_id,$warehouse_id);
+
             if ($result) {
                 $update_sorting_id_str = implode(",", $update_sorting_id_arr);
+
+                //获取最早盘点值
+                $sql_move  = " select   max(inventory_move_id) inventory_move_id  from oc_x_stock_move  WHERE  inventory_type_id = 14  and warehouse_id = '".$warehouse_id ."'  ";
+
+                $query = $dbm->query($sql_move);
+                $result_move = $query->row;
+
+                //获取该商品从最早的盘点值到提交时候的库存值
+
+                $sql_real = "select  sum(smi.quantity) real_quantity from  oc_x_stock_move sm LEFT join oc_x_stock_move_item smi on sm.inventory_move_id = smi.inventory_move_id WHERE  smi.product_id = '".$stationProductMove[0]['product_id']."'and  sm.inventory_move_id >= '". $result_move['inventory_move_id'] . "' and  sm.warehouse_id = '".$warehouse_id ."' GROUP BY smi.product_id ";
+
+                $query = $dbm->query($sql_real);
+                $result_real = $query->row;
+
+                //获取下单未出库的值
+                $sql_order = " select  sum(op.quantity) order_quantity  from   oc_order o LEFT JOIN  oc_order_product op on o.order_id = op.order_id where o.warehouse_id = '".$warehouse_id ."' and o.order_deliver_status_id =1 and o.order_status_id != 3 and op.product_id = '".$stationProductMove[0]['product_id'] ."' and DATE (date_added) between  date_sub(current_date(), interval 6 day)  and  current_date()  group by op.product_id  ";
+
+
+                $query = $dbm->query($sql_order);
+                $result_order = $query->row;
+
+                $qian_quantity = $result_real['real_quantity'] - abs($result_order['order_quantity']);
+
+                //获取前台商品库存
+                $sql_inventory = " select sum(quantity) inventory_quantity  from  oc_x_inventory_move_item  where  product_id = '".$stationProductMove[0]['product_id']."' and status = 1  and warehouse_id = '".$warehouse_id ."'";
+
+                $query = $dbm->query($sql_inventory);
+                $result_inventory = $query->row;
+                $memo2 = '盘点调整';
+                if($result_inventory['inventory_quantity'] >= $qian_quantity ){
+                    $inventory_type = 6 ;
+                    $memo = '盘点亏损';
+                }else {
+                    $inventory_type = 7 ;
+                    $memo = '盘点盈余';
+                }
+                $date = date("Y-m-d");
+                if ($qian_quantity<0) {
+                    $qian_quantity = 0;
+                }
+                if($result_inventory['inventory_quantity'] == 0 ){
+                    $sql_di = " insert  into  oc_x_inventory_move (`station_id` , `date` , `timestamp` , `inventory_type_id` , `date_added` , `status` , `add_user_name` ,`memo` , `warehouse_id`) VALUES  ('2', '".$date."' ,UNIX_TIMESTAMP(NOW()) ,  '".$inventory_type."' , NOW() , '1' , '".$data_inv['add_user_name']."'  , '".$memo ."' , '".$warehouse_id."' )";
+                    $query = $dbm->query($sql_di);
+                    $inventory_di_move_id = $dbm->getLastId();
+
+                    $sql = " insert into oc_x_inventory_move_item (`inventory_move_id`,`station_id` ,`product_id`,`quantity`,`status`,`warehouse_id`) VALUES ('".$inventory_di_move_id."' , '2', '".$stationProductMove[0]['product_id']."' , '".$qian_quantity *(1) ."' , '1' , '".$warehouse_id."')";
+
+                    $query = $dbm->query($sql);
+
+
+                }else{
+                    //抵消前台库存
+                    $sql_di = " insert  into  oc_x_inventory_move (`station_id` , `date` , `timestamp` , `inventory_type_id` , `date_added` , `status` , `add_user_name` ,`memo` , `warehouse_id`) VALUES  ('2', '".$date."' ,UNIX_TIMESTAMP(NOW()) ,  '".$inventory_type."' , NOW() , '1' , '".$data_inv['add_user_name']."'  , '".$memo2 ."' , '".$warehouse_id."' )";
+                    $query = $dbm->query($sql_di);
+                    $inventory_di_move_id = $dbm->getLastId();
+
+
+                    $sql = " insert into oc_x_inventory_move_item (`inventory_move_id`,`station_id` ,`product_id`,`quantity`,`status`,`warehouse_id`) VALUES ('".$inventory_di_move_id."' , '2', '".$stationProductMove[0]['product_id']."' , '".$result_inventory['inventory_quantity'] * (-1) ."' , '1' , '".$warehouse_id."')";
+
+                    $query = $dbm->query($sql);
+
+                    //盘点数量减去下单未出库
+                    $sql_pan = " insert  into  oc_x_inventory_move (`station_id` , `date` , `timestamp` , `inventory_type_id` , `date_added` , `status` , `add_user_name` ,`memo` , `warehouse_id`) VALUES  ('2', '".$date."' ,UNIX_TIMESTAMP(NOW()) ,  '".$inventory_type."' , NOW() , '1' , '".$data_inv['add_user_name']."'  , '".$memo ."' , '".$warehouse_id."' )";
+
+                    $query = $dbm->query($sql_pan);
+
+
+                    $inventory_pan_move_id = $dbm->getLastId();
+
+                    $sql = " insert into oc_x_inventory_move_item (`inventory_move_id`,`station_id` ,`product_id`,`quantity`,`status`,`warehouse_id`) VALUES ('".$inventory_pan_move_id."' , '2', '".$stationProductMove[0]['product_id']."' , '".$qian_quantity ."' , '1' , '".$warehouse_id."')";
+
+                    $query = $dbm->query($sql);
+
+                }
+
+
                 $sql = "update oc_x_inventory_check_single_sorting set move_flag = 1, subtime = NOW() where inventory_sorting_id in (" . $update_sorting_id_str . ")";
                 $log->write($sql);
                 $query = $dbm->query($sql);
@@ -3680,401 +5326,886 @@ ORDER BY
         $data_inv = json_decode($data, 2);
 
         $order_id = isset($data_inv['order_id']) ? $data_inv['order_id'] : false;
+        $warehouse_id = isset($data_inv['warehouse_id']) ? $data_inv['warehouse_id'] : false;
+        $frame_vg_product = isset($data_inv['frame_vg_product']) ? $data_inv['frame_vg_product'] : false;
         if (!$order_id) {
             return false;
         }
 
-        $sql = "select station_id,order_status_id from oc_order where order_id = '".$order_id."'";
-        $query = $db->query($sql);
-        $result = $query->row;
-        $station_id = $result['station_id'];
+        $sql_so_order = "select oi.order_id   from oc_order o left join oc_order_inv  oi  on  o.order_id = oi.order_id left join oc_x_deliver_order doo on doo.order_id = o.order_id where doo.deliver_order_id  = '".$order_id."' ";
 
-        //[add_type=3]: required from admin), [order_status_id=6]: order sorting data submitted, if require not from admin and sorting data submitted, ignore.
-        $order_status_id = $result['order_status_id'];
-        if($data_inv['add_type'] !=3 and $order_status_id ==6){
-            return array('status' => 99, 'msg' => "订单已分拣完成，更改周转筐请联系主管。");
+        $query = $db->query($sql_so_order);
+        $result_so_order  = $query->row;
+        if($result_so_order['order_id'] >0 ){
+           $sql = " update oc_order_inv  set inv_comment = '".$data_inv['inv_comment']."' where order_id = '".$result_so_order['order_id']."'";
+
+            $query = $db->query($sql);
         }
+        
+        if($warehouse_id == 10 ){
 
+            $result = $this->getDeliverOrderInfo($order_id);
 
-        $data_inv['frame_count'] = $data_inv['frame_count'] ? $data_inv['frame_count'] : 0;
-        $data_inv['incubator_count'] = $data_inv['incubator_count'] ? $data_inv['incubator_count'] : 0;
-        $data_inv['foam_count'] = $data_inv['foam_count'] ? $data_inv['foam_count'] : 0;
-        $data_inv['frame_mi_count'] = $data_inv['frame_mi_count'] ? $data_inv['frame_mi_count'] : 0;
-        $data_inv['incubator_mi_count'] = $data_inv['incubator_mi_count'] ? $data_inv['incubator_mi_count'] : 0;
-        $data_inv['frame_ice_count'] = $data_inv['frame_ice_count'] ? $data_inv['frame_ice_count'] : 0;
-        $data_inv['box_count'] = $data_inv['box_count'] ? $data_inv['box_count'] : 0;
-        $data_inv['frame_meat_count'] = $data_inv['frame_meat_count'] ? $data_inv['frame_meat_count'] : 0;
-        $data_inv['foam_ice_count'] = $data_inv['foam_ice_count'] ? $data_inv['foam_ice_count'] : 0;
-
-        $date_h = date("H",time());
-        if($date_h > 12){
-            $order_deliver_date = date("Y-m-d", time()+24*3600);
-        }
-        else{
-            $order_deliver_date = date("Y-m-d", time());
-        }
-
-        $data_inv['frame_vg_list'] = $data_inv['frame_vg_list'] ? $data_inv['frame_vg_list'] : '';
-        $data_inv['frame_vg_arr'] = !empty($data_inv['frame_vg_list']) ? explode(",", $data_inv['frame_vg_list']) : array();
-
-        $data_inv['frame_meat_list'] = $data_inv['frame_meat_list'] ? $data_inv['frame_meat_list'] : '';
-        $data_inv['frame_meat_arr'] = !empty($data_inv['frame_meat_list']) ? explode(",", $data_inv['frame_meat_list']) : array();
-        $data_inv['frame_mi_list'] = $data_inv['frame_mi_list'] ? $data_inv['frame_mi_list'] : '';
-        $data_inv['frame_mi_arr'] = !empty($data_inv['frame_mi_list']) ? explode(",", $data_inv['frame_mi_list']) : array();
-        $data_inv['frame_ice_list'] = $data_inv['frame_ice_list'] ? $data_inv['frame_ice_list'] : '';
-        $data_inv['frame_ice_arr'] = !empty($data_inv['frame_ice_list']) ? explode(",", $data_inv['frame_ice_list']) : array();
-
-
-        if(!empty($data_inv['frame_vg_arr'])){
-            if($data_inv['frame_count'] < 1){
-                return array('status' => 17, 'timestamp' => "请输入框子数量");
+            $station_id = $result['station_id'];
+            $order_id = $result['order_id'];
+            //[add_type=3]: required from admin), [order_status_id=6]: order sorting data submitted, if require not from admin and sorting data submitted, ignore.
+            $order_status_id = $result['order_status_id'];
+            if ($data_inv['add_type'] != 3 and $order_status_id == 6) {
+                return array('status' => 99, 'msg' => "订单已分拣完成，更改周转筐请联系主管。");
             }
-        }
-        if(!empty($data_inv['frame_meat_arr'])){
-            if($data_inv['frame_meat_count'] < 1){
-                return array('status' => 17, 'timestamp' => "请输入框子数量");
+            $order_status_id = $result['order_status_id'];
+            if($data_inv['add_type'] !=3 and $order_status_id ==6){
+                return array('status' => 99, 'msg' => "订单已分拣完成，更改周转筐请联系主管。");
             }
-        }
-        if(!empty($data_inv['frame_mi_arr'])){
-            if($data_inv['foam_count'] + $data_inv['frame_mi_count'] + $data_inv['incubator_mi_count'] < 1){
-                return array('status' => 17, 'timestamp' => "请输入框子数量");
+
+
+            $data_inv['frame_count'] = $data_inv['frame_count'] ? $data_inv['frame_count'] : 0;
+            $data_inv['incubator_count'] = $data_inv['incubator_count'] ? $data_inv['incubator_count'] : 0;
+            $data_inv['foam_count'] = $data_inv['foam_count'] ? $data_inv['foam_count'] : 0;
+            $data_inv['frame_mi_count'] = $data_inv['frame_mi_count'] ? $data_inv['frame_mi_count'] : 0;
+            $data_inv['incubator_mi_count'] = $data_inv['incubator_mi_count'] ? $data_inv['incubator_mi_count'] : 0;
+            $data_inv['frame_ice_count'] = $data_inv['frame_ice_count'] ? $data_inv['frame_ice_count'] : 0;
+            $data_inv['box_count'] = $data_inv['box_count'] ? $data_inv['box_count'] : 0;
+            $data_inv['frame_meat_count'] = $data_inv['frame_meat_count'] ? $data_inv['frame_meat_count'] : 0;
+            $data_inv['foam_ice_count'] = $data_inv['foam_ice_count'] ? $data_inv['foam_ice_count'] : 0;
+
+            $date_h = date("H",time());
+            if($date_h > 12){
+                $order_deliver_date = date("Y-m-d", time()+24*3600);
             }
-        }
-        if(!empty($data_inv['frame_ice_arr'])){
-            if($data_inv['incubator_count'] + $data_inv['frame_ice_count'] + $data_inv['foam_ice_count'] < 1){
-                return array('status' => 17, 'timestamp' => "请输入框子数量");
+            else{
+                $order_deliver_date = date("Y-m-d", time());
             }
-        }
+
+            $data_inv['frame_vg_list'] = $data_inv['frame_vg_list'] ? $data_inv['frame_vg_list'] : '';
+            $data_inv['frame_vg_arr'] = !empty($data_inv['frame_vg_list']) ? explode(",", $data_inv['frame_vg_list']) : array();
+
+            $data_inv['frame_meat_list'] = $data_inv['frame_meat_list'] ? $data_inv['frame_meat_list'] : '';
+            $data_inv['frame_meat_arr'] = !empty($data_inv['frame_meat_list']) ? explode(",", $data_inv['frame_meat_list']) : array();
+            $data_inv['frame_mi_list'] = $data_inv['frame_mi_list'] ? $data_inv['frame_mi_list'] : '';
+            $data_inv['frame_mi_arr'] = !empty($data_inv['frame_mi_list']) ? explode(",", $data_inv['frame_mi_list']) : array();
+            $data_inv['frame_ice_list'] = $data_inv['frame_ice_list'] ? $data_inv['frame_ice_list'] : '';
+            $data_inv['frame_ice_arr'] = !empty($data_inv['frame_ice_list']) ? explode(",", $data_inv['frame_ice_list']) : array();
 
 
-        //提交框号中有重复
-        $all_list_arr = array();
-        $all_list_str = '';
-        $all_list_arr = array_merge($data_inv['frame_vg_arr'],$data_inv['frame_meat_arr'],$data_inv['frame_mi_arr'],$data_inv['frame_ice_arr']);
-        $all_list_arr_unique = array_unique($all_list_arr);
-
-
-
-        //判断框号是否存在
-        if(!empty($all_list_arr)){
-            $all_list_str = implode($all_list_arr, ",");
-            $all_list_frame = array();
-
-            $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ")";
-
-            $query = $dbm->query($sql);
-            $all_list_frame = $query->rows;
-            if(count($all_list_frame) != count($all_list_arr)){
-                return array('status' => 17, 'timestamp' => "不能输入不存在的框号");
-            }
-        }
-
-
-
-
-        if(!empty($all_list_arr)){
-            //return array('status' => 16, 'timestamp' => "未提交框号，请扫描框号");
-
-
-            if(count($all_list_arr_unique) != count($all_list_arr)){
-                return array('status' => 15, 'timestamp' => "本次提交数据中有重复的框号，请检查");
-            }
-            $all_list_str = implode($all_list_arr, ",");
-
-            //框子未做入库
-            $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ") and instore = 0";
-
-            $query = $dbm->query($sql);
-            $no_use_frame = $query->rows;
-            $no_use_frame_arr = array();
-            if(!empty($no_use_frame)){
-                foreach($no_use_frame as $key=>$value){
-                    $no_use_frame_arr[] = $value['container_id'];
+            if(!empty($data_inv['frame_vg_arr'])){
+                if($data_inv['frame_count'] < 1){
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
                 }
-                $no_use_frame_str = implode(",", $no_use_frame_arr);
-                return array('status' => 12, 'timestamp' => '框号 ' . $no_use_frame_str . " 不能使用，应在商家，框子未做入库操作");
             }
-
-            //框号已作废
-            $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ") and status = 0";
-
-            $query = $dbm->query($sql);
-            $no_use_frame = $query->rows;
-            $no_use_frame_arr = array();
-            if(!empty($no_use_frame)){
-                foreach($no_use_frame as $key=>$value){
-                    $no_use_frame_arr[] = $value['container_id'];
+            if(!empty($data_inv['frame_meat_arr'])){
+                if($data_inv['frame_meat_count'] < 1){
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
                 }
-                $no_use_frame_str = implode(",", $no_use_frame_arr);
-                return array('status' => 13, 'timestamp' => '框号 ' . $no_use_frame_str . " 已作废，请重新贴框号或使用其它框子");
+            }
+            if(!empty($data_inv['frame_mi_arr'])){
+                if($data_inv['foam_count'] + $data_inv['frame_mi_count'] + $data_inv['incubator_mi_count'] < 1){
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
+                }
+            }
+            if(!empty($data_inv['frame_ice_arr'])){
+                if($data_inv['incubator_count'] + $data_inv['frame_ice_count'] + $data_inv['foam_ice_count'] < 1){
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
+                }
             }
 
-        }
 
-        //蔬菜框, 仅对生鲜订单做判断
+            //提交框号中有重复
+            $all_list_arr = array();
+            $all_list_str = '';
+            $all_list_arr = array_merge($data_inv['frame_vg_arr'],$data_inv['frame_meat_arr'],$data_inv['frame_mi_arr'],$data_inv['frame_ice_arr']);
+            $all_list_arr_unique = array_unique($all_list_arr);
 
-        if($data_inv['frame_count'] > 0){
-            //数量不符
 
-            $frame_vg_count = count($data_inv['frame_vg_arr']);
-            if($frame_vg_count != $data_inv['frame_count']){
-                return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+
+            //判断框号是否存在
+            if(!empty($all_list_arr)){
+                $all_list_str = implode($all_list_arr, ",");
+                $all_list_frame = array();
+
+                $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ")";
+
+                $query = $dbm->query($sql);
+                $all_list_frame = $query->rows;
+                if(count($all_list_frame) != count($all_list_arr)){
+                    return array('status' => 17, 'timestamp' => "不能输入不存在的框号");
+                }
             }
 
-            //今日其它订单已扫
-            $frame_other_order = false;
-            $frame_order_other_inv = false;
-            foreach($data_inv['frame_vg_arr'] as $dik=>$div){
 
-                $sql = "select oi.order_id from oc_order_inv as oi
+
+
+            if(!empty($all_list_arr)){
+                //return array('status' => 16, 'timestamp' => "未提交框号，请扫描框号");
+
+
+                if(count($all_list_arr_unique) != count($all_list_arr)){
+                    return array('status' => 15, 'timestamp' => "本次提交数据中有重复的框号，请检查");
+                }
+                $all_list_str = implode($all_list_arr, ",");
+
+                //框子未做入库
+                $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ") and instore = 0";
+
+                $query = $dbm->query($sql);
+                $no_use_frame = $query->rows;
+                $no_use_frame_arr = array();
+                if(!empty($no_use_frame)){
+                    foreach($no_use_frame as $key=>$value){
+                        $no_use_frame_arr[] = $value['container_id'];
+                    }
+                    $no_use_frame_str = implode(",", $no_use_frame_arr);
+                    return array('status' => 12, 'timestamp' => '框号 ' . $no_use_frame_str . " 不能使用，应在商家，框子未做入库操作");
+                }
+
+                //框号已作废
+                $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ") and status = 0";
+
+                $query = $dbm->query($sql);
+                $no_use_frame = $query->rows;
+                $no_use_frame_arr = array();
+                if(!empty($no_use_frame)){
+                    foreach($no_use_frame as $key=>$value){
+                        $no_use_frame_arr[] = $value['container_id'];
+                    }
+                    $no_use_frame_str = implode(",", $no_use_frame_arr);
+                    return array('status' => 13, 'timestamp' => '框号 ' . $no_use_frame_str . " 已作废，请重新贴框号或使用其它框子");
+                }
+
+            }
+
+            //蔬菜框, 仅对生鲜订单做判断
+
+            if($data_inv['frame_count'] > 0){
+                //数量不符
+
+                $frame_vg_count = count($data_inv['frame_vg_arr']);
+                if($frame_vg_count != $data_inv['frame_count']){
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+                }
+
+                //今日其它订单已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach($data_inv['frame_vg_arr'] as $dik=>$div){
+
+                    $sql = "select oi.order_id from oc_order_inv as oi
                 left join oc_order as o on o.order_id = oi.order_id
                 where o.deliver_date = '" . $order_deliver_date . "'
                 and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%')
                 and oi.order_id != " . $order_id;
 
-                if($station_id == 2){
-                    $sql = "select oi.order_id from oc_order_inv as oi
+                    if($station_id == 2){
+                        $sql = "select oi.order_id from oc_order_inv as oi
                     left join oc_order as o on o.order_id = oi.order_id
                     where o.deliver_date = (select deliver_date from oc_order where order_id = '".$order_id."')
                     and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%')
                     and oi.order_id != " . $order_id;
+                    }
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_order_other_inv = true;
+                        break;
+                    }
+                }
+                if($frame_other_order){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
+                }
+                if($frame_order_other_inv){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
                 }
 
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_other_order = $frame_order_result[0]['order_id'];
-                    break;
+            }
+
+
+            //肉框
+
+            if($data_inv['frame_meat_count'] > 0){
+                //数量不符
+
+                $frame_meat_count = count($data_inv['frame_meat_arr']);
+                if($frame_meat_count != $data_inv['frame_meat_count']){
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
                 }
-                //本订单其他人已扫
-                $sql = "select * from oc_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id = " . $order_id;
 
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_order_other_inv = true;
-                    break;
+
+                //今日其它订单/本订单其他人已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach($data_inv['frame_meat_arr'] as $dik=>$div){
+
+
+                    $sql = "select oi.order_id from oc_order_inv as oi left join oc_order as o on o.order_id = oi.order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id != " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_order_inv as oi where ( frame_vg_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_order_other_inv = true;
+                        break;
+                    }
                 }
-            }
-            if($frame_other_order){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
-            }
-            if($frame_order_other_inv){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
-            }
-
-        }
-
-
-        //肉框
-
-        if($data_inv['frame_meat_count'] > 0){
-            //数量不符
-
-            $frame_meat_count = count($data_inv['frame_meat_arr']);
-            if($frame_meat_count != $data_inv['frame_meat_count']){
-                return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
-            }
-
-
-            //今日其它订单/本订单其他人已扫
-            $frame_other_order = false;
-            $frame_order_other_inv = false;
-            foreach($data_inv['frame_meat_arr'] as $dik=>$div){
-
-
-                $sql = "select oi.order_id from oc_order_inv as oi left join oc_order as o on o.order_id = oi.order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id != " . $order_id;
-
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_other_order = $frame_order_result[0]['order_id'];
-                    break;
+                if($frame_other_order){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
                 }
-                //本订单其他人已扫
-                $sql = "select * from oc_order_inv as oi where ( frame_vg_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id = " . $order_id;
-
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_order_other_inv = true;
-                    break;
+                if($frame_order_other_inv){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
                 }
-            }
-            if($frame_other_order){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
-            }
-            if($frame_order_other_inv){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+
             }
 
-        }
+            //奶框
 
-        //奶框
+            if($data_inv['foam_count'] > 0 || $data_inv['frame_mi_count'] > 0 || $data_inv['incubator_mi_count'] > 0){
+                //数量不符
 
-        if($data_inv['foam_count'] > 0 || $data_inv['frame_mi_count'] > 0 || $data_inv['incubator_mi_count'] > 0){
-            //数量不符
+                $frame_mi_count = count($data_inv['frame_mi_arr']);
 
-            $frame_mi_count = count($data_inv['frame_mi_arr']);
-
-            if($frame_mi_count != $data_inv['foam_count'] + $data_inv['frame_mi_count'] + $data_inv['incubator_mi_count']){
-                return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
-            }
-
-
-
-            //今日其它订单已扫
-            $frame_other_order = false;
-            $frame_order_other_inv = false;
-            foreach($data_inv['frame_mi_arr'] as $dik=>$div){
-
-
-                $sql = "select oi.order_id from oc_order_inv as oi left join oc_order as o on o.order_id = oi.order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id != " . $order_id;
-
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_other_order = $frame_order_result[0]['order_id'];
-                    break;
+                if($frame_mi_count != $data_inv['foam_count'] + $data_inv['frame_mi_count'] + $data_inv['incubator_mi_count']){
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
                 }
-                //本订单其他人已扫
-                $sql = "select * from oc_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_vg_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id = " . $order_id;
 
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_order_other_inv = true;
-                    break;
+
+
+                //今日其它订单已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach($data_inv['frame_mi_arr'] as $dik=>$div){
+
+
+                    $sql = "select oi.order_id from oc_order_inv as oi left join oc_order as o on o.order_id = oi.order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id != " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_vg_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_order_other_inv = true;
+                        break;
+                    }
                 }
-            }
-            if($frame_other_order){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
-            }
-            if($frame_order_other_inv){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
-            }
-
-        }
-
-
-        //冷冻框
-
-        if($data_inv['incubator_count'] > 0 || $data_inv['frame_ice_count'] > 0 || $data_inv['foam_ice_count'] > 0){
-            //数量不符
-
-            $frame_ice_count = count($data_inv['frame_ice_arr']);
-            if($frame_ice_count != $data_inv['incubator_count'] + $data_inv['frame_ice_count'] + $data_inv['foam_ice_count']){
-                return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
-            }
-
-
-
-            //今日其它订单已扫
-            $frame_other_order = false;
-            $frame_order_other_inv = false;
-            foreach($data_inv['frame_ice_arr'] as $dik=>$div){
-
-
-                $sql = "select oi.order_id from oc_order_inv as oi left join oc_order as o on o.order_id = oi.order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id != " . $order_id;
-
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_other_order = $frame_order_result[0]['order_id'];
-                    break;
+                if($frame_other_order){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
                 }
-                //本订单其他人已扫
-                $sql = "select * from oc_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_vg_list like '%" . $div . "%') and oi.order_id = " . $order_id;
-
-                $query = $dbm->query($sql);
-                $frame_order_result = $query->rows;
-                if(!empty($frame_order_result)){
-                    $frame_order_other_inv = true;
-                    break;
+                if($frame_order_other_inv){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
                 }
-            }
-            if($frame_other_order){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
-            }
-            if($frame_order_other_inv){
-                return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+
             }
 
-        }
+
+            //冷冻框
+
+            if($data_inv['incubator_count'] > 0 || $data_inv['frame_ice_count'] > 0 || $data_inv['foam_ice_count'] > 0){
+                //数量不符
+
+                $frame_ice_count = count($data_inv['frame_ice_arr']);
+                if($frame_ice_count != $data_inv['incubator_count'] + $data_inv['frame_ice_count'] + $data_inv['foam_ice_count']){
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+                }
 
 
 
-        $sql = "select * from oc_order_inv where order_id = " . $data_inv['order_id'];
-        $query = $dbm->query($sql);
-        $order_inv = $query->row;
-        if (empty($order_inv)) {
-            $sql = "insert into oc_order_inv(order_id,frame_count,incubator_count,inv_comment,inv_status,foam_count,frame_mi_count,incubator_mi_count,frame_ice_count,box_count,foam_ice_count,frame_meat_count,frame_vg_list,frame_meat_list,frame_mi_list,frame_ice_list,uptime) values(" . $data_inv['order_id'] . "," . $data_inv['frame_count'] . "," . $data_inv['incubator_count'] . ",'" . $data_inv['inv_comment'] . "',1," . $data_inv['foam_count'] . "," . $data_inv['frame_mi_count'] . ", " . $data_inv['incubator_mi_count'] . " ," . $data_inv['frame_ice_count'] . "," . $data_inv['box_count'] . "," . $data_inv['foam_ice_count'] . "," . $data_inv['frame_meat_count'] . ",'" . $data_inv['frame_vg_list'] . "','" . $data_inv['frame_meat_list'] . "','" . $data_inv['frame_mi_list'] . "','" . $data_inv['frame_ice_list'] . "',now());";
-        } else {
-
-            $sql = "update oc_order_inv set ";
+                //今日其它订单已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach($data_inv['frame_ice_arr'] as $dik=>$div){
 
 
-            if ($data_inv['add_type'] == 1) {
-                $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
-                $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
-                $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
-            }
-            if ($data_inv['add_type'] == 2) {
-                $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
-                $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
-                $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
-                $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
-            }
-            if ($data_inv['add_type'] == 3) {
-                $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
-                $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+                    $sql = "select oi.order_id from oc_order_inv as oi left join oc_order as o on o.order_id = oi.order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.order_id != " . $order_id;
 
-                $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
-                $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
-                $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
-                $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
-                $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
-                $sql .= "box_count = " . $data_inv['box_count'] . ",";
-                $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
-                $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
-                $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_vg_list like '%" . $div . "%') and oi.order_id = " . $order_id;
 
-                $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
-                $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
-                $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
-            }
-            if ($data_inv['add_type'] == 4) {
-                $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
-                $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
-                $sql .= "box_count = " . $data_inv['box_count'] . ",";
-                $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if(!empty($frame_order_result)){
+                        $frame_order_other_inv = true;
+                        break;
+                    }
+                }
+                if($frame_other_order){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
+                }
+                if($frame_order_other_inv){
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+                }
 
-                $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
-            }
-            if ($data_inv['add_type'] == 5) {
-                $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
-                $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
             }
 
-            //WTF IS THIS!!!, rewrite for fastmoving station
-            if($station_id == 2 ){
+
+
+            $sql = "select * from oc_order_inv where order_id = " . $order_id;
+
+            $query = $dbm->query($sql);
+            $order_inv = $query->row;
+            if (empty($order_inv)) {
+                $sql = "insert into oc_order_inv(order_id,frame_count,incubator_count,inv_comment,inv_status,foam_count,frame_mi_count,incubator_mi_count,frame_ice_count,box_count,foam_ice_count,frame_meat_count,frame_vg_list,frame_meat_list,frame_mi_list,frame_ice_list,uptime) values(" . $order_id . "," . $data_inv['frame_count'] . "," . $data_inv['incubator_count'] . ",'" . $data_inv['inv_comment'] . "',1," . $data_inv['foam_count'] . "," . $data_inv['frame_mi_count'] . ", " . $data_inv['incubator_mi_count'] . " ," . $data_inv['frame_ice_count'] . "," . $data_inv['box_count'] . "," . $data_inv['foam_ice_count'] . "," . $data_inv['frame_meat_count'] . ",'" . $data_inv['frame_vg_list'] . "','" . $data_inv['frame_meat_list'] . "','" . $data_inv['frame_mi_list'] . "','" . $data_inv['frame_ice_list'] . "',now());";
+            } else {
+
                 $sql = "update oc_order_inv set ";
+
+
+//                if ($data_inv['add_type'] == 1) {
+//                    $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
+//                    $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+//                    $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+//                }
+//                if ($data_inv['add_type'] == 2) {
+//                    $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
+//                    $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
+//                    $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
+//                    $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
+//                }
+                //if ($data_inv['add_type'] == 3) {
+                if (1) {
+                    $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
+                    $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+
+                    $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
+                    $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
+                    $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
+                    $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
+                    $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
+                    $sql .= "box_count = " . $data_inv['box_count'] . ",";
+                    $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
+                    $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
+                    $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+
+                    $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
+                    $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
+                    $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
+                }
+//                if ($data_inv['add_type'] == 4) {
+//                    $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
+//                    $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
+//                    $sql .= "box_count = " . $data_inv['box_count'] . ",";
+//                    $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
+//
+//                    $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
+//                }
+//                if ($data_inv['add_type'] == 5) {
+//                    $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
+//                    $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
+//                }
+
+                //WTF IS THIS!!!, rewrite for fastmoving station
+//                if($station_id == 2 ){
+//                    $sql = "update oc_order_inv set ";
+//                    $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
+//                    $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+//                    $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+//                    $sql .= "box_count = " . $data_inv['box_count'] . ",";
+//                }
+
+                $sql .= "uptime = now(),";
+
+                $sql .= "inv_status = 1 ";
+                $sql .= " where order_id = " . $order_id;
+            }
+            $dbm->query($sql);
+
+            //临时方案，再写一遍deliver_order_inv
+
+            $sql = "select * from oc_x_deliver_order_inv where deliver_order_id = " . $data_inv['order_id'];
+            $query = $dbm->query($sql);
+            $order_inv = $query->row;
+            if (empty($order_inv)) {
+                $sql = "insert into oc_x_deliver_order_inv(deliver_order_id,frame_count,incubator_count,inv_comment,inv_status,foam_count,frame_mi_count,incubator_mi_count,frame_ice_count,box_count,foam_ice_count,frame_meat_count,frame_vg_list,frame_meat_list,frame_mi_list,frame_ice_list,uptime , order_id) values(" . $data_inv['order_id'] . "," . $data_inv['frame_count'] . "," . $data_inv['incubator_count'] . ",'" . $data_inv['inv_comment'] . "',1," . $data_inv['foam_count'] . "," . $data_inv['frame_mi_count'] . ", " . $data_inv['incubator_mi_count'] . " ," . $data_inv['frame_ice_count'] . "," . $data_inv['box_count'] . "," . $data_inv['foam_ice_count'] . "," . $data_inv['frame_meat_count'] . ",'" . $data_inv['frame_vg_list'] . "','" . $data_inv['frame_meat_list'] . "','" . $data_inv['frame_mi_list'] . "','" . $data_inv['frame_ice_list'] . "',now() ,'" . $result['order_id'] . "');";
+            } else {
+                $sql = "update oc_x_deliver_order_inv set ";
                 $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
                 $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
-                $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+                $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
+                $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
+                $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
+                $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
+                $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
                 $sql .= "box_count = " . $data_inv['box_count'] . ",";
+                $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
+                $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
+                $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+                $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
+                $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
+                $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
+                $sql .= "uptime = now(),";
+                $sql .= "inv_status = 1 ";
+                $sql .= " where deliver_order_id = " . $data_inv['order_id'];
             }
 
-            $sql .= "uptime = now(),";
+            if ($dbm->query($sql)) {
+                return array('status' => 1, 'timestamp' => $sql);
+            } else {
+                return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
+            }
 
-            $sql .= "inv_status = 1 ";
-            $sql .= " where order_id = " . $data_inv['order_id'];
-        }
+        }else {
 
-        if ($dbm->query($sql)) {
-            return array('status' => 1, 'timestamp' => $sql);
-        } else {
-            return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
+
+            $result = $this->getDeliverOrderInfo($order_id);
+
+            $station_id = $result['station_id'];
+
+            //[add_type=3]: required from admin), [order_status_id=6]: order sorting data submitted, if require not from admin and sorting data submitted, ignore.
+            $order_status_id = $result['order_status_id'];
+            if ($data_inv['add_type'] != 3 and $order_status_id == 6) {
+                return array('status' => 99, 'msg' => "订单已分拣完成，更改周转筐请联系主管。");
+            }
+
+
+            $data_inv['frame_count'] = $data_inv['frame_count'] ? $data_inv['frame_count'] : 0;
+            $data_inv['incubator_count'] = $data_inv['incubator_count'] ? $data_inv['incubator_count'] : 0;
+            $data_inv['foam_count'] = $data_inv['foam_count'] ? $data_inv['foam_count'] : 0;
+            $data_inv['frame_mi_count'] = $data_inv['frame_mi_count'] ? $data_inv['frame_mi_count'] : 0;
+            $data_inv['incubator_mi_count'] = $data_inv['incubator_mi_count'] ? $data_inv['incubator_mi_count'] : 0;
+            $data_inv['frame_ice_count'] = $data_inv['frame_ice_count'] ? $data_inv['frame_ice_count'] : 0;
+            $data_inv['box_count'] = $data_inv['box_count'] ? $data_inv['box_count'] : 0;
+            $data_inv['frame_meat_count'] = $data_inv['frame_meat_count'] ? $data_inv['frame_meat_count'] : 0;
+            $data_inv['foam_ice_count'] = $data_inv['foam_ice_count'] ? $data_inv['foam_ice_count'] : 0;
+
+            $date_h = date("H", time());
+            if ($date_h > 12) {
+                $order_deliver_date = date("Y-m-d", time() + 24 * 3600);
+            } else {
+                $order_deliver_date = date("Y-m-d", time());
+            }
+
+            $data_inv['frame_vg_list'] = $data_inv['frame_vg_list'] ? $data_inv['frame_vg_list'] : '';
+            $data_inv['frame_vg_arr'] = !empty($data_inv['frame_vg_list']) ? explode(",", $data_inv['frame_vg_list']) : array();
+
+            $data_inv['frame_meat_list'] = $data_inv['frame_meat_list'] ? $data_inv['frame_meat_list'] : '';
+            $data_inv['frame_meat_arr'] = !empty($data_inv['frame_meat_list']) ? explode(",", $data_inv['frame_meat_list']) : array();
+            $data_inv['frame_mi_list'] = $data_inv['frame_mi_list'] ? $data_inv['frame_mi_list'] : '';
+            $data_inv['frame_mi_arr'] = !empty($data_inv['frame_mi_list']) ? explode(",", $data_inv['frame_mi_list']) : array();
+            $data_inv['frame_ice_list'] = $data_inv['frame_ice_list'] ? $data_inv['frame_ice_list'] : '';
+            $data_inv['frame_ice_arr'] = !empty($data_inv['frame_ice_list']) ? explode(",", $data_inv['frame_ice_list']) : array();
+
+
+            if (!empty($data_inv['frame_vg_arr'])) {
+                if ($data_inv['frame_count'] < 1) {
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
+                }
+            }
+            if (!empty($data_inv['frame_meat_arr'])) {
+                if ($data_inv['frame_meat_count'] < 1) {
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
+                }
+            }
+            if (!empty($data_inv['frame_mi_arr'])) {
+                if ($data_inv['foam_count'] + $data_inv['frame_mi_count'] + $data_inv['incubator_mi_count'] < 1) {
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
+                }
+            }
+            if (!empty($data_inv['frame_ice_arr'])) {
+                if ($data_inv['incubator_count'] + $data_inv['frame_ice_count'] + $data_inv['foam_ice_count'] < 1) {
+                    return array('status' => 17, 'timestamp' => "请输入框子数量");
+                }
+            }
+
+
+            //提交框号中有重复
+            $all_list_arr = array();
+            $all_list_str = '';
+            $all_list_arr = array_merge($data_inv['frame_vg_arr'], $data_inv['frame_meat_arr'], $data_inv['frame_mi_arr'], $data_inv['frame_ice_arr']);
+            $all_list_arr_unique = array_unique($all_list_arr);
+
+
+            //判断框号是否存在
+            if (!empty($all_list_arr)) {
+                $all_list_str = implode($all_list_arr, ",");
+                $all_list_frame = array();
+
+                $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ")";
+
+                $query = $dbm->query($sql);
+                $all_list_frame = $query->rows;
+                if (count($all_list_frame) != count($all_list_arr)) {
+                    return array('status' => 17, 'timestamp' => "不能输入不存在的框号");
+                }
+            }
+
+
+            if (!empty($all_list_arr)) {
+                //return array('status' => 16, 'timestamp' => "未提交框号，请扫描框号");
+
+
+                if (count($all_list_arr_unique) != count($all_list_arr)) {
+                    return array('status' => 15, 'timestamp' => "本次提交数据中有重复的框号，请检查");
+                }
+                $all_list_str = implode($all_list_arr, ",");
+
+                //框子未做入库
+                $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ") and instore = 0";
+
+                $query = $dbm->query($sql);
+                $no_use_frame = $query->rows;
+                $no_use_frame_arr = array();
+                if (!empty($no_use_frame)) {
+                    foreach ($no_use_frame as $key => $value) {
+                        $no_use_frame_arr[] = $value['container_id'];
+                    }
+                    $no_use_frame_str = implode(",", $no_use_frame_arr);
+                    return array('status' => 12, 'timestamp' => '框号 ' . $no_use_frame_str . " 不能使用，应在商家，框子未做入库操作");
+                }
+
+                //框号已作废
+                $sql = "select * from oc_x_container where container_id in (" . $all_list_str . ") and status = 0";
+
+                $query = $dbm->query($sql);
+                $no_use_frame = $query->rows;
+                $no_use_frame_arr = array();
+                if (!empty($no_use_frame)) {
+                    foreach ($no_use_frame as $key => $value) {
+                        $no_use_frame_arr[] = $value['container_id'];
+                    }
+                    $no_use_frame_str = implode(",", $no_use_frame_arr);
+                    return array('status' => 13, 'timestamp' => '框号 ' . $no_use_frame_str . " 已作废，请重新贴框号或使用其它框子");
+                }
+
+            }
+
+            //蔬菜框, 仅对生鲜订单做判断
+
+            if ($data_inv['frame_count'] > 0) {
+                //数量不符
+
+                $frame_vg_count = count($data_inv['frame_vg_arr']);
+                if ($frame_vg_count != $data_inv['frame_count']) {
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+                }
+
+                //今日其它订单已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach ($data_inv['frame_vg_arr'] as $dik => $div) {
+
+                    $sql = "select oi.deliver_order_id order_id from oc_x_deliver_order_inv as oi
+                left join oc_x_deliver_order as o on o.deliver_order_id = oi.deliver_order_id
+                where o.deliver_date = '" . $order_deliver_date . "'
+                and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%')
+                and oi.deliver_order_id != " . $order_id;
+
+                    if ($station_id == 2) {
+                        $sql = "select oi.deliver_order_id from oc_x_deliver_order_inv as oi
+                    left join oc_x_deliver_order as o on o.deliver_order_id = oi.deliver_order_id
+                    where o.deliver_date = (select deliver_date from oc_x_deliver_order where deliver_order_id = '" . $order_id . "')
+                    and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%')
+                    and oi.deliver_order_id != " . $order_id;
+                    }
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_x_deliver_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.deliver_order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_order_other_inv = true;
+                        break;
+                    }
+                }
+                if ($frame_other_order) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
+                }
+                if ($frame_order_other_inv) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+                }
+
+            }
+
+
+            //肉框
+
+            if ($data_inv['frame_meat_count'] > 0) {
+                //数量不符
+
+                $frame_meat_count = count($data_inv['frame_meat_arr']);
+                if ($frame_meat_count != $data_inv['frame_meat_count']) {
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+                }
+
+
+                //今日其它订单/本订单其他人已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach ($data_inv['frame_meat_arr'] as $dik => $div) {
+
+
+                    $sql = "select oi.deliver_order_id order_id from oc_x_deliver_order_inv as oi left join oc_x_deliver_order as o on o.deliver_order_id = oi.deliver_order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.deliver_order_id != " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_x_deliver_order_inv as oi where ( frame_vg_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.deliver_order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_order_other_inv = true;
+                        break;
+                    }
+                }
+                if ($frame_other_order) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
+                }
+                if ($frame_order_other_inv) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+                }
+
+            }
+
+            //奶框
+
+            if ($data_inv['foam_count'] > 0 || $data_inv['frame_mi_count'] > 0 || $data_inv['incubator_mi_count'] > 0) {
+                //数量不符
+
+                $frame_mi_count = count($data_inv['frame_mi_arr']);
+
+                if ($frame_mi_count != $data_inv['foam_count'] + $data_inv['frame_mi_count'] + $data_inv['incubator_mi_count']) {
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+                }
+
+
+                //今日其它订单已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach ($data_inv['frame_mi_arr'] as $dik => $div) {
+
+
+                    $sql = "select oi.deliver_order_id order_id from oc_x_deliver_order_inv as oi left join oc_x_deliver_order as o on o.deliver_order_id = oi.deliver_order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.deliver_order_id != " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_x_deliver_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_vg_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.deliver_order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_order_other_inv = true;
+                        break;
+                    }
+                }
+                if ($frame_other_order) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
+                }
+                if ($frame_order_other_inv) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+                }
+
+            }
+
+
+            //冷冻框
+
+            if ($data_inv['incubator_count'] > 0 || $data_inv['frame_ice_count'] > 0 || $data_inv['foam_ice_count'] > 0) {
+                //数量不符
+
+                $frame_ice_count = count($data_inv['frame_ice_arr']);
+                if ($frame_ice_count != $data_inv['incubator_count'] + $data_inv['frame_ice_count'] + $data_inv['foam_ice_count']) {
+                    return array('status' => 11, 'timestamp' => $data_inv['timestamp']);
+                }
+
+
+                //今日其它订单已扫
+                $frame_other_order = false;
+                $frame_order_other_inv = false;
+                foreach ($data_inv['frame_ice_arr'] as $dik => $div) {
+
+
+                    $sql = "select oi.deliver_order_id from oc_x_deliver_order_inv as oi left join oc_x_deliver_order as o on o.deliver_order_id = oi.deliver_order_id where o.deliver_date = '" . $order_deliver_date . "' and (frame_vg_list like '%" . $div . "%' or frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_ice_list like '%" . $div . "%') and oi.deliver_order_id != " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_other_order = $frame_order_result[0]['order_id'];
+                        break;
+                    }
+                    //本订单其他人已扫
+                    $sql = "select * from oc_x_deliver_order_inv as oi where ( frame_meat_list like '%" . $div . "%' or frame_mi_list like '%" . $div . "%' or frame_vg_list like '%" . $div . "%') and oi.deliver_order_id = " . $order_id;
+
+                    $query = $dbm->query($sql);
+                    $frame_order_result = $query->rows;
+                    if (!empty($frame_order_result)) {
+                        $frame_order_other_inv = true;
+                        break;
+                    }
+                }
+                if ($frame_other_order) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被订单号 " . $frame_other_order . " 扫描使用，请检查");
+                }
+                if ($frame_order_other_inv) {
+                    return array('status' => 14, 'timestamp' => '框号 ' . $div . " 已被同订单其他分拣人扫描使用，请主管查看数据确认");
+                }
+
+            }
+
+
+            $sql = "select * from oc_x_deliver_order_inv where deliver_order_id = " . $data_inv['order_id'];
+
+            $query = $dbm->query($sql);
+            $order_inv = $query->row;
+            if (empty($order_inv)) {
+                $sql = "insert into oc_x_deliver_order_inv(deliver_order_id,frame_count,incubator_count,inv_comment,inv_status,foam_count,frame_mi_count,incubator_mi_count,frame_ice_count,box_count,foam_ice_count,frame_meat_count,frame_vg_list,frame_meat_list,frame_mi_list,frame_ice_list,uptime , order_id) values(" . $data_inv['order_id'] . "," . $data_inv['frame_count'] . "," . $data_inv['incubator_count'] . ",'" . $data_inv['inv_comment'] . "',1," . $data_inv['foam_count'] . "," . $data_inv['frame_mi_count'] . ", " . $data_inv['incubator_mi_count'] . " ," . $data_inv['frame_ice_count'] . "," . $data_inv['box_count'] . "," . $data_inv['foam_ice_count'] . "," . $data_inv['frame_meat_count'] . ",'" . $data_inv['frame_vg_list'] . "','" . $data_inv['frame_meat_list'] . "','" . $data_inv['frame_mi_list'] . "','" . $data_inv['frame_ice_list'] . "',now() ,'" . $result['order_id'] . "');";
+
+            } else {
+
+                $sql = "update oc_x_deliver_order_inv set ";
+
+
+                if ($data_inv['add_type'] == 1) {
+                    $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
+                    $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+                    $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+                }
+                if ($data_inv['add_type'] == 2) {
+                    $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
+                    $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
+                    $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
+                    $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
+                }
+                if ($data_inv['add_type'] == 3) {
+                    $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
+                    $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+
+                    $sql .= "foam_count = " . $data_inv['foam_count'] . ",";
+                    $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
+                    $sql .= "frame_mi_count = " . $data_inv['frame_mi_count'] . ",";
+                    $sql .= "incubator_mi_count = " . $data_inv['incubator_mi_count'] . ",";
+                    $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
+                    $sql .= "box_count = " . $data_inv['box_count'] . ",";
+                    $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
+                    $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
+                    $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+
+                    $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
+                    $sql .= "frame_mi_list = '" . $data_inv['frame_mi_list'] . "',";
+                    $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
+                }
+                if ($data_inv['add_type'] == 4) {
+                    $sql .= "incubator_count = " . $data_inv['incubator_count'] . ",";
+                    $sql .= "frame_ice_count = " . $data_inv['frame_ice_count'] . ",";
+                    $sql .= "box_count = " . $data_inv['box_count'] . ",";
+                    $sql .= "foam_ice_count = " . $data_inv['foam_ice_count'] . ",";
+
+                    $sql .= "frame_ice_list = '" . $data_inv['frame_ice_list'] . "',";
+                }
+                if ($data_inv['add_type'] == 5) {
+                    $sql .= "frame_meat_count = " . $data_inv['frame_meat_count'] . ",";
+                    $sql .= "frame_meat_list = '" . $data_inv['frame_meat_list'] . "',";
+                }
+
+                //WTF IS THIS!!!, rewrite for fastmoving station
+                if ($station_id == 2) {
+                    $sql = "update oc_x_deliver_order_inv set ";
+                    $sql .= "frame_count = " . $data_inv['frame_count'] . ",";
+                    $sql .= "inv_comment = '" . $data_inv['inv_comment'] . "',";
+                    $sql .= "frame_vg_list = '" . $data_inv['frame_vg_list'] . "',";
+                    $sql .= "box_count = " . $data_inv['box_count'] . ",";
+                }
+
+                $sql .= "uptime = now(),";
+
+                $sql .= "inv_status = 1 ";
+                $sql .= " where deliver_order_id = " . $data_inv['order_id'];
+            }
+
+
+            if ($dbm->query($sql)) {
+
+                if ($data_inv['warehouse_id'] != 10) {
+
+
+                    $sql = "delete  from  oc_x_order_container  where deliver_order_id = '" . $data_inv['order_id'] . "'";
+                    $dbm->query($sql);
+
+                    $frame_vg_list = isset($data_inv['frame_vg_list']) ? $data_inv['frame_vg_list'] : '';
+                    $frame_vg_list_arr = explode(',', $frame_vg_list);
+
+
+
+                    $sql_order = " insert into oc_x_order_container (`deliver_order_id` , `container_id` , `date_added` , `added_by` , `warehouse_id` , `status`) VALUES ( '" . $data_inv['order_id'] . "','" . $frame_vg_product . "', NOW(),  '" . $data_inv['add_user_name'] . "',  '" . $data_inv['warehouse_id'] . "' , '1') ";
+
+                    $query = $dbm->query($sql_order);
+
+                    $sql_occupy = " update oc_x_container set occupy = 1 where container_id = '".$frame_vg_product."' ";
+
+                    $query = $dbm->query($sql_occupy);
+
+                    $sql_history = "  insert into oc_x_container_history  (`container_id` , `status`, `type` ,`instore` , `warehouse_id` , `occupy`,`date_added` , `added_by`) (select container_id , status , type , instore ,warehouse_id , occupy , NOW() ,  '".$data_inv['add_user_id']."' from  oc_x_container  where container_id = '".$frame_vg_product ."') ";
+                    $query = $dbm->query($sql_history);
+//                    $n = 0;
+//                    foreach ($frame_vg_list_arr as $container_id) {
+//
+//                        $sql_order .= "(
+//                    '" . $data_inv['order_id'] . "',
+//                    '" . $container_id . "',
+//                   NOW(),
+//                   '" . $data_inv['add_user_name'] . "',
+//                   '" . $data_inv['warehouse_id'] . "',
+//                    1
+//                    )";
+//                        if (++$n < sizeof($frame_vg_list_arr)) {
+//                            $sql_order .= ', ';
+//                        } else {
+//                            $sql_order .= ';';
+//                        }
+//                    }
+
+
+
+                }
+
+
+                return array('status' => 1, 'timestamp' => $sql);
+            } else {
+                return array('status' => 0, 'timestamp' => $data_inv['timestamp']);
+            }
         }
     }
 
@@ -4779,47 +6910,50 @@ and date_added > '" . $date_t . "'
 
         $frame_list = isset($data_inv['frame_list']) ? $data_inv['frame_list'] : '';
 
+        $warehouse_id = isset($data_inv['warehouse_id']) ? $data_inv['warehouse_id'] : '';
 
-        //判断已回收篮框
-        $sql = "select * from oc_x_container where container_id in ( " . $frame_list . ")";
-        $query = $dbm->query($sql);
-        $result = $query->rows;
-        $in_house_frame = false;
-        foreach($result as $key=>$value){
-            if($value['instore'] == 1){
-                $in_house_frame = $value['container_id'];
-                break;
+        if ($warehouse_id == 10) {
+
+            //判断已回收篮框
+            $sql = "select * from oc_x_container where container_id in ( " . $frame_list . ")";
+            $query = $dbm->query($sql);
+            $result = $query->rows;
+            $in_house_frame = false;
+            foreach($result as $key=>$value){
+                if($value['instore'] == 1){
+                    $in_house_frame = $value['container_id'];
+                    break;
+                }
             }
-        }
-        if($in_house_frame){
-            return array('status' => 0, 'timestamp' => "框号" . $in_house_frame . " 已回收，不能重复回收");
-        }
-
-
-        $frame_arr = array();
-        $frame_arr = explode(",", $frame_list);
-
-        $frame_arr = array_unique($frame_arr);
-
-        //插入frame_log数据
-
-
-
-        $err_container_id = 0;
-        $return_user_credits = array();
-        foreach ($frame_arr as $key=>$value){
-            $f_sql = "select customer_id,order_id,move_type from oc_x_container_move where container_id = " . $value . " order by container_move_id desc limit 1";
-            $f_query = $dbm->query($f_sql);
-            $f_result = $f_query->row;
-
-            if($f_result['move_type'] == '-1'){
-                $err_container_id = $value;
-                break;
+            if($in_house_frame){
+                return array('status' => 0, 'timestamp' => "框号" . $in_house_frame . " 已回收，不能重复回收");
             }
 
 
-            //余额变动
-            $sql = "SELECT
+            $frame_arr = array();
+            $frame_arr = explode(",", $frame_list);
+
+            $frame_arr = array_unique($frame_arr);
+
+            //插入frame_log数据
+
+
+
+            $err_container_id = 0;
+            $return_user_credits = array();
+            foreach ($frame_arr as $key=>$value){
+                $f_sql = "select customer_id,order_id,move_type from oc_x_container_move where container_id = " . $value . " order by container_move_id desc limit 1";
+                $f_query = $dbm->query($f_sql);
+                $f_result = $f_query->row;
+
+                if($f_result['move_type'] == '-1'){
+                    $err_container_id = $value;
+                    break;
+                }
+
+
+                //余额变动
+                $sql = "SELECT
                     f.container_id,f.type,fl.order_id
                     FROM
                             oc_x_container_move as fl
@@ -4833,66 +6967,76 @@ and date_added > '" . $date_t . "'
                             sum(move_type) = 1
                     and f.type = 1 ";
 
-            $query = $dbm->query($sql);
-            $result = $query->rows;
-            $user_frame_count = count($result);
+                $query = $dbm->query($sql);
+                $result = $query->rows;
+                $user_frame_count = count($result);
 
 
 
-            $sql = "select * from oc_x_container as c left join oc_x_container_type as ct on c.type = ct.type_id where c.container_id = '" . $value . "'";
-            $query = $dbm->query($sql);
-            $result = $query->row;
+                $sql = "select * from oc_x_container as c left join oc_x_container_type as ct on c.type = ct.type_id where c.container_id = '" . $value . "'";
+                $query = $dbm->query($sql);
+                $result = $query->row;
 
-            $frame_credits = 0;
-            if($result['type'] == 1){
-                if($user_frame_count >= 6){
+                $frame_credits = 0;
+                if($result['type'] == 1){
+                    if($user_frame_count >= 6){
+                        $frame_credits = $result['price'];
+                    }
+                } else {
                     $frame_credits = $result['price'];
                 }
-            }
-            else{
-                $frame_credits = $result['price'];
-            }
 
-            if($frame_credits > 0){
-                $return_user_credits[$f_result['customer_id']][$f_result['order_id']] += $frame_credits;
-            }
-
-
-
-
-
-            //修改框子状态
-            $u_sql = "update oc_x_container set instore = 1 where container_id = " . $value;
-            $query = $dbm->query($u_sql);
-            $sql = "insert into oc_x_container_move(container_id,order_id,move_type,date_added,customer_id,add_w_user_id,checked) values ";
-            $sql .= "('" . $value . "'," . $f_result['order_id'] . ",'-1',now()," . $f_result['customer_id'] . ",'" . $data_inv['add_user_name'] . "',0)";
-
-            $query = $dbm->query($sql);
-        }
-
-        if(!empty($return_user_credits) > 0 ){
-
-            foreach($return_user_credits as $ruck=>$rucv){
-                foreach($rucv as $rucok=>$rucov){
-                    $sql = "INSERT INTO oc_customer_transaction SET added_by = '11', customer_id = '" . (int)$ruck . "', order_id = '" . (int)$rucok . "', description = '退周转筐押金', amount = '" . $rucov . "', customer_transaction_type_id = '12', date_added = NOW(),change_id = 0, return_id = 0";
-
-                    $dbm->query($sql);
-
+                if($frame_credits > 0){
+                    $return_user_credits[$f_result['customer_id']][$f_result['order_id']] += $frame_credits;
                 }
+
+
+
+
+
+                //修改框子状态
+                $u_sql = "update oc_x_container set instore = 1 where container_id = " . $value;
+                $query = $dbm->query($u_sql);
+                $sql = "insert into oc_x_container_move(container_id,order_id,move_type,date_added,customer_id,add_w_user_id,checked) values ";
+                $sql .= "('" . $value . "'," . $f_result['order_id'] . ",'-1',now()," . $f_result['customer_id'] . ",'" . $data_inv['add_user_name'] . "',0)";
+
+                $query = $dbm->query($sql);
+            }
+
+            if(!empty($return_user_credits) > 0 ){
+
+                foreach($return_user_credits as $ruck=>$rucv){
+                    foreach($rucv as $rucok=>$rucov){
+                        $sql = "INSERT INTO oc_customer_transaction SET added_by = '11', customer_id = '" . (int)$ruck . "', order_id = '" . (int)$rucok . "', description = '退周转筐押金', amount = '" . $rucov . "', customer_transaction_type_id = '12', date_added = NOW(),change_id = 0, return_id = 0";
+
+                        $dbm->query($sql);
+
+                    }
+                }
+
+
             }
 
 
+            if($err_container_id){
+
+                return array('status' => 5, 'timestamp' => "框号" . $err_container_id . " 找不到出库记录，请联系仓库检查");
+            }
+
+
+        }else {
+
+            $sql = "  insert into oc_x_container_history (`container_id` , `status`, `type` , `instore` , `warehouse_id` , `occupy` , `date_added` , `added_by`) (
+
+      SELECT  container_id , status, type , instore , warehouse_id , occupy ,  NOW() , '". $data_inv['add_user_name'] ."'  FROM  oc_x_container where  container_id IN(".$frame_list.")
+  )";
+            $dbm->query($sql);
+
+
+            $sql  = " update oc_x_container set  instore = 1 , occupy = 0  , warehouse_id = '".$warehouse_id."' where container_id IN(".$frame_list .")  " ;
+
+            $dbm->query($sql);
         }
-
-
-        if($err_container_id){
-
-            return array('status' => 5, 'timestamp' => "框号" . $err_container_id . " 找不到出库记录，请联系仓库检查");
-        }
-
-
-
-
 
 
 
@@ -4912,6 +7056,8 @@ and date_added > '" . $date_t . "'
 
 
         $data_inv = json_decode($data, 2);
+
+        $warehouse_id = $data_inv['warehouse_id'];
 
         if(empty($data_inv['add_user_name'])){
             return array('status' => 999, 'timestamp' => $data_inv['timestamp']);
@@ -4939,8 +7085,8 @@ and date_added > '" . $date_t . "'
             'is_back' => $isBack,
             'is_repack_missing' => $isRepackMissing
         );
-        $returnProcessErrorMessage = "请检查订单状态和及退货商品信息，出库退货仅限7日内配送［已分拣］且［配送中?］的订单。";
-        $returnOrderDeliverStatus = '1,2';
+        $returnProcessErrorMessage = "请检查订单状态和及退货商品信息，出库退货仅限60日内配送［已分拣］且［配送中?］的订单。";
+        $returnOrderDeliverStatus = '1,2,3';
 
         if($isBack){
             $returnDataParam = array(
@@ -4950,7 +7096,7 @@ and date_added > '" . $date_t . "'
                 'is_repack_missing' => $isRepackMissing
             );
 
-            $returnProcessErrorMessage = "请检查订单状态和及退货商品信息，回库退货仅限7日内配送，已分拣完成且已配送出库的订单。";
+            $returnProcessErrorMessage = "请检查订单状态和及退货商品信息，回库退货仅限60日内配送，已分拣完成且已配送出库的订单。";
             $returnOrderDeliverStatus = '2,3,7';
         }
 
@@ -4963,15 +7109,15 @@ and date_added > '" . $date_t . "'
                 D.name,
                 C.price,
                 sum(C.quantity*-1) out_qty
-                from xsjb2b2.oc_order A
-                left join xsjb2b2.oc_x_stock_move B on A.order_id = B.order_id
-                left join xsjb2b2.oc_x_stock_move_item C on B.inventory_move_id = C.inventory_move_id
-                left join xsjb2b2.oc_product D on C.product_id = D.product_id
+                from oc_order A
+                left join oc_x_stock_move B on A.order_id = B.order_id
+                left join oc_x_stock_move_item C on B.inventory_move_id = C.inventory_move_id
+                left join oc_product D on C.product_id = D.product_id
                 where A.order_id = '".$data_inv['order_id']."'
                 and A.order_status_id in (6,10)
                 and A.order_deliver_status_id in (".$returnOrderDeliverStatus.")
                 and A.station_id = 2
-                and A.deliver_date between date_sub(current_date(), interval 7 day) and date_add(current_date(), interval 1 day)
+                and A.deliver_date between date_sub(current_date(), interval 300 day) and date_add(current_date(), interval 1 day)
                 and B.inventory_type_id = 12 and C.status = 1
                 and C.product_id in (".$return_product_id_str.")
                 group by C.product_id";
@@ -4987,7 +7133,7 @@ and date_added > '" . $date_t . "'
         }
 
         //获取已退货数量包含了分拣出库差异
-        $sql = "select rp.product_id, sum(rp.quantity/rp.box_quantity) qty
+        $sql = "select rp.product_id, sum(rp.quantity/rp.box_quantity) qty, sum(if(r.return_reason_id>1,rp.quantity/rp.box_quantity,0)) out_returned_qty
             from oc_return r left join oc_return_product rp on r.return_id = rp.return_id
             where r.return_status_id in (1,2) and r.order_id='".$data_inv['order_id']."' and rp.product_id in (".$return_product_id_str.")
             group by rp.product_id";
@@ -5028,7 +7174,7 @@ and date_added > '" . $date_t . "'
             //获取已分拣数量、已退货及已登记未确认的数量
             $validQty = $value['out_qty'];
             $pendindReturnQty = array_key_exists($value['product_id'], $pendingReturnResult) ? $pendingReturnResult[$value['product_id']]['qty'] : 0;
-            $ReturnedQty = array_key_exists($value['product_id'], $returnedResult) ? $returnedResult[$value['product_id']]['qty'] : 0;
+            $ReturnedQty = array_key_exists($value['product_id'], $returnedResult) ? $returnedResult[$value['product_id']]['out_returned_qty'] : 0;
             $validQty -= ($pendindReturnQty + $ReturnedQty);
 
             //提交的商品数量, 换算散件退货数 数量/整箱数量
@@ -5042,7 +7188,7 @@ and date_added > '" . $date_t . "'
                 break;
             }
 
-            if($submitReturnQty > $validQty){
+            if(round($submitReturnQty,4) > round($validQty,4)){
                 $product_quantity_false = $value['product_id'];
                 $returnProcessErrorMessage = "商品" . $product_quantity_false . " [分拣出库:".$value['out_qty']."，已退:".round($ReturnedQty,2)."，未确认：".round($pendindReturnQty,2)."，可退：".$validQty.", 本次退：".round($submitReturnQty,2)."]，退货数量不可大于分拣出库数量和已退货数量。";
                 break;
@@ -5065,7 +7211,8 @@ and date_added > '" . $date_t . "'
         }
 
         //插入oc_return_deliver_product数据
-        $sql = "insert into oc_return_deliver_product(return_reason_id,return_action_id, is_back, is_repack_missing, order_id,product_id,product,model,quantity,in_part, box_quantity, price,total,add_user_id,date_added) values";
+        $sql = "insert into oc_return_deliver_product(return_reason_id,return_action_id, is_back, is_repack_missing, order_id,product_id,product,model,quantity,in_part, box_quantity, price,total,add_user_id,date_added,warehouse_id ) values";
+
         foreach($data_inv['products'] as $m){
             //按提交数据是否整件计算商品金额
             $inPart = ($m['box_quantity']>1) ? 1 : 0;
@@ -5073,7 +7220,7 @@ and date_added > '" . $date_t . "'
             if($inPart){
                 $returnProudctPrice = round($order_product_arr[$m['product_id']]['price']/$m['box_quantity'],2);
             }
-            $sql .= "('".$data_inv['return_reason']."','".$returnDataParam['return_action_id']."','".$returnDataParam['is_back']."','". $returnDataParam['is_repack_missing'] ."','" . $data_inv['order_id'] . "','" . $m['product_id'] . "','" . $order_product_arr[$m['product_id']]['name'] . "','','" . $m['quantity'] . "','" . $inPart . "','" . $m['box_quantity'] . "','" . $returnProudctPrice . "','" . $returnProudctPrice*$m['quantity'] . "'," . $data_inv['add_user_name'] . ",now()),";
+            $sql .= "('".$data_inv['return_reason']."','".$returnDataParam['return_action_id']."','".$returnDataParam['is_back']."','". $returnDataParam['is_repack_missing'] ."','" . $data_inv['order_id'] . "','" . $m['product_id'] . "','" . $order_product_arr[$m['product_id']]['name'] . "','','" . $m['quantity'] . "','" . $inPart . "','" . $m['box_quantity'] . "','" . $returnProudctPrice . "','" . $returnProudctPrice*$m['quantity'] . "'," . $data_inv['add_user_name'] . ",now(),'".$warehouse_id."'),";
         }
         if(substr($sql, strlen($sql)-1,1) == ','){
             $sql = substr($sql, 0,-1);
@@ -5084,6 +7231,294 @@ and date_added > '" . $date_t . "'
 
         return array('status' => 1, 'timestamp' => '', 'message' => "商品退货完成");
     }
+
+
+    // 移库操作
+    public  function  submitStockChecksProduct($data, $station_id, $language_id = 2, $origin_id)
+    {
+        global $db, $dbm;
+        global $log;
+
+        $data_inv = json_decode($data, 2);
+        $date = date("Y-m-d");
+        $warehouse_id = $data_inv['warehouse_id'];
+        $changeStockCheckProduct = $data_inv['changeStockCheckProduct'];
+        $pallet_number = $data_inv['pallet_number'];
+        $warehouse_section_id = $data_inv['warehouse_section_id'];
+        $inventory_user_id = $data_inv['inventory_user_id'];
+        $add = $data_inv['add'];
+
+        if ($add == 0) {
+            $sql_num = "select stock_check_id from oc_x_stock_checks where pallet_number = '" . $pallet_number . "' and warehouse_id = '" . $warehouse_id . "'";
+            $query = $db->query($sql_num);
+
+            if ($query->num_rows) {
+                return array('status' => 2, 'timestamp' => '', 'message' => "此托盘已提交过。");
+            }
+        }
+
+        if ($changeStockCheckProduct == '') {
+
+            if($add == 0 ){
+                $sql = " insert into oc_x_stock_checks (`date_added` , `added_by` ,`warehouse_id` , `pallet_number`) VALUES  (NOW() ,'" . $data_inv['add_user_name'] . "','" . $warehouse_id . "' , '" . $pallet_number . "')";
+
+                $query = $db->query($sql);
+                $stock_check_id = $db->getLastId();
+            }
+
+            if($add == 1 ){
+                $sql_index = "select stock_check_id from oc_x_stock_checks where pallet_number = '" . $pallet_number . "' and warehouse_id = '" . $warehouse_id . "'";
+
+                $query = $db->query($sql_index);
+                $stock_check = $query->row;
+                $stock_check_id = $stock_check['stock_check_id'] ;
+
+            }
+
+            $sql = " insert  into  oc_x_stock_checks_item (`stock_check_id` , `product_id` , `quantity`, `date_added` ,`warehouse_id` ,`pallet_number`)  VALUES ";
+            foreach ($data_inv['products'] as $m) {
+
+                $sql .= "(  '" . $stock_check_id . "' ,'" . $m['product_id'] . "','" . $m['quantity'] . "', NOW()  , '" . $warehouse_id . "' , '" . $pallet_number . "'),";
+            }
+
+            if (substr($sql, strlen($sql) - 1, 1) == ',') {
+                $sql = substr($sql, 0, -1);
+            }
+
+
+            $dbm->query($sql);
+
+//                $sql_move = " insert  into  oc_x_stock_section_product_move (`stock_section_id` , `product_id` , `quantity`, `date_added` ,`section_move_type_id` ,`warehouse_id` , `added_by`)  VALUES ";
+//                foreach ($data_inv['products'] as $m) {
+//
+//                    $sql_move .= "(  '".$stock_check_id ."' ,'" . $m['product_id'] . "','" . $m['quantity'] . "', NOW() , '6','".$warehouse_id."' , '".$inventory_user_id."'),";
+//                }
+//
+//                if (substr($sql_move, strlen($sql_move) - 1, 1) == ',') {
+//                    $sql_move = substr($sql_move, 0, -1);
+//                }
+//
+//
+//                $dbm->query($sql_move);
+
+        } else {
+            foreach ($data_inv['products'] as $m) {
+
+                $sql = "update oc_x_stock_checks  set  quantity = '" . $m['quantity'] . "' where  stock_check_id = '" . $changeStockCheckProduct . "'  ";
+                $dbm->query($sql);
+            }
+
+        }
+
+
+
+        return array('status' => 1, 'timestamp' => '', 'message' => "商品盘点提交完成");
+
+    }
+
+
+    public function addReturnDeliverBadProduct($data, $station_id, $language_id = 2, $origin_id) {
+        global $db, $dbm;
+        global $log;
+
+
+        $data_inv = json_decode($data, 2);
+
+        $warehouse_id = $data_inv['warehouse_id'];
+
+        if(empty($data_inv['add_user_name'])){
+            return array('status' => 999, 'timestamp' => $data_inv['timestamp']);
+        }
+
+        $return_product_id_arr = array();
+        $return_product_id_str = '';
+        foreach($data_inv['products'] as $m){
+            $return_product_id_arr[] = $m['product_id'];
+        }
+        $return_product_id_str = implode(",", $return_product_id_arr);
+
+        //判断是否未回库后退货
+        if(!isset($data_inv['isBack'])){
+            return false;
+        }
+
+        $isBack = (int)$data_inv['isBack'];
+        $isRepackMissing = (int)$data_inv['isRepackMissing'];
+
+        //TODO: 判断用户是否已支付，未支付金额和退货金额对比
+        $returnDataParam = array(
+            'return_reason_id' => 0,
+            'return_action_id' => 0,
+            'is_back' => $isBack,
+            'is_repack_missing' => $isRepackMissing
+        );
+        $returnProcessErrorMessage = "请检查订单状态和及退货商品信息，出库退货仅限60日内配送［已分拣］且［配送中?］的订单。";
+        $returnOrderDeliverStatus = '1,2,3';
+
+        if($isBack){
+            $returnDataParam = array(
+                'return_reason_id' => 0,
+                'return_action_id' => 0,
+                'is_back' => $isBack,
+                'is_repack_missing' => $isRepackMissing
+            );
+
+            $returnProcessErrorMessage = "请检查订单状态和及退货商品信息，回库退货仅限60日内配送，已分拣完成且已配送出库的订单。";
+            $returnOrderDeliverStatus = '2,3,7';
+        }
+
+        //TODO 判断用户是否全额支付
+        //TODO 判断是否实物退货，选择不同操作
+
+        //获取订单分拣出货数量, 出库回库退货时查询条件不同
+        $sql = "select
+                C.product_id,
+                D.name,
+                C.price,
+                sum(C.quantity*-1) out_qty
+                from oc_order A
+                left join oc_x_stock_move B on A.order_id = B.order_id
+                left join oc_x_stock_move_item C on B.inventory_move_id = C.inventory_move_id
+                left join oc_product D on C.product_id = D.product_id
+                where A.order_id = '".$data_inv['order_id']."'
+                and A.order_status_id in (6,10)
+                and A.order_deliver_status_id in (".$returnOrderDeliverStatus.")
+                and A.station_id = 2
+                and A.deliver_date between date_sub(current_date(), interval 60 day) and date_add(current_date(), interval 1 day)
+                and B.inventory_type_id = 12 and C.status = 1
+                and C.product_id in (".$return_product_id_str.")
+                group by C.product_id";
+
+
+
+        //$log->write('退货01[' . __FUNCTION__ . ']检查：'.$sql."\n\r");
+        $query = $db->query($sql);
+        $sortingResult = $query->rows;
+
+        if(empty($sortingResult)){
+            return array('status' => 3, 'timestamp' => "", 'message'=>$returnProcessErrorMessage, 'err_code'=>$sql);
+        }
+
+        //获取已退货数量包含了分拣出库差异
+        $sql = "select rp.product_id, sum(rp.quantity/rp.box_quantity) qty, sum(if(r.return_reason_id>1,rp.quantity/rp.box_quantity,0)) out_returned_qty
+            from oc_return r left join oc_return_product rp on r.return_id = rp.return_id
+            where r.return_status_id in (1,2) and r.order_id='".$data_inv['order_id']."' and rp.product_id in (".$return_product_id_str.")
+            group by rp.product_id";
+
+        //$log->write('已退货01-1[' . __FUNCTION__ . ']检查：'.$sql."\n\r");
+        $query = $db->query($sql);
+        $returnedResult = array();
+        if($query->num_rows){
+            foreach($query->rows as $m){
+                $returnedResult[$m['product_id']] = $m;
+            }
+        }
+
+
+        //获取已登记退货数量：有效状态且尚未提交
+        $sql = "select product_id, sum(quantity/box_quantity) qty
+            from oc_return_deliver_product
+            where status = 1  and  confirmed = 1 and order_id='".$data_inv['order_id']."' and product_id in (".$return_product_id_str.")
+            group by product_id";
+
+        //$log->write('退货01-2[' . __FUNCTION__ . ']检查：'.$sql."\n\r");
+        $query = $db->query($sql);
+        $pendingReturnResult = array();
+        if($query->num_rows){
+            foreach($query->rows as $m){
+                $pendingReturnResult[$m['product_id']] = $m;
+            }
+        }
+
+        $sql = "select product_id, sum(quantity/box_quantity) qty
+            from oc_return_deliver_bad_product
+            where status = 1  and order_id='".$data_inv['order_id']."' and product_id in (".$return_product_id_str.")
+            group by product_id";
+
+        //$log->write('退货01-2[' . __FUNCTION__ . ']检查：'.$sql."\n\r");
+        $query = $db->query($sql);
+        $badReturnResult = array();
+        if($query->num_rows){
+            foreach($query->rows as $m){
+                $badReturnResult[$m['product_id']] = $m;
+            }
+        }
+
+        //$log->write('退货02[' . __FUNCTION__ . ']退货信息：'.serialize($data_inv['products'])."\n\r");
+        $order_product_arr = array();
+        $product_quantity_false = false;
+        foreach($sortingResult as $key=>$value){
+            //整理商品列表
+            $order_product_arr[$value['product_id']] = $value;
+
+            //获取已分拣数量、已退货及已登记未确认的数量
+            $validQty = $value['out_qty'];
+            $pendindReturnQty = array_key_exists($value['product_id'], $pendingReturnResult) ? $pendingReturnResult[$value['product_id']]['qty'] : 0;
+            $badReturnQty = array_key_exists($value['product_id'], $badReturnResult) ? $badReturnResult[$value['product_id']]['qty'] : 0;
+            $ReturnedQty = array_key_exists($value['product_id'], $returnedResult) ? $returnedResult[$value['product_id']]['out_returned_qty'] : 0;
+//            $validQty -= ($pendindReturnQty + $ReturnedQty);
+
+
+            //提交的商品数量, 换算散件退货数 数量/整箱数量
+            $submitReturnQty = $data_inv['products'][$value['product_id']]['quantity'];
+            $validQty =  $badReturnQty +$submitReturnQty ;
+            if($data_inv['products'][$value['product_id']]['box_quantity'] >= 1){
+                $submitReturnQty = $submitReturnQty/$data_inv['products'][$value['product_id']]['box_quantity'];
+            }
+            else{
+                $product_quantity_false = $value['product_id'];
+                $returnProcessErrorMessage = "退货商品" . $product_quantity_false . " 整箱规格数据异常";
+                break;
+            }
+
+
+            if($validQty > round($ReturnedQty,2)){
+                $product_quantity_false = $value['product_id'];
+                $returnProcessErrorMessage = "商品" . $product_quantity_false . " [分拣出库:".$value['out_qty']."，已退:".round($ReturnedQty,2)."，已报损：".$badReturnQty.", 本次报损：".round($submitReturnQty,2)."]，报损数量不可大于退货数量。";
+                break;
+            }
+        }
+
+        //$log->write('退货03[' . __FUNCTION__ . ']订单信息：'.serialize($order_product_arr)."\n\r");
+        if(!$product_quantity_false){
+            foreach($data_inv['products'] as $m){
+                if(!array_key_exists($m['product_id'],$order_product_arr)){
+                    $product_quantity_false = $m['product_id'];
+                    $returnProcessErrorMessage = "商品" . $product_quantity_false . " 无订单分拣出库记录！";
+                    break;
+                }
+            }
+        }
+
+        if($product_quantity_false){
+            return array('status' => 3, 'timestamp' => '', 'message' => $returnProcessErrorMessage);
+        }
+
+        //插入oc_return_deliver_product数据
+        $sql = "insert into oc_return_deliver_bad_product(return_reason_id,return_action_id, is_back, is_repack_missing, order_id,product_id,product,model,quantity,in_part, box_quantity, price,total,add_user_id,date_added,warehouse_id ) values";
+
+        foreach($data_inv['products'] as $m){
+            //按提交数据是否整件计算商品金额
+            $inPart = ($m['box_quantity']>1) ? 1 : 0;
+            $returnProudctPrice = $order_product_arr[$m['product_id']]['price'];
+            if($inPart){
+                $returnProudctPrice = round($order_product_arr[$m['product_id']]['price']/$m['box_quantity'],2);
+            }
+            $sql .= "('".$data_inv['return_reason']."','".$returnDataParam['return_action_id']."','".$returnDataParam['is_back']."','". $returnDataParam['is_repack_missing'] ."','" . $data_inv['order_id'] . "','" . $m['product_id'] . "','" . $order_product_arr[$m['product_id']]['name'] . "','','" . $m['quantity'] . "','" . $inPart . "','" . $m['box_quantity'] . "','" . $returnProudctPrice . "','" . $returnProudctPrice*$m['quantity'] . "'," . $data_inv['add_user_name'] . ",now(),'".$warehouse_id."'),";
+        }
+        if(substr($sql, strlen($sql)-1,1) == ','){
+            $sql = substr($sql, 0,-1);
+        }
+
+        //$log->write('退货04[' . __FUNCTION__ . ']写入退货中间表：'.$sql."\n\r");
+        $dbm->query($sql);
+
+        return array('status' => 1, 'timestamp' => '', 'message' => "商品退货完成");
+    }
+
+
+
+
 
     // 前台用户退货申请
     public function addReturnDeliverProductData($data) {
@@ -5254,12 +7689,15 @@ and date_added > '" . $date_t . "'
         if(substr($sql, strlen($sql)-1, 1) == ','){
             $sql = substr($sql, 0, -1);
         }
-        return $sql;
+
         //$log->write('退货04[' . __FUNCTION__ . ']写入退货中间表：'.$sql."\n\r");
         $dbm->query($sql);
 
         return array('status' => 1, 'timestamp' => '', 'message' => "申请退货成功");
     }
+
+
+
 
 
     public function getAddedReturnDeliverProduct($data, $station_id, $language_id = 2, $origin_id) {
@@ -5275,18 +7713,150 @@ and date_added > '" . $date_t . "'
         $isBack = (int)$data_inv['isBack'];
         $isRepackMissing = (int)$data_inv['isRepackMissing'];
         $warehouse_id = $data_inv['warehouse_id'];
+        $add_user_id = $data_inv['add_user_name'];
+        $product_id = $data_inv['product_id'];
+        $shelves_id = $data_inv['isReturnShelves'];
+        $user_group_id = $data_inv['user_group_id'];
+        if($shelves_id ==0){
+            if($user_group_id == 1 || $user_group_id == 22  ){
+                $sql = "select
+        p.`return_deliver_product_id`,  p.`order_id`,  p.`return_reason_id`,  p.`return_action_id`,  p.`is_back`,  p.`is_repack_missing`,  p.`product_id`,  p.`product`,  p.`model`,  p.`quantity`,  p.`in_part`,  p.`box_quantity`,  p.`price`,  p.`total`,  p.`add_user_id`,  p.`date_added`,  p.`status`,  p.`confirm_user_id`,  p.`date_comfirmed`,  p.`confirmed`,  p.`return_id`
+        from oc_return_deliver_product p
+        LEFT JOIN oc_order o ON  o.order_id = p.order_id
+        where  p.status = 1 and date_format( p.date_added, '%Y-%m-%d') = '" . $date . "'
+        and  p.is_back = '". $isBack ."' and  p.is_repack_missing = '".$isRepackMissing."'
+        and p.warehouse_id = '". $warehouse_id ."'
+          ";
 
-        $sql = "select
-        `return_deliver_product_id`, `order_id`, `return_reason_id`, `return_action_id`, `is_back`, `is_repack_missing`, `product_id`, `product`, `model`, `quantity`, `in_part`, `box_quantity`, `price`, `total`, `add_user_id`, `date_added`, `status`, `confirm_user_id`, `date_comfirmed`, `confirmed`, `return_id`
-        from oc_return_deliver_product
-        where status = 1 and date_format(date_added, '%Y-%m-%d') = '" . $date . "' and add_user_id = " . $data_inv['add_user_name'] . "
-        and is_back = '". $isBack ."' and is_repack_missing = '".$isRepackMissing."'
-        order by date_added desc";
+                if($product_id !=''){
+                    $sql .= " and p.product_id = '". $product_id ."' ";
+                }
+                $sql .= " order by  p.date_added desc";
+            }else{
+                $sql = "select
+        p.`return_deliver_product_id`,  p.`order_id`,  p.`return_reason_id`,  p.`return_action_id`,  p.`is_back`,  p.`is_repack_missing`,  p.`product_id`,  p.`product`,  p.`model`,  p.`quantity`,  p.`in_part`,  p.`box_quantity`,  p.`price`,  p.`total`,  p.`add_user_id`,  p.`date_added`,  p.`status`,  p.`confirm_user_id`,  p.`date_comfirmed`,  p.`confirmed`,  p.`return_id`
+        from oc_return_deliver_product p
+        LEFT JOIN oc_order o ON  o.order_id = p.order_id
+        where  p.status = 1 and date_format( p.date_added, '%Y-%m-%d') = '" . $date . "'
+        and  p.is_back = '". $isBack ."' and  p.is_repack_missing = '".$isRepackMissing."'
+        and p.warehouse_id = '". $warehouse_id ."'
+        and p.add_user_id  = '".$add_user_id. "'  ";
+
+                if($product_id !=''){
+                    $sql .= " and p.product_id = '". $product_id ."' ";
+                }
+                $sql .= " order by  p.date_added desc";
+            }
+
+
+
+
+            $query = $db->query($sql);
+            $result = $query->rows;
+        }
+
+        if($shelves_id == 1){
+            $sql = " select  (group_concat(r.return_id)) return_id ,rp.product_id , rdp.box_quantity,
+              sum(rp.quantity) quantity ,p.repack  ,p.box_size ,rp.price ,rdp.in_part,rdp.box_quantity ,p.name , rp.return_confirmed ,
+              (sum(rp.quantity) * rp.price) total ,r.return_confirmed_by,
+              if(pw.do_warehouse_id = pw.warehouse_id, 1 ,0) isDoWarehouse, w.shortname doWarehouse,pw.stock_area
+              from  oc_return_deliver_product rdp
+                LEFT JOIN oc_return r   ON r.return_id = rdp.return_id and r.return_status_id != 3
+                LEFT JOIN oc_return_product rp ON r.return_id = rp.return_id
+                LEFT  JOIN  oc_order o ON  o.order_id = r.order_id
+                LEFT JOIN  oc_product p ON  rp.product_id  = p.product_id
+                left join oc_product_to_warehouse pw on p.product_id = pw.product_id and pw.warehouse_id = '". $warehouse_id ."'
+                left join oc_x_warehouse w on pw.do_warehouse_id = w.warehouse_id
+                where  rdp.status = 1 and date_format( rdp.date_added, '%Y-%m-%d') = '" . $date . "' and  '" . $date . "' >= '2017-10-15'
+                and rdp.warehouse_id = '". $warehouse_id ."' and  rdp.is_repack_missing = '".$isRepackMissing."'
+                and  rdp.is_back = '". $isBack ."'  and  r.return_reason_id in (2,3,4,5,6)   ";
+
+            if($product_id !=''){
+                $sql .= " and rp.product_id = '". $product_id ."' ";
+            }
+
+            $sql  .= " group by date(r.return_confirmed_date) ,rp.product_id  , rdp.in_part ,rp.return_confirmed" ;
+
+            $sql .= " order by isDoWarehouse desc, doWarehouse, return_id, rp.product_id";
+
+            $query = $db->query($sql);
+            $result = $query->rows;
+
+        }
+
+        return $result;
+    }
+    // 盘点
+    public function getAddedStcokChecksProduct($data, $station_id, $language_id = 2, $origin_id) {
+        global $db;
+        global $log;
+
+        $data_inv = json_decode($data, 2);
+        $warehouse_id = $data_inv['warehouse_id'];
+        $add_user_id = $data_inv['add_user_name'];
+        $pallet_number = $data_inv['pallet_number'];
+
+        $date = $data_inv['date'];
+        $sql  = "SELECT
+	
+	ssp.product_id,
+	ssp.quantity,
+	p.name,
+	ptw.sku_barcode,
+	ss.stock_check_id stock_section_id
+	
+FROM
+	oc_x_stock_checks ss
+LEFT JOIN oc_x_stock_checks_item  ssp ON ss.stock_check_id = ssp.stock_check_id
+LEFT JOIN oc_product p ON ssp.product_id = p.product_id
+LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id and  ptw.warehouse_id = '".$warehouse_id."'  WHERE ss.warehouse_id = '".$warehouse_id."' 
+         " ;
+
+        if($pallet_number !=''){
+            $sql .= " and ss.pallet_number = '".$pallet_number ."' ";
+        }
 
 
         $query = $db->query($sql);
         $result = $query->rows;
 
+        return $result;
+    }
+
+    //报损当面
+
+    public  function  getAddedBadReturnDeliverProduct($data, $station_id, $language_id = 2, $origin_id){
+        global $db;
+        global $log;
+
+        $data_inv = json_decode($data, 2);
+
+        $date = $data_inv['date'];
+        if(!isset($data_inv['isBack'])){
+            return false;
+        }
+        $isBack = (int)$data_inv['isBack'];
+        $isRepackMissing = (int)$data_inv['isRepackMissing'];
+        $warehouse_id = $data_inv['warehouse_id'];
+        $add_user_id = $data_inv['add_user_name'];
+        $product_id = $data_inv['product_id'];
+
+
+        $sql = "select
+        p.`return_deliver_product_id`,  p.`order_id`,  p.`return_reason_id`,  p.`return_action_id`,  p.`is_back`,  p.`is_repack_missing`,  p.`product_id`,  p.`product`,  p.`model`,  p.`quantity`,  p.`in_part`,  p.`box_quantity`,  p.`price`,  p.`total`,  p.`add_user_id`,  p.`date_added`,  p.`status`,  p.`confirm_user_id`,  p.`date_comfirmed`,  p.`confirmed`,  p.`return_id`
+        from oc_return_deliver_bad_product p
+        LEFT JOIN oc_order o ON  o.order_id = p.order_id
+        where  p.status = 1 and date_format( p.date_added, '%Y-%m-%d') = '" . $date . "'
+        and  p.is_back = '". $isBack ."' and  p.is_repack_missing = '".$isRepackMissing."'
+        and p.warehouse_id = '". $warehouse_id ."'
+         ";
+
+        if($product_id !=''){
+            $sql .= " and p.product_id = '". $product_id ."' ";
+        }
+        $sql .= " order by  p.date_added desc";
+        $query = $db->query($sql);
+        $result = $query->rows;
         return $result;
     }
 
@@ -5350,6 +7920,26 @@ and date_added > '" . $date_t . "'
         }
     }
 
+    public function disableReturnBadDeliverProduct($data, $station_id, $language_id = 2, $origin_id) {
+        global $dbm;
+        global $log;
+
+        $data = json_decode($data, 2);
+        if(!isset($data['return_deliver_product_id']) || !$data['return_deliver_product_id'] || !$data['add_user_id']){
+            return array('status' => 0, 'timestamp' => '', 'message' => "提交数据有误，取消退货失败");
+        }
+
+        $sql = "update oc_return_deliver_bad_product set status = 0 where confirmed = 0 and confirm_user_id = '".(int)$data['confirm_user_id']."' and return_deliver_product_id = '".(int)$data['return_deliver_product_id']."'";
+
+
+        if($dbm->query($sql)){
+            return array('status' => 1, 'timestamp' => '', 'message' => "取消退货完成");
+        }
+        else{
+            return array('status' => 0, 'timestamp' => '', 'message' => "取消退货失败");
+        }
+    }
+
     public function confirmReturnDeliverProduct($data, $station_id, $language_id = 2, $origin_id) {
         global $db, $dbm;
         global $log;
@@ -5370,7 +7960,7 @@ and date_added > '" . $date_t . "'
         $warehouse_id = $data['warehouse_id'];
         //查找指定日期，由本人提交的，有效的且未确认的退货记录
         $sql = "select order_id, sum(total) current_return_total from oc_return_deliver_product
-        where status = 1 and confirmed = 0 and date_format(date_added, '%Y-%m-%d') = '" . $date . "' and add_user_id = " . $userId . "
+        where status = 1 and confirmed = 0 and date_format(date_added, '%Y-%m-%d') = '" . $date . "' 
         and is_back = '". $isBack ."' and is_repack_missing = '". $isRepackMissing ."' group by order_id";
         //$log->write('INFO:[' . __FUNCTION__ . ']' . ': 出库缺货退货'. $sql . "\n\r");
         $query = $db->query($sql);
@@ -5448,6 +8038,11 @@ and date_added > '" . $date_t . "'
 
             $dueCurrent = $dueOut-$returnTotal-$currentReturnTotal;//本次退货应收 = 出库应收－已退货－本次退货
             $returnCurrent = ($dueCurrent < 0) ? abs($dueCurrent) : 0;//计算退货后后本次应收小于0，退余额
+
+            //判断是否全部退货或退货金额占订单出货80%以上，不退余额
+            if($currentReturnTotal >= $outTotal*0.8){
+                $returnCurrent = 0;
+            }
 
             //根据是出货退货和是否退余额确定退货操作
             $returnCredits = 0;
@@ -5569,63 +8164,143 @@ and date_added > '" . $date_t . "'
 
 
         $frame_list = isset($data_inv['frame_list']) ? $data_inv['frame_list'] : '';
+        $warehouse_id = isset($data_inv['warehouse_id']) ? $data_inv['warehouse_id'] : '';
+
+        if($warehouse_id == 10 ) {
 
 
-        //判断已回收篮框
-        $sql = "select * from oc_x_container where container_id in ( " . $frame_list . ")";
-        $query = $dbm->query($sql);
-        $result = $query->rows;
-        $in_house_frame = false;
-        foreach($result as $key=>$value){
-            if($value['instore'] == 1){
-                $in_house_frame = $value['container_id'];
-                break;
+            //判断已回收篮框
+            $sql = "select * from oc_x_container where container_id in ( " . $frame_list . ")";
+            $query = $dbm->query($sql);
+            $result = $query->rows;
+            $in_house_frame = false;
+            foreach($result as $key=>$value){
+                if($value['instore'] == 1){
+                    $in_house_frame = $value['container_id'];
+                    break;
+                }
             }
-        }
-        if($in_house_frame){
-            return array('status' => 0, 'timestamp' => "框号" . $in_house_frame . " 已回收，不能重复回收");
-        }
-
-
-        $frame_arr = array();
-        $frame_arr = explode(",", $frame_list);
-        //插入frame_log数据
-
-
-
-        $err_container_id = 0;
-        $return_user_credits = array();
-        foreach ($frame_arr as $key=>$value){
-            $f_sql = "select customer_id,order_id,move_type from oc_x_container_move where container_id = " . $value . " order by container_move_id desc limit 1";
-            $f_query = $dbm->query($f_sql);
-            $f_result = $f_query->row;
-
-            if($f_result['move_type'] != '1'){
-                $err_container_id = $value;
-                break;
+            if($in_house_frame){
+                return array('status' => 0, 'timestamp' => "框号" . $in_house_frame . " 已回收，不能重复回收");
             }
 
 
+            $frame_arr = array();
+            $frame_arr = explode(",", $frame_list);
+            //插入frame_log数据
+
+
+
+            $err_container_id = 0;
+            $return_user_credits = array();
+            foreach ($frame_arr as $key=>$value){
+                $f_sql = "select customer_id,order_id,move_type from oc_x_container_move where container_id = " . $value . " order by container_move_id desc limit 1";
+                $f_query = $dbm->query($f_sql);
+                $f_result = $f_query->row;
+
+                if($f_result['move_type'] != '1'){
+                    $err_container_id = $value;
+                    break;
+                }
+
+
+            }
+
+
+
+
+            if($err_container_id){
+
+                return array('status' => 5, 'timestamp' => "框号" . $err_container_id . " 找不到出库记录，请记录回收框子的商家并联系主管检查数据，");
+            }
+
+
+        }else {
+            $sql = "select * from oc_x_container where container_id in ( " . $frame_list . ")";
+            $query = $dbm->query($sql);
+            $result = $query->rows;
         }
-
-
-
-
-        if($err_container_id){
-
-            return array('status' => 5, 'timestamp' => "框号" . $err_container_id . " 找不到出库记录，请记录回收框子的商家并联系主管检查数据，");
-        }
-
-
-
-
-
-
-
 
 
 
         return array('status' => 1, 'timestamp' => $data_inv['timestamp']);
+    }
+    public function checkFrameCanInput($data, $station_id, $language_id = 2, $origin_id) {
+        //Expect Data: $data= '{"data":"2015-09-02","station_id":"2"}';
+        //Expect Data: $data= '{"station_id":"2"}';
+        global $dbm;
+        global $log;
+
+
+
+        $data_inv = json_decode($data, 2);
+
+
+        $frame_list = isset($data_inv['frame_list']) ? $data_inv['frame_list'] : '';
+        $warehouse_id = isset($data_inv['warehouse_id']) ? $data_inv['warehouse_id'] : '';
+
+//        if($warehouse_id == 10 ) {
+//
+//
+//            //判断已回收篮框
+//            $sql = "select * from oc_x_container where container_id in ( " . $frame_list . ")";
+//            $query = $dbm->query($sql);
+//            $result = $query->rows;
+//            $in_house_frame = false;
+//            foreach($result as $key=>$value){
+//                if($value['instore'] == 1){
+//                    $in_house_frame = $value['container_id'];
+//                    break;
+//                }
+//            }
+//            if($in_house_frame){
+//                return array('status' => 0, 'timestamp' => "框号" . $in_house_frame . " 已回收，不能重复回收");
+//            }
+//
+//
+//            $frame_arr = array();
+//            $frame_arr = explode(",", $frame_list);
+//            //插入frame_log数据
+//
+//
+//
+//            $err_container_id = 0;
+//            $return_user_credits = array();
+//            foreach ($frame_arr as $key=>$value){
+//                $f_sql = "select customer_id,order_id,move_type from oc_x_container_move where container_id = " . $value . " order by container_move_id desc limit 1";
+//                $f_query = $dbm->query($f_sql);
+//                $f_result = $f_query->row;
+//
+//                if($f_result['move_type'] != '1'){
+//                    $err_container_id = $value;
+//                    break;
+//                }
+//
+//
+//            }
+//
+//
+//
+//
+//            if($err_container_id){
+//
+//                return array('status' => 5, 'timestamp' => "框号" . $err_container_id . " 找不到出库记录，请记录回收框子的商家并联系主管检查数据，");
+//            }
+//
+//
+//        }else {
+            $sql = "select oct.*,oc.* from oc_x_container oc LEFT JOIN oc_x_container_type oct ON oct.type_id = oc.type where oc.container_id in ( " . $frame_list . ")";
+            $query = $dbm->query($sql);
+            $result = $query->row;
+//        }
+
+//return $sql;
+        if (empty($result)) {
+            return array('status' => 0, 'timestamp' => "该框号不存在",'container_ids'=>$result);
+        } else {
+            return array('status' => 1, 'timestamp' => $data_inv['timestamp'],'container_ids'=>$result);
+        }
+
     }
 
 
@@ -5642,16 +8317,25 @@ and date_added > '" . $date_t . "'
         }
 
         if (strlen($sku) == 18) {
-            $sql = "SELECT pd.name, p.status, p.sku, p.box_size, p.inv_class_sort, p.model, pd.special_price as price, p.product_id FROM oc_product AS p LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN labelprinter.productlist AS pd ON p.product_id = pd.product_id WHERE pd.barcode = '" . $sku . "' ";
+            $sql = "SELECT cd.name ca_name , pd.name, pd.abstract, p.status,ptw.sku_barcode, p.box_size, ptw.stock_area inv_class_sort, p.model, pd.special_price as price, p.product_id ,ptw.retail_barcode,p.repack FROM oc_product AS p LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN labelprinter.productlist AS pd ON p.product_id = pd.product_id left join oc_product_to_category ptc on ptc.product_id = p.product_id
+left join oc_category c on c.category_id = ptc.category_id
+left join oc_category_description cd on cd.category_id = c.category_id WHERE ptw.sku_barcode = '" . $sku . "' and ptw.warehouse_id = '". $data_inv['warehouse_id']."' ";
         }
         elseif(is_numeric($sku) && strlen($sku) <= 6) {
-            $sql = "SELECT pd.name, p.status, p.sku, p.box_size, p.inv_class_sort, p.model, p.price, p.product_id FROM oc_product AS p  LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN  oc_product_description AS pd ON p.product_id = pd.product_id WHERE p.product_id = '".$sku."'   ";
+            $sql = "SELECT cd.name ca_name , pd.name, pd.abstract, p.status,ptw.sku_barcode, p.box_size,  ptw.stock_area inv_class_sort, p.model, p.price, p.product_id,ptw.retail_barcode,p.repack FROM oc_product AS p  LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN  oc_product_description AS pd ON p.product_id = pd.product_id left join oc_product_to_category ptc on ptc.product_id = p.product_id
+left join oc_category c on c.category_id = ptc.category_id
+left join oc_category_description cd on cd.category_id = c.category_id  WHERE ptw.product_id = '".$sku."' and ptw.warehouse_id = '". $data_inv['warehouse_id']."' ";
+//            return $sql;
         }
         elseif(is_numeric($sku) && strlen($sku) > 6) {
-            $sql = "SELECT pd.name, p.status, p.sku, p.box_size, p.inv_class_sort, p.model, p.price, p.product_id FROM oc_product AS p  LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id WHERE p.sku like '".$sku."%' ";
+            $sql = "SELECT cd.name ca_name , pd.name, pd.abstract, p.status, ptw.sku_barcode, p.box_size,  ptw.stock_area inv_class_sort, p.model, p.price, p.product_id ,ptw.retail_barcode,p.repack FROM oc_product AS p  LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id left join oc_product_to_category ptc on ptc.product_id = p.product_id
+left join oc_category c on c.category_id = ptc.category_id
+left join oc_category_description cd on cd.category_id = c.category_id  WHERE ptw.sku_barcode like '".$sku."%' and ptw.warehouse_id = '". $data_inv['warehouse_id']."' ";
         }
         else{
-            $sql = "SELECT pd.name, p.status, p.sku, p.box_size, p.inv_class_sort, p.model, p.price, p.product_id FROM oc_product AS p LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id WHERE p.inv_class_sort like '".$sku."%'   ";
+            $sql = "SELECT cd.name ca_name , pd.name, pd.abstract, p.status, ptw.sku_barcode, p.box_size,  ptw.stock_area inv_class_sort, p.model, p.price, p.product_id ,ptw.retail_barcode,p.repack FROM oc_product AS p LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id left join oc_product_to_category ptc on ptc.product_id = p.product_id
+left join oc_category c on c.category_id = ptc.category_id
+left join oc_category_description cd on cd.category_id = c.category_id WHERE p.inv_class_sort like '".$sku."%' and  ptw.warehouse_id = '". $data_inv['warehouse_id']."'  ";
         }
 
 //        if (strlen($sku) == 18) {
@@ -5674,6 +8358,51 @@ and date_added > '" . $date_t . "'
         return $result;
     }
 
+    //仓库盘点
+    public  function  getStockChecksProductInfo($data, $station_id, $language_id = 2, $origin_id){
+
+        global $db;
+        global $log;
+
+
+        $data_inv = json_decode($data, 2);
+
+        $sku = isset($data_inv['sku']) ? $data_inv['sku'] : false;
+        if (!$sku) {
+            return false;
+        }
+
+        if(is_numeric($sku) && strlen($sku) <= 6) {
+            $sql = "SELECT pd.name, p.status,ptw.sku_barcode, p.box_size,  ptw.stock_area inv_class_sort, p.model, p.price, p.product_id,ptw.retail_barcode ,cd.name ca_name  , ws.warehouse_section_id , ws.name section_name
+FROM oc_product AS p  LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN  oc_product_description AS pd ON p.product_id = pd.product_id LEFT JOIN oc_x_sku s ON   p.sku_id =  s.sku_id LEFT JOIN oc_product_to_category ptc ON ptc.product_id = p.product_id
+
+LEFT join oc_x_sku_category sc on sc.sku_category_id = s.sku_category_id
+LEFT join  oc_x_warehouse_section ws on  sc.warehouse_section_id = ws.warehouse_section_id 
+LEFT JOIN oc_category c ON c.category_id = ptc.category_id
+LEFT JOIN oc_category_description cd ON cd.category_id = c.category_id
+ WHERE ptw.product_id = '".$sku."' and ptw.warehouse_id = '". $data_inv['warehouse_id']."' ";
+
+        }
+        elseif(is_numeric($sku) && strlen($sku) > 6) {
+            $sql = "SELECT pd.name, p.status, ptw.sku_barcode, p.box_size,  ptw.stock_area inv_class_sort, p.model, p.price, p.product_id ,ptw.retail_barcode ,cd.name ca_name ,ws.warehouse_section_id , ws.name  section_name FROM oc_product AS p  LEFT JOIN oc_product_to_warehouse ptw ON p.product_id = ptw.product_id LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id LEFT JOIN oc_x_sku s ON   p.sku_id =  s.sku_id LEFT JOIN   oc_product_to_category ptc ON ptc.product_id = p.product_id
+
+LEFT join oc_x_sku_category sc on sc.sku_category_id = s.sku_category_id
+LEFT join  oc_x_warehouse_section ws on  sc.warehouse_section_id = ws.warehouse_section_id 
+LEFT JOIN oc_category c ON c.category_id = ptc.category_id
+LEFT JOIN oc_category_description cd ON cd.category_id = c.category_id WHERE ptw.sku_barcode like '".$sku."%' and ptw.warehouse_id = '". $data_inv['warehouse_id']."' ";
+        }
+
+        $query = $db->query($sql);
+        $result = $query->row;
+
+        if(!empty($result)){
+            $result['price'] = round($result['price'],2);
+        }
+
+        return $result;
+    }
+
+
     public function changeProductSection($data, $station_id, $language_id = 2, $origin_id){
         global $dbm;
 
@@ -5681,19 +8410,21 @@ and date_added > '" . $date_t . "'
         $data = json_decode($data, 2);
 
         if(isset($data['productSection']) && $data['productSection'] !== ''){
-            $sql = "INSERT INTO oc_product_section_history(product_id,inv_class_sort,new_section,added_by,date_added)
-                SELECT product_id, inv_class_sort, '".$data['productSection']."', '".$data['inventory_user']."', NOW() FROM oc_product
-                WHERE product_id = '".$data['productId']."'";
+            $sql = "INSERT INTO oc_product_section_history(product_id,inv_class_sort,new_section,added_by,date_added,warehouse_id)
+                SELECT product_id, stock_area, '".$data['productSection']."', '".$data['inventory_user']."', NOW() ,warehouse_id FROM oc_product_to_warehouse
+                WHERE product_id = '".$data['productId']."' and warehouse_id = '".$data['warehouse_id']."'";
             $query = $dbm->query($sql);
 
-            $sql = "UPDATE oc_product SET inv_class_sort = '".$data['productSection']."' WHERE product_id = '".$data['productId']."'";
+            $sql = "UPDATE oc_product_to_warehouse SET stock_area = '".$data['productSection']."' WHERE product_id = '".$data['productId']."' and warehouse_id = '".$data['warehouse_id']."'";
+
             $query = $dbm->query($sql);
 
             return $query;
         }
 
         if(isset($data['productBarCode']) && $data['productBarCode'] !== ''){
-            $sql = "UPDATE oc_product SET model = '".$data['productBarCode']."' WHERE product_id = '".$data['productId']."'";
+            $sql = "UPDATE oc_product_to_warehouse SET retail_barcode = '".$data['productBarCode']."' WHERE product_id = '".$data['productId']."' and warehouse_id = '".$data['warehouse_id']."'";
+
             $query = $dbm->query($sql);
 
             return $query;
@@ -5710,10 +8441,11 @@ and date_added > '" . $date_t . "'
         $productSectionInfo = array();
 
         if($productSection){
-            $sql = "SELECT p.product_id, pd.name, p.repack, p.status, p.sku, p.inv_class_sort, p.model
+            $sql = "SELECT p.product_id, pd.name, p.repack, p.status, ptw.sku_barcode sku, ptw.stock_area inv_class_sort, p.model
                 FROM oc_product AS p
+                LEFT JOIN oc_product_to_warehouse  AS ptw ON ptw.product_id = p.product_id
                 LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id
-                WHERE p.inv_class_sort like '".$productSection."%'
+                WHERE ptw.warehouse_id = '".$data['warehouse_id']."' and  ptw.stock_area like '".$productSection."%'
                 ORDER BY p.inv_class_sort DESC";
             $query = $db->query($sql);
             $productList = array();
@@ -5774,7 +8506,9 @@ and date_added > '" . $date_t . "'
         $data_inv = json_decode($data, 2);
 
         $sku = isset($data_inv['sku']) ? $data_inv['sku'] : false;
-        if (!$sku) {
+        $warehouse_id = isset($data_inv['warehouse_id']) ? (int)$data_inv['warehouse_id'] : false;
+
+        if (!$sku || !$warehouse_id) {
             return false;
         }
 
@@ -5787,26 +8521,43 @@ and date_added > '" . $date_t . "'
 
         $uptime = date("Y-m-d 00:00:00", time());
         if (strlen($sku) == 18) {
-            $sql2 = "select * from oc_x_inventory_check_single_sorting as ics left join oc_product as p on ics.product_id = p.product_id left join  labelprinter.productlist AS pd ON p.product_id = pd.product_id
-where ics.uptime > '" . $uptime . "' and pd.barcode = '" . $sku . "'";
-            $sql = "SELECT  p.product_id FROM oc_product AS p LEFT JOIN labelprinter.productlist AS pd ON p.product_id = pd.product_id WHERE pd.barcode = '" . $sku . "'";
-        }
-        if (strlen($sku) == 13 || strlen($sku) == 14) {
-            $sql2 = "select * from oc_x_inventory_check_single_sorting as ics left join oc_product as p on ics.product_id = p.product_id
-where ics.uptime > '" . $uptime . "' and p.sku like '%" . $sku . "%'";
-            $sql = "SELECT p.product_id FROM oc_product AS p LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id WHERE p.sku like '%" . $sku . "%'";
-        }
-        if (strlen($sku) <= 6) {
+            $sql2 = "
+            select * from oc_x_inventory_check_single_sorting as ics
+            left join oc_product as p on ics.product_id = p.product_id
+            left join labelprinter.productlist AS pd ON p.product_id = pd.product_id
+            where ics.warehouse_id = '".$warehouse_id."' and ics.uptime > '" . $uptime . "' and pd.barcode = '" . $sku . "'";
 
-            $sql2 = "select * from oc_x_inventory_check_single_sorting as ics left join oc_product as p on ics.product_id = p.product_id
-where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
-            $sql = "SELECT  p.product_id FROM oc_product AS p LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id WHERE p.product_id = " . $sku;
+            $sql = "SELECT p.product_id FROM oc_product AS p
+            LEFT JOIN labelprinter.productlist AS pd ON p.product_id = pd.product_id
+            WHERE pd.barcode = '" . $sku . "'";
+        }
+
+        if (strlen($sku) > 6 && strlen($sku) <18) {
+            $sql2 = "
+            select * from oc_x_inventory_check_single_sorting as ics
+            left join oc_product_to_warehouse as p on ics.product_id = p.product_id
+            where ics.warehouse_id = '".$warehouse_id."' and ics.uptime > '" . $uptime . "' and p.sku_barcode like '%" . $sku . "%'";
+
+            $sql = "
+            SELECT p.product_id FROM oc_product AS p
+            LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id
+            LEFT JOIN oc_product_to_warehouse pw on p.product_id = pw.product_id and pw.warehouse_id = '".$warehouse_id."'
+            WHERE pw.sku_barcode like '%" . $sku . "%'";
+        }
+        else{
+            $sql2 = "
+            select * from oc_x_inventory_check_single_sorting as ics
+            left join oc_product as p on ics.product_id = p.product_id
+            where ics.warehouse_id = '".$warehouse_id."' and ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
+
+            $sql = "SELECT p.product_id FROM oc_product AS p
+            LEFT JOIN oc_product_description AS pd ON p.product_id = pd.product_id
+            WHERE p.product_id = " . $sku;
         }
 
 
         $query2 = $db->query($sql2);
         if(!empty($query2->rows)){
-
             $product_inv['status'] = 0;
         }
 
@@ -5835,10 +8586,13 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
 
         //商品库存
         $inventory_product_move_arr = array();
-        $sql = "select inventory_move_id,date_added from oc_x_stock_move where inventory_type_id = 14 order by inventory_move_id desc limit 1";
+        $sql = "select inventory_move_id,date_added from oc_x_stock_move where inventory_type_id = 14 and warehouse_id = '".$warehouse_id."' order by inventory_move_id desc limit 1";
 
         $query = $db->query($sql);
         $inventory_check = $query->row;
+
+        //TODO处理生鲜warehouse_id为0问题，20170730
+        $warehouseIds = $warehouse_id == 0 ? '0,10' : $warehouse_id;
 
         $inventory_check_id = $inventory_check['inventory_move_id'];
         $inventory_check_time = $inventory_check['date_added'];
@@ -5847,21 +8601,19 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
                     xsm.inventory_move_id,
                     xsm.inventory_type_id,
                     smi.product_id,
-                    sum(smi.quantity) as product_move_type_quantity,
+                    round(sum(smi.quantity/smi.box_quantity),2) as product_move_type_quantity,
                     pd.name
             FROM
                     oc_x_stock_move AS xsm
             left JOIN oc_x_stock_move_item AS smi ON xsm.inventory_move_id = smi.inventory_move_id
             left join oc_product as p on p.product_id = smi.product_id
-            -- left join (select * from oc_product_to_category group by product_id) as ptc on ptc.product_id = smi.product_id
-            -- left join (select * from oc_product_description where language_id = 2 group by product_id) as pd on pd.product_id=smi.product_id
             left join oc_product_to_category as ptc on ptc.product_id = smi.product_id
             left join oc_product_description as pd on pd.product_id=smi.product_id and pd.language_id = 2
             WHERE
                     xsm.inventory_move_id >= " . $inventory_check_id . "
             and xsm.date_added >= '" . $inventory_check_time . "'
             and smi.product_id in (" . $select_inv_product_id_str . ")
-
+            and xsm.warehouse_id in (".$warehouseIds.")
             group by xsm.inventory_type_id,smi.product_id";
 
             $query = $db->query($sql);
@@ -5932,14 +8684,15 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
         $sql = "select concat(C.name) inv_type,
                 if(A.inventory_type_id=14, concat(date(A.date_added),'_00_',A.inventory_move_id,'_', A.inventory_type_id),  concat(date(A.date_added), '_01_',A.inventory_type_id)) inventory_type_id,
                 date(A.date_added) adate,
-                sum(B.quantity) qty
+                round(sum(B.quantity/B.box_quantity),2) qty
                 from oc_x_stock_move A
                 left join oc_x_stock_move_item B on A.inventory_move_id = B.inventory_move_id
                 left join oc_product P on B.product_id = P.product_id
                 left join oc_x_inventory_type C on A.inventory_type_id = C.inventory_type_id
                 where B.status = 1
-                and A.date_added >= ( select min(date_added) from oc_x_stock_move where inventory_type_id = 14 and date_added >= date_sub(current_date(), interval 3 day))  -- 最早盘点时间
+                and A.date_added >= ( select min(date_added) from oc_x_stock_move where warehouse_id = '".$warehouse_id."' and inventory_type_id = 14 and date_added >= date_sub(current_date(), interval 3 day))  -- 最早盘点时间
                 and P.station_id = 2 and B.product_id = '".$product_id."'
+                and A.warehouse_id in (".$warehouseIds.")
                 group by inventory_type_id
                 order by inventory_type_id
                 ";
@@ -5948,10 +8701,47 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
         $product_inv['inventoryInfo'] = $inventoryInfo;
 
         //获取当分拣占用但未提交的商品
-        $sql = "select sum(quantity) sort_qty from oc_x_inventory_order_sorting where product_id = '".$product_id."' and move_flag = 0";
+        $sql = "SELECT
+	sum(a.quantity) sort_qty
+FROM
+	oc_x_inventory_order_sorting a
+LEFT JOIN oc_x_deliver_order odo ON a.deliver_order_id = odo.deliver_order_id
+LEFT JOIN oc_order o ON a.order_id = o.order_id
+LEFT JOIN oc_x_stock_move sm ON sm.order_id = o.order_id
+WHERE
+	a.product_id = '".$product_id."'
+AND a.move_flag = 0
+AND odo.do_warehouse_id = '".$warehouse_id."'
+AND o.order_status_id != 3
+AND o.order_deliver_status_id = 1
+AND sm.inventory_move_id IS NULL
+AND a. STATUS = 1 ";
         $query = $db->query($sql);
         $sortInfo = $query->row;
         $product_inv['sortQty'] = isset($sortInfo['sort_qty']) ? $sortInfo['sort_qty'] : 0;
+
+        $sql_cancel = " SELECT
+	GROUP_CONCAT(ios.deliver_order_id) AS order_ids,
+	sum(ios.quantity) cancel_quantity
+FROM
+	oc_order o
+	left join oc_x_deliver_order odo on odo.order_id =o.order_id
+LEFT JOIN oc_x_inventory_order_sorting ios ON ios.deliver_order_id = odo.deliver_order_id and ios.status = 1
+WHERE
+	o.order_status_id = 3
+AND ios.product_id = '".$product_id."'
+AND odo.do_warehouse_id = '".$warehouse_id."'
+AND DATE(o.date_added) BETWEEN date_sub(
+	CURRENT_DATE (),
+	INTERVAL 3 DAY
+)
+AND CURRENT_DATE () ";
+
+        $query = $db->query($sql_cancel);
+        $result_cancel = $query->row;
+        $product_inv['cancelQuantity'] = isset($result_cancel['cancel_quantity']) ? abs($result_cancel['cancel_quantity']) : 0;
+        $product_inv['order_ids'] = isset($result_cancel['order_ids']) ? $result_cancel['order_ids'] : 0;
+
 
         return $product_inv;
     }
@@ -5996,7 +8786,7 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
         $password = $data_inv['password'] ? $data_inv['password'] : '';
         $warehouse_id = $data_inv['warehouse_id'] ? $data_inv['warehouse_id'] : '';
 
-        $user_query = $db->query("SELECT wu.username,wu.user_id,wu.status,wu.warehouse_id, w.title FROM " . DB_PREFIX . "w_user wu left join oc_x_warehouse w on wu.warehouse_id = w.warehouse_id WHERE wu.username = '" . $db->escape($username) . "' AND (wu.password = SHA1(CONCAT(salt, SHA1(CONCAT(salt, SHA1('" . $db->escape($password) . "'))))) OR wu.password = '" . $db->escape(md5($password)) . "') AND wu.status = '1' and wu.warehouse_id = '". $warehouse_id ."'");
+        $user_query = $db->query("SELECT wu.username,wu.user_id,wu.status,wu.warehouse_id,w.is_dc, w.title,wu.user_group_id ,w.repack warehouse_repack , wu.repack user_repack ,wu.to_warehouse_id  FROM " . DB_PREFIX . "w_user wu left join oc_x_warehouse w on wu.warehouse_id = w.warehouse_id WHERE wu.username = '" . $db->escape($username) . "' AND (wu.password = SHA1(CONCAT(salt, SHA1(CONCAT(salt, SHA1('" . $db->escape($password) . "'))))) OR wu.password = '" . $db->escape(md5($password)) . "') AND wu.status = '1' and wu.warehouse_id = '". $warehouse_id ."'");
 
 
 
@@ -6047,9 +8837,10 @@ where ics.uptime > '" . $uptime . "' and p.product_id = " . $sku;
         $data_inv = json_decode($data, 2);
 
         $date = $data_inv['date'];
+        $warehouse_id = intval($data_inv['warehouse_id']);
+//return $data_inv;
 
-
-        $sql = "SELECT smi.*, SUM(smi.quantity) as sum_quantity, p. NAME FROM oc_x_stock_move_item AS smi LEFT JOIN oc_x_stock_move AS sm ON sm.inventory_move_id = smi.inventory_move_id LEFT JOIN oc_product_description AS p ON p.product_id = smi.product_id WHERE sm.inventory_type_id = 13 AND date_format(date_added, '%Y-%m-%d') = '" . $date . "' GROUP BY smi.product_id";
+        $sql = "SELECT sm.date_added,sm.add_user_name,smi.*, SUM(smi.quantity) as sum_quantity,p.NAME FROM oc_x_stock_move_item AS smi LEFT JOIN oc_x_stock_move AS sm ON sm.inventory_move_id = smi.inventory_move_id LEFT JOIN oc_product_description AS p ON p.product_id = smi.product_id WHERE sm.inventory_type_id = 13 AND date_format(date_added, '%Y-%m-%d') = '" . $date . "'  AND sm.warehouse_id = '".$warehouse_id."' GROUP BY sm.warehouse_id,smi.product_id,sm.date_added ";
 
 
 
@@ -6137,16 +8928,18 @@ GROUP BY
         $data_inv = json_decode($data, 2);
 
         $date = $data_inv['date'];
+        $warehouse_id = (int)$data_inv['warehouse_id'];
 
 
         $sql = "SELECT
-	ics.*,
-	pd. NAME,p.price,p.sku as product_batch
-FROM
-	oc_x_inventory_check_single_sorting AS ics
-LEFT JOIN oc_product_description AS pd ON pd.product_id = ics.product_id
-left join oc_product as p on p.product_id = ics.product_id";
+            ics.*,
+            pd. NAME,p.price,p.sku as product_batch
+        FROM
+            oc_x_inventory_check_single_sorting AS ics
+        LEFT JOIN oc_product_description AS pd ON pd.product_id = ics.product_id
+        left join oc_product as p on p.product_id = ics.product_id";
         $sql .=" WHERE ics.uptime > '" . $date . " 00:00:00' and ics.uptime < '" . $date . " 24:00:00'";
+        $sql .= " and ics.warehouse_id = '".$warehouse_id."'";
 
 
 
@@ -6162,6 +8955,46 @@ left join oc_product as p on p.product_id = ics.product_id";
 
         return $result;
     }
+
+
+
+// 根据日期获取盘盈盘库的结果
+    public function getinventoryCheckSingleDate($data, $station_id, $language_id = 2, $origin_id) {
+        global $db;
+        global $log;
+
+
+        $data_inv = json_decode($data, 2);
+
+        $date = $data_inv['date'];
+        $warehouse_id = (int)$data_inv['warehouse_id'];
+
+
+        $sql = "SELECT
+            ics.*,
+            pd. NAME,p.price,p.sku as product_batch
+        FROM
+            oc_x_inventory_check_single_sorting AS ics
+        LEFT JOIN oc_product_description AS pd ON pd.product_id = ics.product_id
+        left join oc_product as p on p.product_id = ics.product_id";
+        $sql .=" WHERE ics.uptime > '" . $date . " 00:00:00' and ics.uptime < '" . $date . " 24:00:00'";
+        $sql .= " and ics.warehouse_id = '".$warehouse_id."'";
+
+
+
+        $query = $db->query($sql);
+        $result = $query->rows;
+        if(!empty($result)){
+            foreach($result as $key=>$value){
+                $value['product_batch'] = trim($value['product_batch']);
+                $result[$key]['product_batch'] = str_replace(" ","",$value['product_batch']);
+                $result[$key]['price'] = round($value['price'],2);
+            }
+        }
+
+        return $result;
+    }
+
 
 
     public function getInventoryVegCheck($data, $station_id, $language_id = 2, $origin_id) {
@@ -6229,7 +9062,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
 
 
-        $sql = "select * from oc_order_status where language_id = 2 order by order_status_id asc";
+        $sql = "SELECT * FROM oc_x_deliver_order_status WHERE language_id = 2 ORDER BY order_status_id ASC";
 
 
 
@@ -6345,14 +9178,19 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
         return false;
     }
-
+//获取需要的do单信息
     function getOrderss($data, $station_id=1, $language_id=2, $origin_id=1, $key){
         global $db;
         global $log;
 
         $data = json_decode($data, 2);
-
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : false;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : false;
+        $deliver_order_repack = isset($data['deliver_order_repack']) ? $data['deliver_order_repack'] : false;
+        $user_warehouse_id = isset($data['user_warehouse_id']) ? $data['user_warehouse_id'] : false;
         $product_id = isset($data['product_id']) ? $data['product_id'] : false;
+        $check_is_dc = $this->checkWarehouseIsDc($data['warehouse_id']);
+
         if(!$product_id){
             return false;
         }
@@ -6367,46 +9205,54 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
         $area_id_list = isset($data['area_id_list']) ? $data['area_id_list'] : false;
 
-        $sql = "
-            SELECT
-              oc_order.order_id,
-              oc_order.station_id,
-              sum(oc_order_product.weight_inv_flag) as s_weight_inv_flag,
-              sum(oc_order_product.quantity) as quantity,
-              occ.customer_group_id as group_id,
-              occ.shortname as group_shortname,
-              oc_order.date_added,
-              oc_order.shipping_address_1,
-              oc_order.is_nopricetag,
+        $sql = "SELECT
+              odo.deliver_order_id as order_id,
+              odo.order_id as old_order_id,
+              odo.station_id,
+              odo.is_urgent,ooo.with_fresh,
+              SUM(odop.weight_inv_flag) AS s_weight_inv_flag,
+              SUM(odop.quantity) AS quantity,
+              SUM(if(p.repack = 0 ,odop.quantity , 0)) AS quantity_zheng,
+              SUM(if(p.repack = 1 ,odop.quantity , 0)) AS quantity_san,
+              occ.customer_group_id AS group_id,
+              occ.shortname AS group_shortname,
+              odo.date_added,
+              odo.warehouse_id,
+              oxw.title,
+              odo.shipping_address_1,
+              odo.is_nopricetag,
               c.is_agent,
               a.name area_name,
               a.city,
               a.district
-            from oc_order
-            left join oc_order_product  on oc_order.order_id = oc_order_product.order_id
-            left join oc_customer_group as occ on oc_order.customer_group_id = occ.customer_group_id
-            left join oc_customer c on oc_order.customer_id = c.customer_id
-            left join oc_x_area a on c.area_id = a.area_id
-            left join oc_product as p on p.product_id = oc_order_product.product_id
-            left join oc_product_to_category as ptc on ptc.product_id = p.product_id
+            FROM oc_x_deliver_order odo
+            left join oc_order ooo on ooo.order_id = odo.order_id
+            LEFT JOIN oc_x_deliver_order_product odop  ON odo.deliver_order_id = odop.deliver_order_id
+            LEFT JOIN oc_customer_group AS occ ON odo.customer_group_id = occ.customer_group_id
+            LEFT JOIN oc_customer c ON odo.customer_id = c.customer_id
+            LEFT JOIN oc_x_area a ON c.area_id = a.area_id
+            LEFT JOIN oc_product AS p ON p.product_id = odop.product_id
+            LEFT JOIN oc_product_to_category AS ptc ON ptc.product_id = p.product_id
+            LEFT JOIN oc_x_warehouse AS oxw ON oxw.warehouse_id = odo.warehouse_id
         ";
-
-
-
+        //do单类型
         if($product_id ==5001){
-            $sql .= " WHERE oc_order.station_id = 1 and p.product_type_id = 2";
+            $sql .= " WHERE odo.do_warehouse_id = 10 AND p.product_type_id = 2";
         }
         elseif($product_id ==5002){
-            $sql .= " WHERE oc_order.station_id = 1 and p.product_type_id = 3";
+            $sql .= " WHERE odo.do_warehouse_id = 10 AND p.product_type_id = 3";
         }
         elseif($product_id ==5003){
-            $sql .= " WHERE oc_order.station_id = 1 and p.product_type_id = 11";
+            $sql .= " WHERE odo.do_warehouse_id = 10 AND p.product_type_id = 11";
         }
         //elseif($product_id ==5003){
         //  $sql .= " WHERE ptc.category_id in (72,74,157) and oc_order.station_id = 1 ";
         //}
         elseif($product_id ==5004){
-            $sql .= " WHERE oc_order.station_id = 2";
+            $sql .= " WHERE odo.station_id = 2";
+        } else if (intval($product_id) == 5555) {
+            $sql .= " WHERE ooo.with_fresh = 1 ";
+
         }
         //elseif($product_id ==5005){
         //    $sql .= " WHERE oc_order.station_id = 2 and p.product_type = 4";
@@ -6415,18 +9261,31 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         //    $sql .= " WHERE oc_order.station_id = 2 and p.product_type = 5";
         //}
         else{
-            $sql .= " WHERE oc_order.station_id = 1 and p.product_type_id = 1";
+            $sql .= " WHERE odo.do_warehouse_id = 10 ";
+        }
+        $sql .= " AND odo.order_status_id = " . $data['order_status_id'];
+        $sql .= " AND odo.do_warehouse_id = ". $data['warehouse_id'];
+        $sql .= " AND odo.deliver_date  = '" . $data['deliver_date'] . "'";
+        $sql .= " AND odo.order_type  != 3 ";
+
+        if($warehouse_repack == 1){
+            $sql .= " ANd odo.is_repack = '".$deliver_order_repack."'";
         }
 
         if($area_id_list){
-            $sql .= " AND c.area_id in (".$area_id_list.")";
+            $sql .= " AND c.area_id IN (".$area_id_list.")";
         }
 
-        $sql .= " AND oc_order.order_status_id = " . $data['order_status_id'];
-        $sql .= " AND oc_order.warehouse_id = ". $data['warehouse_id'];
-        $sql .= " AND oc_order.deliver_date  = '" . $data['deliver_date'] . "'";
-        $sql .=" group by oc_order.order_id";
-        $sql .=" order by a.city,a.district,a.name,oc_order.shipping_address_1";
+        if($data['warehouse_id'] == 12 || $check_is_dc){
+            $sql .= "  and  odo.warehouse_id = '".$user_warehouse_id."' ";
+            if (intval($user_warehouse_id) != 0 && intval($user_warehouse_id) != intval($data['warehouse_id'])) {
+                $sql .= "  and  odo.box_only = 0 ";
+            }
+        }
+
+
+        $sql .=" GROUP BY odo.deliver_order_id";
+        $sql .=" ORDER BY odo.warehouse_id DESC,odo.is_urgent DESC , a.city,a.district,a.name,odo.shipping_address_1";
 
         /*
          * 数据插入到新表temp_order
@@ -6436,14 +9295,39 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         *	$query2=$db->query($sql2);
         */
 
+
         $query = $db->query($sql);
 
         $results = $query->rows;
 
         $all_orders = array();
+
+        //获取快消品平台关联订单信息
+        $doInfo = array();
+        if($data['warehouse_id'] && $data['deliver_date'] && sizeof($results)){
+            $getDoInfo = array(
+                'station_id' => 2,
+                'warehouse_id' => $data['warehouse_id'],
+                'date' => $data['deliver_date'],
+                'inventory_user' => ''
+            );
+            $doInfo = $this->getDoOrderInfo($getDoInfo);
+        }
+
+        //将do单数据的日期按固定格式输出，添加订单信息
         foreach($results as $key=>$value){
             $value['date_added'] = date("H:i:s",  strtotime($value['date_added']));
             $all_orders[$value['order_id']] = $value;
+
+            $all_orders[$value['order_id']]['doInfo'] = '';
+
+            if(array_key_exists($value['old_order_id'], $doInfo)){
+                foreach($doInfo[$value['old_order_id']] as $idx=>$val){
+                    if($idx <> $value['order_id']){
+                        $all_orders[$value['order_id']]['doInfo'] .= '['.$val.']';
+                    }
+                }
+            }
         }
 
 
@@ -6463,42 +9347,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
             }
         */
 
-        $distr = array();
-        if($product_id==5001){
 
-            $sql = "select * from oc_order_distr where ordclass = 2";
-        }
-        elseif($product_id==5002){
-
-            $sql = "select * from oc_order_distr where ordclass = 3";
-        }
-        elseif($product_id==5003){
-
-            $sql = "select * from oc_order_distr where ordclass = 4";
-        }
-        elseif($product_id==5004){
-
-            $sql = "select * from oc_order_distr where ordclass = 5 ORDER BY order_id DESC LIMIT 10000";
-
-        }
-        elseif($product_id==5005){
-
-            $sql = "select * from oc_order_distr where ordclass = 6";
-        }
-        elseif($product_id==5006){
-
-            $sql = "select * from oc_order_distr where ordclass = 7";
-        }
-        else{
-            $sql = "select * from oc_order_distr where ordclass = 1";
-        }
-
-        $distr= $db->query($sql);
-        $distr = $distr->rows;
-
-        foreach($distr as $d_key=>$d_value){
-            unset($all_orders[$d_value['order_id']]);
-        }
         $all_orders=array_values($all_orders);
 
 
@@ -6510,7 +9359,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
             return array();
         }
     }
-
+//DO单分配
     function orderdistr($data, $station_id=1, $language_id=2, $origin_id=1, $key){
         global $db;
         global $log;
@@ -6519,21 +9368,34 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         $language_id = (int)$language_id;
 
         $data = json_decode($data, 2);
-
+//return $sql;
         $order_id = isset($data['order_id']) ? $data['order_id'] : false;
         //return $order_id;
         if(!is_array($order_id)){
-            return false;
+            return 0;
         }
 
         $inventory_name = isset($data['inventory_name']) ? $data['inventory_name'] : false;
+        $add_user_name_id = isset($data['add_user_name_id']) ? $data['add_user_name_id'] : 0;
         if(!$inventory_name){
-            return false;
+            return 0;
+        }
+
+        $sql = "select  repack from oc_w_user  WHERE username = '".$inventory_name."' ";
+
+        $query = $db->query($sql);
+        $user_repack = $query->row;
+        if ($data['warehouse_repack'] == 1) {
+            if($user_repack['repack'] != $data['user_repack']){
+                return 0 ;
+            }
+
         }
 
         $product_id = isset($data['product_id']) ? $data['product_id'] : false;
+//do单分类
         if(!$product_id){
-            return false;
+            return 0;
         }
 
         else if ($product_id==5001){
@@ -6565,16 +9427,46 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         }
 
 
+
         if( is_array($order_id)){
 
             foreach($order_id as $value){
                 $ayy = explode('@',$value);
                 $orders_id = $ayy[0];
                 $quantity = $ayy[1];
+//                if ($data['old_order_id'] == null) {
+                $old_order_id = $ayy[2];
+//                } else {
+//                    $old_order_id = $data['old_order_id'];
+//                }
 
-                $sql="INSERT INTO oc_order_distr (order_id, inventory_name, ordclass,quantity,warehouse_id)VALUES ('$orders_id','$inventory_name','$ordclass','$quantity', '". $data['warehouse_id']."')";
+//查询do单状态以及整散
+                $sql = "  SELECT order_status_id,is_repack FROM oc_x_deliver_order WHERE  deliver_order_id = '".$orders_id ."'  ";
 
                 $query = $db->query($sql);
+                $order_status = $query->row;
+
+//如果不是已确认不能进行分配
+                if($order_status['order_status_id'] != 2 ){
+                    return 0;
+                }else {
+
+//判断是否是分区分拣，如果是，判断分配的订单是否对应相应的分拣人员
+                    if ($data['warehouse_repack'] == 1) {
+                        if ($order_status['is_repack'] != $user_repack['repack']) {
+                            return 0;
+                        }
+
+                    }
+                    $sql="INSERT INTO oc_order_distr 
+(order_id, deliver_order_id,inventory_name, ordclass,quantity,warehouse_id,warehouse_repack, user_repack,w_user_id,date_added)
+VALUES ('$old_order_id','$orders_id','$inventory_name','$ordclass','$quantity', '". $data['warehouse_id']."','". $data['warehouse_repack']."','". $data['user_repack']."','". $add_user_name_id."',NOW())";
+                    $sql1 = "UPDATE oc_x_deliver_order SET  order_status_id = 4,repack_status_id = 4  WHERE deliver_order_id = '" . $orders_id . "'";
+
+                    $query = $db->query($sql);
+                    $query1 = $db->query($sql1);
+
+                }
             }
         }
         return $query;
@@ -6614,7 +9506,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
             return array();
         }
     }
-
+//获取分配分拣表中的数据
     function ordered($data, $station_id=1, $language_id=2, $origin_id=1, $key){
 
         global $db;
@@ -6623,8 +9515,13 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
         $data = json_decode($data, 2);
         $date = isset($data['date']) ? $data['date'] : false;
-
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : 0;
+        $user_warehouse_id = isset($data['user_warehouse_id']) ? $data['user_warehouse_id'] : 0;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : 0;
         $order_status_id = isset($data['order_status_id']) ? $data['order_status_id'] : false;
+        $check_is_dc = $this->checkWarehouseIsDc($data['warehouse_id']);
+//        $deliver_order_repack = isset($data['deliver_order_repack']) ? $data['deliver_order_repack'] : false;
+//        return $data;
         if(!$order_status_id){
             return false;
         }
@@ -6636,6 +9533,7 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         if(!$deliver_date){
             return false;
         }
+        //判断分类
         if ($product_id==5001){
 
             $ordclass = 2 ;
@@ -6657,16 +9555,84 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         else{
             $ordclass = 1 ;
         }
+        //非分区分拣
+        if($warehouse_repack == 0 ){
+            $sql = "SELECT GROUP_CONCAT(o.is_nopricetag,td.quantity) AS groups1,
+GROUP_CONCAT(o.order_status_id) AS groups2,
+GROUP_CONCAT(td.deliver_order_id) AS groups3,
+GROUP_CONCAT(os.name) AS groups4,
+GROUP_CONCAT(o.warehouse_id) AS warehouse_id,
+GROUP_CONCAT(oxw.title) AS title,
+GROUP_CONCAT(IF (
+		td.user_repack = 0,
+		'整件',
+		'散件'
+	),td.inventory_name) AS inventory_name,
+SUM(td.quantity) AS total, 
+td.ordclass,o.deliver_date ,td.warehouse_repack,td.user_repack
+FROM oc_order_distr AS td 
+LEFT JOIN oc_x_deliver_order AS o ON o.deliver_order_id = td.deliver_order_id 
+LEFT JOIN oc_x_deliver_order_status AS os ON os.order_status_id =o.order_status_id 
+LEFT JOIN oc_x_warehouse AS oxw ON oxw.warehouse_id = o.warehouse_id WHERE";
+            //$sql .= " o.order_status_id = " . $data['order_status_id'];
+            $sql .="   o.do_warehouse_id = '" .$data['warehouse_id'] . "'";
+            $sql .="  AND o.deliver_date = '" .$data['deliver_date'] . "'";
 
-        $sql = "select GROUP_CONCAT(o.order_status_id,o.is_nopricetag,td.order_id,td.quantity,os.name) as groups,td.inventory_name,sum(td.quantity) as total, td.ordclass,o.deliver_date from oc_order_distr as td left join oc_order as o on o.order_id = td.order_id left join oc_order_status as os on os.order_status_id =o.order_status_id where";
-        //$sql .= " o.order_status_id = " . $data['order_status_id'];
-        $sql .="  o.deliver_date = '" .$data['deliver_date'] . "'";
-        $sql .= " AND td.ordclass =  ".$ordclass;
-        $sql .=" group by td.inventory_name";
+            $sql .= " AND td.ordclass =  ".$ordclass;
+            $sql .=" GROUP BY td.inventory_name ORDER BY o.warehouse_id DESC";
+//return $sql;
+            $query = $db->query($sql);
+            $results = $query->rows;
+            //分区分拣
+        } else{
+            $sql = "SELECT
+	GROUP_CONCAT(
+		o.is_nopricetag,
+		td.quantity
+	) AS groups1,
+GROUP_CONCAT(o.order_status_id) AS groups2,
+GROUP_CONCAT(td.deliver_order_id) AS groups3,
+GROUP_CONCAT(os.name) AS groups4,
+GROUP_CONCAT(o.warehouse_id) AS warehouse_id,
+GROUP_CONCAT(oxw.title) AS title,
+GROUP_CONCAT(IF (
+		td.user_repack = 0,
+		'整件',
+		'散件'
+	),td.inventory_name) AS inventory_name,
+	SUM(td.quantity) AS total,
+	td.ordclass,
+	o.deliver_date,
+	o.order_id AS old_order_id,
+	td.warehouse_repack,
+	td.user_repack
+FROM
+	oc_order_distr AS td
+LEFT JOIN oc_x_deliver_order AS o ON o.deliver_order_id = td.deliver_order_id
+LEFT JOIN oc_order AS ooo ON o.order_id = ooo.order_id
+LEFT JOIN oc_x_deliver_order_status AS os ON os.order_status_id = o.order_status_id  
+LEFT JOIN oc_x_warehouse AS oxw ON oxw.warehouse_id = o.warehouse_id
+ left join  oc_w_user w on  w.username = td.inventory_name  WHERE ";
 
-        $query = $db->query($sql);
-        $results = $query->rows;
 
+            //$sql .= " o.order_status_id = " . $data['order_status_id'];
+            $sql .="   o.do_warehouse_id = '" .$data['warehouse_id'] . "'";
+            $sql .="  AND o.deliver_date = '" .$data['deliver_date'] . "'";
+            if($data['warehouse_id'] ==12 || $check_is_dc){
+                $sql .=  " and  w.to_warehouse_id = '".$user_warehouse_id ."' ";
+            }
+
+            if ($product_id == 5555) {
+                $sql .= " AND ooo.with_fresh =  1 ";
+            } else {
+                $sql .= " AND td.ordclass =  ".$ordclass;
+            }
+//            $sql .= "  and o.is_repack = '".$deliver_order_repack."'";
+            $sql .="  GROUP BY td.inventory_name ORDER BY o.warehouse_id DESC";
+
+            $query = $db->query($sql);
+            $results = $query->rows;
+        }
 
         /*
          * 查找订单状态
@@ -6680,16 +9646,14 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
              $results[$k]['order_status_id'] = $r['order_status_id'];
          }
          */
-        if(sizeof($results)){
+        if(!empty($results)){
             return $results;
         }else{
-
             return array();
         }
 
-
     }
-
+//重新分配
     function orderRedistr($data, $station_id=1, $language_id=2, $origin_id=1, $key){
 
         global $db;
@@ -6713,11 +9677,29 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
             return false;
         }
+        $warehouse_repack = isset($data['warehouse_repack']) ? $data['warehouse_repack'] : 0;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : 0;
 
-        $sql = "delete from oc_order_distr where order_id = $order_id and ordclass = $ordclass;";
-        $query = $db->query($sql);
+        $sql2 = "select order_status_id  from oc_x_deliver_order where deliver_order_id = '".$order_id ."'";
 
-        return $query;
+        $query = $db->query($sql2);
+        $results = $query->row;
+        if($results['order_status_id'] == 4) {
+
+            $sql = "DELETE FROM oc_order_distr WHERE deliver_order_id = $order_id 
+AND ordclass = $ordclass  
+  ";
+
+            $query = $db->query($sql);
+
+            $sql1 = "UPDATE oc_x_deliver_order SET order_status_id = 2,repack_status_id = 2  
+WHERE deliver_order_id = '" . $order_id . "'";
+            $query1 = $db->query($sql1);
+
+            return 1;
+        }else{
+            return 2 ;
+        }
     }
 
 
@@ -6733,12 +9715,27 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         }
 
         $sql = "SELECT
-                    od.id, od.order_id, od.w_user_id, od.inventory_name, od.ordclass, od.quantity
+                    od.id, od.deliver_order_id order_id, od.w_user_id, od.inventory_name, od.ordclass, od.quantity
                 FROM oc_order_distr AS od
-                LEFT JOIN oc_order AS o ON od.order_id = o.order_id
+                LEFT JOIN oc_x_deliver_order AS o ON od.deliver_order_id = o.deliver_order_id
                 WHERE
-                    o.deliver_date = '" . $date . "'
-                and od.inventory_name = '" . $data['inventory_user'] . "' ";
+                    
+                 od.inventory_name = '" . $data['inventory_user'] . "' and o.order_status_id !=3 ";
+
+//        if($data['warehouse_id'] != 12  && $data['warehouse_id'] !=14 ){
+//            $sql  .= " and o.deliver_date = '" . $date . "'  ";
+//        }
+//        if($data['warehouse_id'] == 12 || $data['warehouse_id']  == 14 ){
+//            $sql .= "  and o.order_status_id in (4,5,8)";
+//        }
+
+        if($data['order_status_id'] == 2 || $data['order_status_id'] == 4 || $data['order_status_id'] == 5){
+            $sql .= " and o.deliver_date between date_sub(current_date(), interval 8 day) and date_add(current_date(), interval 1 day) ";
+        }
+        else{
+            $sql .= " and o.deliver_date = '" . $date . "' ";
+        }
+
         $query = $db->query($sql);
         $results = $query->rows;
 
@@ -6756,8 +9753,55 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
     }
 
+    //获取指定日期DO单基本信息
+    function getDoOrderInfo($data=array()){
+        //Require $data['station_id'], $data['warehouse_id'], $data['date'], $data['inventory_user']
+        global $db;
+        global $log;
 
+        $station_id = isset($data['station_id']) ? mysql_real_escape_string($data['station_id']) : false;
+        $warehouse_id = isset($data['warehouse_id'])  ? mysql_real_escape_string($data['warehouse_id']) : false;
+        $date = isset($data['date']) ? date('Y-m-d', strtotime($data['date'])) : false;
+        $inventory_user = isset($data['inventory_user']) ? mysql_real_escape_string($data['inventory_user']) : false;
+        $ongoing = isset($data['ongoing']) ? mysql_real_escape_string($data['ongoing']) : false;
 
+        $doInfo = array();
+        if($station_id && $warehouse_id && $date){
+            $doSql = "select
+                    o.deliver_order_id, o.order_id, o.order_status_id,
+                    os.name order_status,
+                    if(oi.inv_comment is null, 0, oi.inv_comment) inv_comment,
+                    w.shortname
+                from oc_x_deliver_order o
+                left join oc_order_distr od on o.order_id = od.order_id
+                left join oc_x_deliver_order_status os on os.order_status_id = o.order_status_id
+                left join oc_x_deliver_order_inv oi on o.deliver_order_id = oi.deliver_order_id
+                left join oc_x_warehouse w on o.warehouse_id = w.warehouse_id
+                where o.station_id = '".$station_id."' and  o.warehouse_id = '".$warehouse_id."'
+                and o.order_type !=3
+                and o.deliver_date = '". $date."'
+                ";
+            if($ongoing){
+                $doSql .=  " and o.order_status_id not in (1,2,3,4)";
+            }
+            else{
+                $doSql .=  " and o.order_status_id not in (1,3)";
+            }
+
+            if($inventory_user){
+                $doSql .=  " and od.inventory_name = '".$inventory_user."'";
+            }
+            $doSql .= " order by o.is_urgent desc";
+
+            $doQuery = $db->query($doSql);
+            $doInfoRaw = $doQuery->rows;
+            foreach($doInfoRaw as $m){
+                $doInfo[$m['order_id']][$m['deliver_order_id']] = $m['shortname'].'-'.$m['order_status'].'-'.$m['inv_comment'];
+            }
+        }
+
+        return $doInfo;
+    }
 
     function getOrders($data, $station_id=1, $language_id=2, $origin_id=1, $key){
         global $db;
@@ -6772,15 +9816,22 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
         //New 20170416
         $station_id = isset($data['station_id']) ? $data['station_id'] : 0;
         $inventory_user = isset($data['inventory_user']) ? $data['inventory_user'] : false;
+        $search_type = isset($data['search_type']) ? (int)$data['search_type'] : false;
+        $user_repack = isset($data['user_repack']) ? $data['user_repack'] : false;
+        $warehouse_repack = isset($data['warehouse_repack']) ? (int)$data['warehouse_repack'] : false;
+        $search_deliver_order_id = isset($data['search_deliver_order_id']) ? $data['search_deliver_order_id'] : false;
         //$orderList = isset($data['orderList']) && sizeof($data['orderList']) ? $data['orderList'] : array(0);
-
+        $return = array();
+        $return['data'] = array();
         if(!$date){
             return false;
         }
 
-
-        $sql = "SELECT
-          o.order_id,
+        if($data['order_status_id']  == 999 ){
+            $sql = "SELECT
+          o.deliver_order_id order_id,
+          o.order_id  so_order_id , 
+          o.is_urgent,
           o.customer_id,
           o.station_id,
           o.deliver_date,
@@ -6788,6 +9839,8 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
           GROUP_CONCAT(op.product_id) as product_id_str,
           os.`name`,
           SUM(op.quantity) as quantity,
+          sum(if(p.repack = 0 ,op.quantity , 0)) as quantity_zheng,
+          sum(if(p.repack = 1 ,op.quantity , 0)) as quantity_san,
           o.order_status_id,
           o.shipping_name,
           o.shipping_phone,
@@ -6814,49 +9867,193 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
           c.is_agent,
           a.name area_name,
           a.city,
-          a.district
-        FROM oc_order AS o
-        LEFT JOIN oc_order_product AS op ON o.order_id = op.order_id
+          a.district,
+          '' order_container ,
+         o.do_warehouse_id ,
+         o.warehouse_id ,
+         w.title, w.shortname
+        FROM oc_order oo
+        LEFT JOIN oc_x_deliver_order AS o ON oo.order_id = o.order_id
+        LEFT JOIN oc_x_deliver_order_product AS op ON o.deliver_order_id = op.deliver_order_id
+        left join oc_product p on p.product_id = op.product_id 
         left join oc_customer_group as ocg on o.customer_group_id = ocg.customer_group_id
-        LEFT JOIN oc_order_status AS os ON os.order_status_id = o.order_status_id
+        LEFT JOIN oc_x_deliver_order_status AS os ON os.order_status_id = o.order_status_id
         left join oc_customer c on o.customer_id = c.customer_id
         left join oc_x_area a on c.area_id = a.area_id
+        LEFT join oc_x_warehouse w on o.warehouse_id = w.warehouse_id 
         ";
 
 
-        if($station_id == 2){
-            $sql .= " left join oc_order_distr od on o.order_id = od.order_id";
-        }
+            if ($station_id == 2 && $inventory_user) {
+                $sql .= " left join oc_order_distr od on o.deliver_order_id = od.deliver_order_id";
+            }
+            $sql .= "
+        LEFT JOIN oc_product_to_category AS ptc ON ptc.product_id = op.product_id
+        LEFT JOIN oc_x_deliver_order_inv  AS oi ON o.deliver_order_id = oi.deliver_order_id  AND oi.inv_status = 1
+        WHERE oo.station_id = '".$station_id."' AND oo.warehouse_id = '".$data['warehouse_id']."' AND o.order_type in (1,2)  AND oo.order_status_id not in (1,2,3,6) 
+        GROUP BY oo.order_id 
+         ";
 
-        $sql .= "
+            $sql1 = "SELECT
+          o.deliver_order_id order_id,
+          o.order_id  so_order_id , 
+         o.do_warehouse_id ,
+         o.warehouse_id ,
+        COUNT(o.deliver_order_id) AS count
+        FROM oc_order oo
+        LEFT JOIN oc_x_deliver_order AS o ON oo.order_id = o.order_id
+        WHERE oo.station_id = '".$station_id."' AND oo.warehouse_id = '".$data['warehouse_id']."' AND oo.order_type in (1,2)  AND oo.order_status_id not in (1,2,3,6)
+        GROUP BY oo.order_id 
+        HAVING count = 1 ";
+
+
+            $query1 = $db->query($sql1);
+            $results1 = $query1->rows;
+            $return['data2'] = $results1;
+        } else {
+            $sql = "SELECT
+          o.deliver_order_id order_id,
+          o.order_id  so_order_id , 
+          o.is_urgent,
+          o.customer_id,
+          o.station_id,
+          o.deliver_date,
+          o.date_added,
+          GROUP_CONCAT(op.product_id) as product_id_str,
+          os.`name`,
+          SUM(op.quantity) as quantity,
+          sum(if(p.repack = 0 ,op.quantity , 0)) as quantity_zheng,
+          sum(if(p.repack = 1 ,op.quantity , 0)) as quantity_san,
+          o.order_status_id,
+          o.shipping_name,
+          o.shipping_phone,
+          o.shipping_address_1,
+          o.customer_group_id,
+          o.is_nopricetag,
+          oi.frame_count,
+          oi.inv_comment,
+          oi.incubator_count,
+          oi.foam_count,
+          oi.frame_mi_count,
+          incubator_mi_count,
+          oi.frame_ice_count,
+          oi.box_count,
+          oi.foam_ice_count,
+          oi.frame_meat_count,
+          oi.frame_vg_list,
+          oi.frame_meat_list,
+          oi.frame_mi_list,
+          oi.frame_ice_list,
+          ptc.category_id,
+          ocg.customer_group_id as group_id,
+          ocg.shortname as group_shortname,
+          c.is_agent,
+          a.name area_name,
+          a.city,
+          a.district,
+          '' order_container ,
+         o.do_warehouse_id ,
+         o.warehouse_id ,
+         w.title, w.shortname
+        FROM oc_x_deliver_order AS o
+        LEFT JOIN oc_x_deliver_order_product AS op ON o.deliver_order_id = op.deliver_order_id
+        left join oc_product p on p.product_id = op.product_id 
+        left join oc_customer_group as ocg on o.customer_group_id = ocg.customer_group_id
+        LEFT JOIN oc_x_deliver_order_status AS os ON os.order_status_id = o.order_status_id
+        left join oc_customer c on o.customer_id = c.customer_id
+        left join oc_x_area a on c.area_id = a.area_id
+        LEFT join oc_x_warehouse w on o.warehouse_id = w.warehouse_id 
+        ";
+
+
+            if($station_id == 2 && $inventory_user){
+                $sql .= " left join oc_order_distr od on o.deliver_order_id = od.deliver_order_id";
+            }
+            if($data['order_status_id'] == 555){
+                $sql .= " left join oc_order oco on oco.order_id = o.order_id";
+            }
+            $sql .= "
         left join oc_product_to_category as ptc on ptc.product_id = op.product_id
 
-        LEFT JOIN oc_order_inv  as oi on o.order_id = oi.order_id  and oi.inv_status = 1
+        LEFT JOIN oc_x_deliver_order_inv  as oi on o.deliver_order_id = oi.deliver_order_id  and oi.inv_status = 1
 
-        WHERE o.station_id = '".$station_id."' and  o.warehouse_id = '". $data['warehouse_id']."'";
+        WHERE   o.do_warehouse_id = '". $data['warehouse_id']."'  and o.order_type !=3 ";
 
-
-        $sql .="  and o.deliver_date = '" . $date . "'";
-        if($data['order_status_id'] != 0 ){
-            $sql .= " AND o.order_status_id = " . $data['order_status_id'];
+        if (intval($data['warehouse_id']) ==21 && $search_type == 1) {
+            $sql .= "  and o.is_repack = '0' and o.warehouse_id = 21 ";
+        } else if ($search_type == 2){
+            $sql .= " and (o.warehouse_id != 21 or o.is_repack = 1) ";
         }
+//
+//
+//        if ($data['warehouse_id'] == 12 || $data['warehouse_id'] == 14) {
+//
+//            $sql .= "  and o.order_status_id  in (4,5,8) ";
+//        }
+            if ($search_deliver_order_id > 0) {
+                $sql .= " and o.deliver_order_id = '".$search_deliver_order_id."' ";
+            } else {
+                if ($data['order_status_id'] == 2 || $data['order_status_id'] == 4 || $data['order_status_id'] == 5) {
+                    $sql .= " and o.deliver_date between date_sub(current_date(), interval 8 day) and date_add(current_date(), interval 1 day) ";
+                } else {
+                    $sql .= " and o.deliver_date = '" . $date . "' ";
+                }
 
-        if($inventory_user && $station_id == 2){
-            $sql .= " AND od.inventory_name = '".$inventory_user."'";
+                if ($data['order_status_id'] != 0 && $data['order_status_id'] < 100) {
+
+                    if ($data['order_status_id'] == 2) {
+                        $sql .= " AND o.order_status_id in (2,4) ";
+                    } else {
+                        $sql .= " AND o.order_status_id = " . $data['order_status_id'];
+                    }
+
+
+                }
+                if ($data['order_status_id'] == 777) {
+                    $sql .= " AND o.is_urgent = 1 ";
+                }
+                if ($data['order_status_id'] == 666) {
+                    $sql .= " AND o.warehouse_id != o.do_warehouse_id ";
+                }
+
+                if ($data['order_status_id'] == 555) {
+                    $sql .= " AND  oco.order_status_id = 5 ";
+                }
+
+                if ($inventory_user && $station_id == 2) {
+                    $sql .= " AND od.inventory_name = '" . $inventory_user . "'";
+                }
+            }
+
+            $sql .= " GROUP BY op.deliver_order_id order by o.is_urgent desc, o.station_id asc,o.order_id asc";
         }
-
-        $sql .= " GROUP BY op.order_id order by o.station_id asc,o.order_id asc";
 
 
         $query = $db->query($sql);
         $results = $query->rows;
 
-        $return = array();
-        $return['data'] = array();
+
+        //为分拣员工获取相关配送单信息, Alex 2018-01-20
+        //未确认，已确认，取消订单, 已分配不列出
+        if($inventory_user && $station_id == 2){
+            $getDoInfo = array(
+                'station_id' => $station_id,
+                'warehouse_id' => $data['warehouse_id'],
+                'date' => $date,
+                'inventory_user' => $inventory_user,
+                'ongoing' => 1
+            );
+            $doInfo = $this->getDoOrderInfo($getDoInfo);
+        }
+
+
 
         $queryOrderList = array(0);
-        if(sizeof($results)){
-            foreach($results as $k=>$v){
+
+        $array_order_ids = [];
+        $array_deliver_order_ids = [];
+        if (sizeof($results)) {
+            foreach ($results as $k => $v) {
 
                 $order_product_id_arr = array();
                 $order_has_vg = false;
@@ -6871,26 +10068,8 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                 $v['inv_type_6'] = 0;
                 $v['inv_type_7'] = 0;
 
-//                foreach($order_product_id_arr as $key=>$value){
-//                    if($value > 1000 && $value < 5000){
-//                        $order_has_vg = true;
-//
-//                    }
-//
-//                    if($value > 5000){
-//                        $order_has_mi = true;
-//                    }
-//                }
-//
-//                if($order_has_vg && !$order_has_mi){
-//                    $v['order_product_type'] = 1;
-//                }
-//                if($order_has_vg && $order_has_mi){
-//                    $v['order_product_type'] = 2;
-//                }
-//                if(!$order_has_vg && $order_has_mi){
-//                    $v['order_product_type'] = 3;
-//                }
+                $array_order_ids[$v['so_order_id']] = $v['so_order_id'];
+                $array_deliver_order_ids[$v['order_id']] = $v['order_id'];
 
                 $return['data'][$v['station_id'] . $v['order_id']] = $v;
                 $return['data'][$v['station_id'] . $v['order_id']]['plan_quantity'] = $v['quantity'];
@@ -6900,32 +10079,62 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                 //20170421, 取消order_product_type 和 bao 的计算和设定
                 $return['data'][$v['station_id'] . $v['order_id']]['order_product_type'] = 0;
                 $return['data'][$v['station_id'] . $v['order_id']]['bao'] = 0;
+
+                //为分拣员工获取相关配送单信息, Alex 2018-01-20
+                $return['data'][$v['station_id'] . $v['order_id']]['doInfo'] = '';
+                if(array_key_exists($v['so_order_id'], $doInfo)){
+                    foreach($doInfo[$v['so_order_id']] as $idx=>$val){
+                        if($idx < $v['order_id']){
+                            $return['data'][$v['station_id'] . $v['order_id']]['doInfo'] .= '['.$val.']';
+                        }
+                    }
+                }
             }
         }
+        $array_order_ids = join($array_order_ids,',');
+        $array_deliver_order_ids = join($array_deliver_order_ids,',');
+
 
 
         //$last_one_day = date("Y-m-d", time() + 8*3600 - 24*3600);
         //获取入库中间表中已入库的商品，并从计划入库的商品中减去已入库的商品
-
-        $sql = "SELECT o.station_id, xis.order_id, xis.product_id, xis.quantity, xis.uptime, xis.move_flag, xis.added_by, xis.product_barcode, p.storage_mode_id,ptc.category_id,o.station_id,p.product_type,p.product_type_id
+        if (!empty($array_order_ids) && intval($data['order_status_id']) != 2) {
+            $sql = "SELECT o.station_id, xis.deliver_order_id order_id , xis.product_id, sum(xis.quantity) quantity , xis.uptime, xis.move_flag, xis.added_by, xis.product_barcode, p.storage_mode_id, '0' category_id,o.station_id,p.product_type,p.product_type_id ,o.is_urgent
         FROM oc_x_inventory_order_sorting AS xis
-        left join oc_order as o on o.order_id = xis.order_id
+        left join oc_x_deliver_order as o on o.deliver_order_id = xis.deliver_order_id
         left join oc_product as p on p.product_id = xis.product_id
-        left join oc_product_to_category as ptc on ptc.product_id = p.product_id
-        where o.deliver_date = '" . $date . "' and o.station_id = '".$station_id."'";
+        where  xis.status = 1 
+        " ;
+
+//            if (!in_array($data['warehouse_id'],[12,14])) {
+//                $sql .= "  and  o.deliver_date = '" . $date . "' ";
+//            }
+//
+//        if(in_array($data['warehouse_id'],[12,14])){
+//            $sql .= "  and   o.order_status_id in (4,5,6,8)";
+//            $sql .= "  and o.deliver_date between date_sub(current_date(), interval 2 day) and date_add(current_date(), interval 1 day) ";
+//        }
+
+            $sql .= " AND o.deliver_order_id IN(".$array_deliver_order_ids.") and o.do_warehouse_id = '".$data['warehouse_id']."' ";
+//        }
+
+            $sql .= "  and o.order_type = 1 group by o.deliver_order_id   ";
+
+
+        $sql .= " order by o.is_urgent desc ";
+
 
         $query = $db->query($sql);
         $result = $query->rows;
 
 
 
-
         if(sizeof($result)){
             foreach($result as $rk => $rv){
-
                 $return_move_p = array();
                 if($return['data'][$rv['station_id'] . $rv['order_id']]['quantity'] > 0){
                     $return['data'][$rv['station_id'] . $rv['order_id']]['quantity'] -= $rv['quantity'];
+
                     if($return['data'][$rv['station_id'] . $rv['order_id']]['quantity'] <= 0){
                         $return_move_p = $return['data'][$rv['station_id'] . $rv['order_id']];
                         unset($return['data'][$rv['station_id'] . $rv['order_id']]);
@@ -6942,61 +10151,62 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
                     if($rv['station_id'] == 1 && $rv['product_type_id'] == 3){
                         $return['data'][$rv['station_id'] . $rv['order_id']]['inv_type_3'] += $rv['quantity'];
                     }
-//                    if(in_array($rv['category_id'], array(72,74,157))){
-//                        $return['data'][$rv['station_id'] . $rv['order_id']]['inv_type_4'] += $rv['quantity'];
-//                    }
-//                    if(  $rv['product_type'] == 4){
-//                        $return['data'][$rv['station_id'] . $rv['order_id']]['inv_type_6'] += $rv['quantity'];
-//                    }
+
                     if( $rv['station_id'] == 2 ){
                         $return['data'][$rv['station_id'] . $rv['order_id']]['inv_type_5'] += $rv['quantity'];
                     }
                 }
             }
+            }
         }
-        //echo "<pre>";print_r($return);exit;
 
+
+
+//        return $array_order_ids;
+        $array_merge_info = [];
+        $array_merge_info2 = [];
+        if (!empty($array_order_ids)){
+            $sql = "SELECT COUNT(deliver_order_id) as count,order_id FROM oc_x_deliver_order WHERE order_id IN(".$array_order_ids.") GROUP BY order_id ";
+//            return $sql;
+
+            $result_order = $db->query($sql)->rows;
+            $sql2 = "SELECT
+	odo.deliver_order_id,if(sum(if(op.repack=1,odop.quantity,0))=0,'只有整件', if(sum(if(op.repack=0,odop.quantity,0))>0,'含整件','没有整件')) box_name
+FROM
+	oc_x_deliver_order odo
+LEFT JOIN oc_x_deliver_order_product odop ON odop.deliver_order_id = odo.deliver_order_id
+LEFT JOIN oc_product op on op.product_id = odop.product_id
+WHERE
+	odo.deliver_order_id IN (".$array_deliver_order_ids.") and odo.do_warehouse_id = '".$data['warehouse_id']."' GROUP BY odo.deliver_order_id";
+            $box_order = $db->query($sql2)->rows;
+//            return $box_order;
+            if (!empty($result_order)) {
+                foreach ($result_order as $value) {
+                    $array_merge_info[$value['order_id']]['count'] = $value['count'];
+                }
+                foreach ($box_order as $value2) {
+                    $array_merge_info2[$value2['deliver_order_id']]['box_name'] = $value2['box_name'];
+                }
+                foreach ($return['data'] as $key => $value2) {
+                    $return['data'][$key]['order_count'] = empty($array_merge_info[$value2['so_order_id']]) ? 0 : $array_merge_info[$value2['so_order_id']]['count'] ;
+                    $return['data'][$key]['box_name'] = empty($array_merge_info2[$value2['order_id']]) ? '' : $array_merge_info2[$value2['order_id']]['box_name'] ;
+                }
+            }
+
+        }
 
 
         if(sizeof($return)){
 
-//            $bao_product_arr = array(1047,1720);
-//            $bao_user_arr = array(834,810,769,850,752,973,808,754,1026,815,1121,1505);
-//            $bao_week_arr = array(5,6,0);
-//
-//
-//            foreach($return['data'] as $key=>$value){
-//
-//                $week_order_deliver = date("w",  strtotime($value['date_added']));
-//
-//                $array_jiaoji = array();
-//                $return['data'][$key]['is_bao'] = 0;
-//                $product_id_arr = explode(",", $value['product_id_str']);
-//                $array_jiaoji = array_intersect($product_id_arr, $bao_product_arr);
-//                if(in_array($value['customer_id'], $bao_user_arr)&&!empty($array_jiaoji)&&  in_array($week_order_deliver, $bao_week_arr)){
-//                    //$return['data'][$key]['is_bao'] = 1;
-//                }
-//
-//            }
 
-            return $return;
+
+            return  $return;
         }
         else{
             return array();
         }
 
-//        if($results && sizeof($results)){
-//            if($id>0){
-//                $sql = "SELECT * FROM oc_x_area WHERE station_id = {$id} AND status=1";
-//                $query = $db->query($sql);
-//                $areas = $query->rows;
-//                if($areas && sizeof($areas)){
-//                    $results[0]['areas'] = $areas;
-//                }
-//            }
-//
-//            return $results;
-//        }
+
     }
 
 
@@ -7009,11 +10219,146 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 
         $data = json_decode($data, 2);
         $date = isset($data['date']) ? $data['date'] : false;
+        $handle_product = isset($data['handle_product']) ? $data['handle_product'] : false;
         if(!$date){
-            //return false;
+            return false;
+        }
+//        return $date;
+        $sql = "SELECT
+	GROUP_CONCAT(o.purchase_order_id ORDER BY o.purchase_order_id) purchase_order_ids 
+FROM 
+oc_x_pre_purchase_order AS o 
+where o.is_gift = 0 AND o.order_type=1  and o.warehouse_id = '".$data['warehouse_id']."'
+	 ";
+        if($data['purchase_order_id']){
+            $sql .= " AND o.purchase_order_id = " . $data['purchase_order_id'];
+        } else {
+            if($date){
+                $sql .=" AND DATE(o.date_deliver) = '" . $date . "' ";
+            }
+            if($data['order_status_id'] != 0 ){
+                $sql .= " AND o.status = " . $data['order_status_id'];
+            }
+//            if($handle_product){
+//                $sql .= " AND oppp.product_id = " .$handle_product;
+//            }
+        }
+//return $sql;
+        $query = $db->query($sql)->row;
+        if (empty($query['purchase_order_ids'])) {
+            return array();
+        }
+        //采购单id集
+        $purchase_orders = $query['purchase_order_ids'];
+        //赠品单数组集
+        $order_gifts = [];
+        //赠品单id集
+        $gift_purchase_orders = '';
+
+        $sql = "SELECT
+	o.purchase_order_id as order_id,
+	o.purchase_order_id,
+        o.station_id,
+	o.`status` as order_status_id,
+	os.`name` AS name,
+	st.`name` AS st_name,
+        o.order_comment,
+	SUM(op.quantity) as plan_quantity , 
+	 u.lastname ,
+	 u.firstname ,
+	o.related_order,
+      DATEDIFF(NOW(), o.date_deliver) date_diff ,
+      SUM(IF(opp.repack = 0,op.quantity,0) ) AS quantity_one, 
+      SUM(IF(opp.repack = 1,op.quantity,0) ) AS quantity_two 
+   
+	 
+FROM
+	oc_x_pre_purchase_order AS o
+LEFT JOIN oc_x_pre_purchase_order_product AS op ON o.purchase_order_id = op.purchase_order_id
+-- LEFT JOIN oc_x_supplier_type AS st ON st.supplier_type_id = o.supplier_type
+LEFT JOIN oc_x_supplier AS st ON st.supplier_id = o.supplier_type
+LEFT JOIN oc_x_pre_purchase_order_status AS os ON o.`status` = os.order_status_id
+LEFT JOIN oc_user u on  o.added_by  = u.user_id
+LEFT JOIN oc_product opp on  opp.product_id  = op.product_id
+WHERE o.is_gift=1 AND o.with_gift =0 AND o.status != 3 AND o.related_order IN(".$purchase_orders.") GROUP BY o.purchase_order_id ORDER BY order_id ";
+//        return $sql;
+        $gift_orders = $db->query($sql)->rows;
+        if (!empty($gift_orders)) {
+            foreach ($gift_orders as $value) {
+                $gift_purchase_orders .= ','.$value['order_id'];
+            }
         }
 
 
+        //返回数组集
+        $return = array();
+        //操作中间表集
+        $sorting_array = array();
+
+        //print_r($return['data']);
+
+        //$last_one_day = date("Y-m-d", time() + 8*3600 - 24*3600);
+        //获取入库中间表中已入库的商品，并从计划入库的商品中减去已入库的商品
+
+        $sql = "SELECT
+	xis.order_id,SUM(xis.quantity) quantity,xis.added_by
+FROM
+	oc_x_inventory_purchase_order_sorting AS xis
+WHERE 1 = 1 
+	 ";
+
+            $sql  .= "  AND xis.order_id IN  (".$purchase_orders.$gift_purchase_orders.") GROUP BY xis.order_id ORDER BY xis.order_id";
+
+//return $sql;
+        $query = $db->query($sql);
+        $result = $query->rows;
+//return $result;
+
+
+
+        if(sizeof($result)){
+            foreach($result as $rk => $rv){
+                $sorting_array[$rv['order_id']] = $rv;
+
+
+
+//                $return_move_p = array();
+//                if($return['data'][$rv['order_id']]['quantity'] > 0){
+//                    $return['data'][$rv['order_id']]['quantity'] -= $rv['quantity'];
+//                    if($return['data'][$rv['order_id']]['quantity'] <= 0){
+//                        $return_move_p = $return['data'][$rv['order_id']];
+//                        unset($return['data'][$rv['order_id']]);
+//                        $return['data'][$rv['order_id']] = $return_move_p;
+//                    }
+//                    $return['data'][$rv['order_id']]['added_by'] = $rv['added_by'];
+//
+//
+//
+//                }
+            }
+        }
+//        return $gift_orders;
+        if (!empty($gift_orders)) {
+            foreach ($gift_orders as $value) {
+                $gift_orders[$value['order_id']] = $value;
+                $sorting_quantity = intval($sorting_array[$value['order_id']]['quantity']);
+                $plan_quantity = intval($value['plan_quantity']);
+                if ($sorting_quantity > 0) {
+                    $gift_orders[$value['order_id']]['added_by'] = $sorting_array[$value['order_id']]['added_by'];
+                    $gift_orders[$value['order_id']]['quantity'] = $plan_quantity;
+                    $gift_orders[$value['order_id']]['sort_num'] = $sorting_quantity;
+                } else {
+                    $gift_orders[$value['order_id']]['added_by'] = '';
+                    $gift_orders[$value['order_id']]['quantity'] = $plan_quantity;
+                    $gift_orders[$value['order_id']]['sort_num'] = 0;
+                }
+                $order_gifts[$value['related_order']][] = $gift_orders[$value['order_id']];
+            }
+        }
+//return $order_gifts;
+
+        //echo "<pre>";print_r($return);exit;
+        //采购单数组集
         $sql = "SELECT
 	o.purchase_order_id as order_id,
         o.station_id,
@@ -7021,34 +10366,46 @@ WHERE ics.uptime > '" . date("Y-m-d",  strtotime($date . " 00:00:00") - 24*3600)
 	os.`name` AS os_name,
 	st.`name` AS st_name,
         o.order_comment,
-	SUM(op.quantity) as quantity
+	SUM(op.quantity) as plan_quantity , 
+	 u.lastname ,
+	 u.firstname ,
+	o.need_delivery_service,
+      DATEDIFF(NOW(), o.date_deliver) date_diff ,
+      o.date_deliver,
+         SUM(IF(opp.repack = 0,op.quantity,0) ) AS quantity_one, 
+         SUM(IF(opp.repack = 1,op.quantity,0) ) AS quantity_two 
+
+	 
 FROM
 	oc_x_pre_purchase_order AS o
 LEFT JOIN oc_x_pre_purchase_order_product AS op ON o.purchase_order_id = op.purchase_order_id
 -- LEFT JOIN oc_x_supplier_type AS st ON st.supplier_type_id = o.supplier_type
 LEFT JOIN oc_x_supplier AS st ON st.supplier_id = o.supplier_type
 LEFT JOIN oc_x_pre_purchase_order_status AS os ON o.`status` = os.order_status_id
-where o.order_type=1  and o.warehouse_id = '".$data['warehouse_id']."'";
+LEFT JOIN oc_user u on  o.added_by  = u.user_id 
+LEFT JOIN oc_product opp on  opp.product_id  = op.product_id
 
-
-        if($date != ''){
-            $sql .=" and o.date_deliver = '" . $date . "'";
-        }
-        if($data['order_status_id'] != 0 ){
-            $sql .= " AND o.status = " . $data['order_status_id'];
-        }
-
-        if($data['purchase_order_id'] != 0 ){
-            $sql .= " AND o.purchase_order_id = " . $data['purchase_order_id'];
-        }
+where 1=1 ";
+//        if($data['purchase_order_id'] != '' ){
+            $sql .= " AND o.purchase_order_id IN (" . $purchase_orders.") ";
+//        } else {
+//            if($date != ''){
+//                $sql .=" and o.date_deliver = '" . $date . "'";
+//            }
+//            if($data['order_status_id'] != 0 ){
+//                $sql .= " AND o.status = " . $data['order_status_id'];
+//            }
+//            if($handle_product){
+//                $sql .= " AND oppp.product_id = " .$handle_product;
+//            }
+//        }
 
         $sql .= " GROUP BY o.purchase_order_id order by o.purchase_order_id asc";
 
         $query = $db->query($sql);
         $results = $query->rows;
 
-        $return = array();
-        $return['data'] = array();
+//return $results;
 
         //echo "<pre>";print_r($results);
 
@@ -7058,54 +10415,21 @@ where o.order_type=1  and o.warehouse_id = '".$data['warehouse_id']."'";
 
 
                 $return['data'][$v['order_id']] = $v;
-                $return['data'][$v['order_id']]['plan_quantity'] = $v['quantity'];
-                $return['data'][$v['order_id']]['added_by'] = '';
-                $return['data'][$v['order_id']]['station_id'] = $v['station_id'];
-            }
-        }
-        //print_r($return['data']);
-
-        //$last_one_day = date("Y-m-d", time() + 8*3600 - 24*3600);
-        //获取入库中间表中已入库的商品，并从计划入库的商品中减去已入库的商品
-
-        $sql = "SELECT
-	xis.*
-FROM
-	oc_x_inventory_purchase_order_sorting AS xis
-LEFT JOIN oc_x_pre_purchase_order AS o ON o.purchase_order_id = xis.order_id
-WHERE
-	o.date_deliver =  '" . $date . "' ";
-
-        $query = $db->query($sql);
-        $result = $query->rows;
-
-
-
-
-        if(sizeof($result)){
-            foreach($result as $rk => $rv){
-
-
-
-                $return_move_p = array();
-                if($return['data'][$rv['order_id']]['quantity'] > 0){
-                    $return['data'][$rv['order_id']]['quantity'] -= $rv['quantity'];
-                    if($return['data'][$rv['order_id']]['quantity'] <= 0){
-                        $return_move_p = $return['data'][$rv['order_id']];
-                        unset($return['data'][$rv['order_id']]);
-                        $return['data'][$rv['order_id']] = $return_move_p;
-                    }
-                    $return['data'][$rv['order_id']]['added_by'] = $rv['added_by'];
-
-
+//                $return['data'][$v['order_id']]['plan_quantity'] = $v['quantity'];
+                $sorting_quantity = intval($sorting_array[$v['order_id']]['quantity']);
+                $plan_quantity = intval($v['plan_quantity']);
+                if ($sorting_quantity > 0) {
+                    $return['data'][$v['order_id']]['quantity'] = $plan_quantity - $sorting_quantity;
+                    $return['data'][$v['order_id']]['added_by'] = $sorting_array[$v['order_id']]['added_by'];
+                } else {
+                    $return['data'][$v['order_id']]['quantity'] = $plan_quantity;
+                    $return['data'][$v['order_id']]['added_by'] = '';
 
                 }
+                $return['data'][$v['order_id']]['extend'] = $order_gifts[$v['order_id']];
+//                $return['data'][$v['order_id']]['station_id'] = $v['station_id'];
             }
         }
-        //echo "<pre>";print_r($return);exit;
-
-
-
         if(sizeof($return)){
 
             return $return;
@@ -7452,11 +10776,128 @@ SELECT '{$order_id}', '0','{$reason_id}', '{$comment}', NOW(), order_status_id, 
 
     }
 
+    //DO单分配
+    function auto_order_distr($data, $station_id=1, $language_id=2, $origin_id=1, $key){
+        global $db;
+        global $log;
+        global $orders_id;
+        $station_id = (int)$station_id;
+        $language_id = (int)$language_id;
+
+        $data = json_decode($data, 2);
+//return $data;
+        $order_id = isset($data['order_id']) ? $data['order_id'] : false;
+        $warehouse_repack = isset($data['warehouse_repack']) ? trim($data['warehouse_repack']) : false;
+        $warehouse_id = isset($data['warehouse_id']) ? trim($data['warehouse_id']) : false;
+        $user_repack1 = isset($data['user_repack']) ? trim($data['user_repack']) : false;
+//        return $order_id;
+
+        $inventory_name = isset($data['inventory_name']) ? trim($data['inventory_name']) : false;
+        if (!$inventory_name) {
+            return 0;
+        }
+
+        $sql = "SELECT repack FROM oc_w_user  WHERE username = '".$inventory_name."' ";
+        $query = $db->query($sql);
+        $user_repack = $query->row;
+        if ($data['warehouse_repack'] == 1) {
+            if ($user_repack['repack'] != $user_repack1) {
+                return 0;
+            }
+        }
+        $product_id = isset($data['product_id']) ? trim($data['product_id']) : false;
+//do单分类
+        if (!$product_id) {
+            return 0;
+        } else if ($product_id==5001) {
+            $ordclass = 2 ;
+        } else if ($product_id==5002) {
+            $ordclass = 3 ;
+        } else if ($product_id==5003) {
+            $ordclass = 4 ;
+        } else if ($product_id==5004) {
+            $ordclass = 5 ;
+        } else if ($product_id==5005) {
+            $ordclass = 6 ;
+        } else if ($product_id==5006) {
+            $ordclass = 7 ;
+        } else {
+            $ordclass = 1 ;
+        }
 
 
+//查询do单状态以及整散
+        $sql = "SELECT odo.order_status_id,odo.is_repack,odo.order_id AS old_order_id,SUM(odop.quantity) AS quantity
+FROM oc_x_deliver_order odo
+LEFT JOIN oc_x_deliver_order_product odop ON odop.deliver_order_id = odo.deliver_order_id
+WHERE odo.deliver_order_id = '".$order_id ."'";
+//        return $sql;
+        $query = $db->query($sql);
+        $order_status = $query->row;
+        $old_order_id = $order_status['old_order_id'];
+        $quantity = $order_status['quantity'];
+//如果不是已确认不能进行分配
+        if ($order_status['order_status_id'] != 2 ) {
+            return 2;
+        } else {
+
+//判断是否是分区分拣，如果是，判断分配的订单是否对应相应的分拣人员
+            if ($warehouse_repack == 1) {
+                if ($order_status['is_repack'] != $user_repack['repack']) {
+                    return 0;
+                }
+            }
+            /*zx
+            找出该分拣人最近分出的五百个单子，判断是否都已完成，如有为未完成的，不能领单*/
+            $sql = "SELECT GROUP_CONCAT(DISTINCT odo.order_status_id order by odo.order_status_id) AS order_status
+FROM oc_order_distr ood 
+LEFT JOIN oc_x_deliver_order odo ON odo.deliver_order_id = ood.deliver_order_id
+WHERE ood.inventory_name = '".$inventory_name."' 
+ORDER BY ood.deliver_order_id DESC 
+LIMIT 0,500";
+            $query = $db->query($sql);
+            $order_status1 = $query->rows;
+            $dont_order_status = explode(',',$order_status1[0]['order_status']);
+            if (in_array(4,$dont_order_status) || in_array(5,$dont_order_status)) {
+                return 3;
+            }
+            /*zx
+            非生鲜仓*/
+            $sql = "SELECT odo.deliver_order_id 
+FROM oc_order_distr odo 
+WHERE odo.deliver_order_id = '".$order_id."'";
+            $query = $db->query($sql);
+            $order_status2 = $query->row;
+            if ($order_status2) {
+                return 4;
+            }
+            $sql = "INSERT INTO oc_order_distr 
+(order_id, deliver_order_id,inventory_name, ordclass,quantity,warehouse_id,warehouse_repack, user_repack,date_added)
+VALUES ('$old_order_id','$order_id','$inventory_name','$ordclass','$quantity','".$warehouse_id."','".$warehouse_repack."','".$user_repack1."',NOW())";
+            $sql1 = "UPDATE oc_x_deliver_order SET order_status_id = 4,repack_status_id = 4 WHERE deliver_order_id = '".$order_id."'";
+            $query1 = $db->query($sql1);
+            $query = $db->query($sql);
+            return 1;
+        }
+
+    }
+
+    function checkWarehouseIsDc($warehouse_id){
+        global $db;
+        $sql = "SELECT  warehouse_id ,title,station_id,is_dc  FROM  oc_x_warehouse  where  warehouse_id = '".$warehouse_id."'";
+
+        $query = $db->query($sql);
+        $result = $query->row;
+        $warehouse_is_dc = intval($result['is_dc']);
+        if (in_array($warehouse_is_dc,[1])) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
 
 
 }
-
 $oldwarehouse = new OLDWAREHOUSE();
 ?>

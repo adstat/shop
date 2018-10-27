@@ -1,0 +1,7 @@
+2017-11-20 19:36:56 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='3', inv_comment='67' where order_id = '436599'
+
+2017-11-20 19:36:57 - [分拣]提交订单为待审核[addFastMoveSortingToInv]update oc_order set order_status_id = 8 where order_id = '436599'
+
+2017-11-20 19:38:26 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(),  inv_spare_comment='88', frame_count='1', frame_vg_list= '999999' where order_id = '436599'
+
+2017-11-20 19:38:26 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn

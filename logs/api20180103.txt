@@ -1,0 +1,12 @@
+2018-01-03 16:56:54 - Array
+2018-01-03 16:56:57 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryInProduct
+2018-01-03 16:56:57 - update oc_x_inventory_purchase_order_sorting set move_flag = 1 where inventory_sorting_id in (17)
+2018-01-03 17:01:58 - Array
+2018-01-03 17:02:00 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryInProduct
+2018-01-03 17:02:00 - update oc_x_inventory_purchase_order_sorting set move_flag = 1 where inventory_sorting_id in (18)
+2018-01-03 17:09:31 - Array
+2018-01-03 17:09:33 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryInProduct
+2018-01-03 17:09:33 - update oc_x_inventory_purchase_order_sorting set move_flag = 1 where inventory_sorting_id in (19,20)
+2018-01-03 17:16:31 - Array
+2018-01-03 17:16:33 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryInProduct
+2018-01-03 17:16:33 - update oc_x_inventory_purchase_order_sorting set move_flag = 1 where inventory_sorting_id in (19,20)

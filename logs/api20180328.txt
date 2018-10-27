@@ -1,0 +1,10 @@
+2018-03-28 13:47:41 - [分拣]记录或更新货位号[addOrderProductStation]insert into oc_x_deliver_order_inv(deliver_order_id, frame_vg_list, inv_status, uptime, order_id) values ('71412','',1 , now() ,'' )
+
+2018-03-28 13:48:46 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125606' where deliver_order_id = '71412'
+
+2018-03-28 13:49:31 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125606,125605' where deliver_order_id = '71412'
+
+2018-03-28 13:50:00 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125606,125605' where deliver_order_id = '71412'
+
+2018-03-28 13:50:05 - [分拣]记录或更新货位号[addOrderProductStation]update oc_x_deliver_order_inv set  date_modified = now(),  frame_vg_list= '125606,125605' where deliver_order_id = '71412'
+

@@ -1,0 +1,42 @@
+2017-12-14 14:47:32 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='4', inv_comment='547', frame_count='1', frame_vg_list= '109599' where order_id = '365922'
+
+2017-12-14 14:47:34 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 14:51:35 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 14:51:37 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 14:57:49 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 14:57:52 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:03:33 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:03:36 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:04:58 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:05:00 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:06:57 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:06:58 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:09:30 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:09:32 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:13:24 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:13:26 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:14:41 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:14:43 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:15:39 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:15:41 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:17:11 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:17:13 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:18:20 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:18:22 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:19:44 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:19:46 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
+2017-12-14 15:21:43 - [分拣]记录或更新货位号[addFastMoveSortingToInv]update oc_order_inv set  date_modified = now(), box_count='6', inv_comment='160', frame_count='1', frame_vg_list= '108524' where order_id = '379503'
+
+2017-12-14 15:21:46 - INFO:[addInventoryMoveOrder]: 变动类型：inventoryOrderIn
