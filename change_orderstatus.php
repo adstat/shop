@@ -98,7 +98,7 @@ if(empty($_COOKIE['inventory_user'])){
     });
 
     function getOrderByDriver(tmptxt){
-
+        var  warehouse_id = '<?php echo $_COOKIE['warehouse_id'];?>';
         $.ajax({
             type : 'POST',
             url : 'invapi.php',
@@ -106,7 +106,8 @@ if(empty($_COOKIE['inventory_user'])){
             data : {
                 method : 'getOrderByDriver',
                 data: {
-                    logistic_allot_id :tmptxt
+                    logistic_allot_id :tmptxt,
+                    warehouse_id:warehouse_id,
                 }
             },
             success : function (response){
@@ -114,32 +115,39 @@ if(empty($_COOKIE['inventory_user'])){
                 console.log(response);
                 if(response){
                     var html= '';
-                    $.each(response, function(i, v){
-                        html +="<tr style='background:#d0e9c6; height: 30px;' id='check"+v.order_id+"'>";
-                        if(v.order_deliver_status_id == 1 && v.order_status_id !=8){
-                            html += "<td>";
-                            html +='<input  type="checkbox" style="zoom:180%;" type="button" name="pich_id[]" class="pich_id"  id="'+ v.order_id +'"  value="'+ v.order_id +'" >';
-                            html +="</td>";
-                        }else{
-                            html += "<td></td>";
-                        }
 
-                        html +="<td>"+ v.inv_comment+"</td>";
-                        html +="<td>"+ v.order_id+'/'+v.name+'/'+ v.order_name+"</td>";
-                        html +="<td>"+ v.quantity+"</td>";
-                        html +="<td>"+ v.logistic_driver_title+"</td>";
-                        if(v.order_deliver_status_id == 1 && v.order_status_id !=8 ){
-                            html += "<td>";
-                            html +='<input style="background: red ;border-radius: 10px ;width: 100px" type="button" id="button_id'+ v.order_id +'"  value="确认出库"  onclick="javascript:confirm_orderStatus(\''+ v.order_id +'\')">';
-                            html +="</td>";
-                        }else{
-                            html += "<td></td>";
+                    if(response == 1){
+                        alert('司机超过欠款金额不能出库');
+                    }else {
 
-                        }
 
-                        html +="</tr>";
-                    });
-                    $('#order_logistic_driver').html(html);
+                        $.each(response, function (i, v) {
+                            html += "<tr style='background:#d0e9c6; height: 30px;' id='check" + v.order_id + "'>";
+                            if (v.order_deliver_status_id == 11 || v.order_deliver_status_id == 1 && v.order_status_id != 8) {
+                                html += "<td>";
+                                html += '<input  type="checkbox" style="zoom:180%;" type="button" name="pich_id[]" class="pich_id"  id="' + v.order_id + '"  value="' + v.order_id + '" >';
+                                html += "</td>";
+                            } else {
+                                html += "<td></td>";
+                            }
+
+                            html += "<td>" + v.inv_comment + "</td>";
+                            html += "<td>" + v.order_id + '/' + v.name + '/' + v.order_name + "</td>";
+                            html += "<td>" + v.quantity + "</td>";
+                            html += "<td>" + v.logistic_driver_title + "</td>";
+                            // if (v.order_deliver_status_id == 11 || v.order_deliver_status_id == 1 && v.order_status_id != 8) {
+                                html += "<td>";
+                                html += '<input style="background: red ;border-radius: 10px ;width: 100px" type="button" id="button_id' + v.order_id + '"  value="确认出库"  onclick="javascript:confirm_orderStatus(\'' + v.order_id + '\')">';
+                                html += "</td>";
+                            // } else {
+                            //     html += "<td></td>";
+                            //
+                            // }
+
+                            html += "</tr>";
+                        });
+                        $('#order_logistic_driver').html(html);
+                    }
                 }
             }
 
@@ -149,6 +157,9 @@ if(empty($_COOKIE['inventory_user'])){
     function  confirm_orderStatus(order_id){
         var user_id=$("#user_id").text();
         var logistic_id =$("#input_logistic_id").val();
+
+        // $("#button_id"+order_id).attr("disabled", true);
+
        if(logistic_id){
            if(confirm("确认出库确认?出库确认之后将不能更改")) {
                $.ajax({
@@ -189,6 +200,8 @@ function submitDeliverStatus(){
     for(var i=0;i<checkbox.length;i++){
         check_value.push(checkbox[i].value);
     }
+
+    $("#submitDeliverStatus").attr("disabled", true);
 
     $.ajax({
         type: 'POST',

@@ -86,7 +86,7 @@ if(empty($_COOKIE['inventory_user'])){
 <hr>
 <div id="div_bar_code" align="center" style="height: 40px"><input id="bar_code" name="bar_code"  autocomplete="off" type="text" value="" style="height: 25px;border:1px solid" placeholder="商品条码"></div>
 <div id="div_bar_code2" hidden="hidden" align="center" style="height: 40px"><input id="bar_code2"  name="bar_code"  autocomplete="off" type="text" value="" style="height: 25px;border:1px solid" placeholder="商品条码"></div>
-<div id="div_bar_code3" hidden="hidden" align="center" style="height: 40px"><input id="bar_code3"  name="bar_code"  autocomplete="off" type="text" value="" style="height: 25px;border:1px solid" placeholder="商品条码"></div>
+<div id="div_bar_code3" hidden="hidden" align="center" style="height: 40px"><input id="bar_code3"  name="bar_code"  autocomplete="off" type="text" value="" style="height: 25px;border:1px solid" placeholder="商品条码">   </div>
 
 <!--  <button id="single_button" name="single_button" style="width: 100px;height: 20px;background: red" type="button"     onclick="getSingle();">单个商品缺货</button>  -->
 <button id="spare_button" name="single_button" style="width: 100px;height: 20px;background: red" type="button"     onclick="getSpareDetails();">散件商品缺货</button>
@@ -190,6 +190,7 @@ if(empty($_COOKIE['inventory_user'])){
             }
         }
         var order_id = (theRequest['order_id']);
+        var warehouse_id = '<?php $_COOKIE['warehouse_id'] ;?>';
         $('#find_order').hide();
         $('#short_regist').show();
 
@@ -202,6 +203,7 @@ if(empty($_COOKIE['inventory_user'])){
                 method: 'location_details',
                 data: {
                     order_id: order_id,
+                    warehouse_id :warehouse_id,
 
                 }
             },
@@ -267,10 +269,10 @@ if(empty($_COOKIE['inventory_user'])){
 </script>
 <script>
 
-    $("input[name='bar_code']").keyup(function(){
+    $("input[id='bar_code']").keyup(function(){
         var tmptxt=$(this).val();
         $(this).val(tmptxt.replace(/\D/g,''));
-        if(tmptxt.length >= 4){
+        if( tmptxt.length >= 4){
             handleProductList2();
             //handleProductList();
             handleProductList3();
@@ -280,6 +282,20 @@ if(empty($_COOKIE['inventory_user'])){
         var tmptxt=$(this).val();
         $(this).val(tmptxt.replace(/\D/g,''));
     });
+    $("input[id='bar_code3']").keyup(function(){
+        var tmptxt=$(this).val();
+        $(this).val(tmptxt.replace(/\D/g,''));
+        if( tmptxt.length >= 5){
+            handleProductList2();
+            //handleProductList();
+            handleProductList3();
+        }
+
+    }).bind("paste",function(){
+        var tmptxt=$(this).val();
+        $(this).val(tmptxt.replace(/\D/g,''));
+    });
+
 </script>
 <script>
 
@@ -545,6 +561,8 @@ if(empty($_COOKIE['inventory_user'])){
         $("#shortage2").hide();
         $("#shortage3").show();
         var order_id=$("#order_id").text();
+
+        var warehouse_id = '<?php $_COOKIE['warehouse_id'] ;?>' ;
         window.onload=document.getElementById('bar_code3').focus();
         $.ajax({
             type: 'POST',
@@ -553,6 +571,7 @@ if(empty($_COOKIE['inventory_user'])){
                 method: 'getSpareDetails',
                 data: {
                     order_id: order_id,
+                    warehouse_id  : warehouse_id
                 }
             },
             success: function (response, status, xhr) {

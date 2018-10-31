@@ -4,16 +4,16 @@ if( !isset($_GET['auth']) || $_GET['auth'] !== 'xsj2015inv'){
 }
 include_once 'config_scan.php';
 
-$inventory_user_admin = array('alex','leibanban','wuguobiao','zhouhuan','hantingting','penglie');
+$inventory_user_admin = array('1','20');
 if(empty($_COOKIE['inventory_user'])){
     //重定向浏览器
-    header("Location: inventory_login.php?return=w_i.php");
+    header("Location: inventory_login.php?return=i.php");
     //确保重定向后，后续代码不会被执行 
     exit;
 }
-if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
+if(!in_array($_COOKIE['user_group_id'],$inventory_user_admin)){
     echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
-    exit("入库功能仅限指定人员操作, 请返回");
+    exit("入库功能仅限收货人员操作, 请返回");
 }
 ?>
 <html>
@@ -98,7 +98,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
 
         .invopt{
             background-color:#DF0000;
-            height:3em;
+            height:6em;
             line-height: 1em;
             padding: 0.5em 0.5em;
             margin:0.1em 0.1em;
@@ -376,9 +376,9 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         }
 
         .qty{
-            width:1.2em;
+            width:3.1em;
             height:1.2em;
-            font-size: 1.5em;
+            font-size: 0.5em;
             text-align: center;
             background: none;
         }
@@ -662,28 +662,33 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
     <script>
         window.product_barcode_arr = {};
         window.product_barcode_arr_s = {};
-        <?php if(!in_array($_COOKIE['inventory_user'], $inventory_user_admin)){?> 
+        <?php if(!in_array($_COOKIE['user_group_id'], $inventory_user_admin)){?>
             $(document).keydown(function (event) {
                 $('#product').focus();
             });
         <?php } ?>
     </script>
+
+    <script type="text/javascript">
+        var is_admin = 0;
+        <?php if($_COOKIE['user_group_id'] == 1){?>
+            is_admin = 1;
+        <?php } ?>
+    </script>
 </head>
 
 <body>
-    <script type="text/javascript">
-               var is_admin = 0;
-            </script>
-    <div align="right" style="margin: 0.2rem">
-        <?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <button onclick="javascript:logout_inventory_user();">退出</button>
-    </div>
-    <div  style="display: none" id="warehouse_id"> <?php echo $_COOKIE['warehouse_id'];?> </div>
-    <div align="center" style="display:block; margin:0.5em auto" id="logo"><img src="view/image/logo.png" style="width:6em"/> 采购入库<button class="invopt" style="display: inline" onclick="javascript:location.reload();">刷新</button></div>
-    <div align="center" style="display:block; margin:0.5em auto" id="show_order_comment"></div>
-    <?php
-            
-            if(isset($_GET['date'])){
-                $date_array = array();
+<div align="right" style="margin: 0.2rem">
+    <?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <button onclick="javascript:logout_inventory_user();">退出</button>
+</div>
+<div align="center" id="purchase_info"></div>
+<div  style="display: none" id="warehouse_id"> <?php echo $_COOKIE['warehouse_id'];?> </div>
+<div align="center" style="display:block; margin:0.5em auto" id="logo"><img src="view/image/logo.png" style="width:6em"/> 采购入库<button class="invopt" style="height:3em;display: inline" onclick="javascript:location.reload();">刷新</button></div>
+<div align="center" style="display:block; margin:0.5em auto" id="show_order_comment"></div>
+<?php
+
+if(isset($_GET['date'])){
+    $date_array = array();
 
                 $date_array[0]['date'] = date("m-d",  strtotime($_GET['date']));
                 $date_array[1]['date'] = date("m-d",strtotime($_GET['date']));
@@ -729,20 +734,20 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
     </select>
     
     <br>
-    <p style="margin: 0.5em"><span style="width: 3em">到货日期：</span> 
-            <select style="font-size: 1.2em; padding: 0.2em; background-color: #a9dba9" type="text" value="" name="contact_phone" id="select_date">
-                
-                <?php foreach ($selete_date as $dk=>$dv){?>
-                    
-                <option value="<?php echo $dv;?>" <?php echo $date_array[2]['date'] == $dv ? "selected='selected'" : "";?>><?php echo $dv;?></option>
-                <?php } ?>
-                
-            </select>
+        <br>
+        采购单/退货单:
+        <select id = "ordertype" style="width:12em;height:2em;">
+            <option value="1">采购单</option>
+
+            <option value="2">退货单</option>
+        </select>
+    <p style="margin: 0.5em"><span style="width: 3em">到货日期：</span>
+        <input id="date_start" name="date_start"  autocomplete="off" class="date" type="text" value=""  style="font-size: 15px; width:15.5em ;height: 40px;border:1px solid" data-date-format="YYYY-MM-DD-HH" id="input-date-end" >
         </p>
     
         采购单号：<input id="input_purchase_order_id" name="input_purchase_order_id" style="font-size: 1.2em; padding: 0.2em; background-color: #a9dba9; width: 5em;" />
     
-    
+
    <input type="button" style="font-size:1.2em;" onclick="javascript:getOrderByStatus()" value="查询">
     </div>
     
@@ -755,13 +760,14 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         <div align="center" id="orderListTable" style="margin:0.5em auto;">
             <input type="hidden" id="current_order_id" value="">
             <table border="0" style="width:100%;" cellpadding="2" cellspacing="3" id="ordersHold">
-                <thead>
+            <caption style="color:red;" id="table_title"></caption><thead>
                     <tr>
                         
                         <th >订单ID</th>
                         <th>供应商</th>
                         <th>商品数</th>
-                        <th>未入库</th>
+                        <th id="in">未入库</th>
+                        <th id="out" style="display: none">未出库</th>
                         <th>订单状态</th>
                         <th>操作</th>
                     </tr>
@@ -797,7 +803,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                     </tr>
                     <tbody id="productsInfoDo">
                         <tr>
-                            <td id="current_product_plan"  align="center" style="font-size:3.75em;"></td>
+                            <td id="current_product_plan"  align="center" style="font-size:1.75em;"></td>
                             <td id="current_product_quantity" align="center" style="font-size:2.5em;"></td>
                             <td id="current_product_quantity_change" align="center">
                                 
@@ -807,26 +813,29 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 </table>
 
                 <div id="barcodescanner" style="display: none">
+                    <span show_local_area>当前存放区:</span><select id="show_local_stock_area" ></select><br />
+                    当前托盘号:<span id="show_local_tray">无</span><button>不使用托盘</button>
                     <form method="get" onsubmit="handleProductList(); return false;">
                         <input name="product" id="product" rows="1" maxlength="19" onclick="javascript:clickProductInput();" autocomplete="off" placeholder="点击激活开始扫描" style="ime-mode:disabled; height: 2em;"/>
+                        <input class="addprod style_green" type="submit" value ="确认" style="font-size: 1em; padding: 0.2em">
                         <!--<input class="addprod style_green" type="submit" value ="添加" style="font-size: 1em; padding: 0.2em">-->
                     </form>
                 </div>
-                <script type="text/javascript">
-                    $("input[name='product']").keyup(function(){
-                        var tmptxt=$(this).val();
-                        $(this).val(tmptxt.replace(/\D/g,''));
-
-                        if(tmptxt.length >= 4){
-                            handleProductList();
-                        }
-                        $(this).val("");
-                    }).bind("paste",function(){
-                            var tmptxt=$(this).val();
-                            $(this).val(tmptxt.replace(/\D/g,''));
-                        });
-                    //$("input[name='product']").css("ime-mode", "disabled");
-                </script>
+<!--                <script type="text/javascript">-->
+<!--                    $("input[name='product']").keyup(function(){-->
+<!--                        var tmptxt=$(this).val();-->
+<!--                        $(this).val(tmptxt.replace(/\D/g,''));-->
+<!---->
+<!--                        if(tmptxt.length >= 4){-->
+<!--                            handleProductList();-->
+<!--                        }-->
+<!--                        $(this).val("");-->
+<!--                    }).bind("paste",function(){-->
+<!--                            var tmptxt=$(this).val();-->
+<!--                            $(this).val(tmptxt.replace(/\D/g,''));-->
+<!--                        });-->
+<!--                    //$("input[name='product']").css("ime-mode", "disabled");-->
+<!--                </script>-->
 
                 <input type="hidden" id="current_do_product" value="0">
                 <div style="display:block; margin-top: 1em;">
@@ -857,7 +866,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 
                 
                 <input class="submit" id="submit_del" type="button" value="删除入库数据" onclick="javascript:delPurchaseOrderProductToInv();">
-                <?php if(in_array($_COOKIE['inventory_user'],$inventory_user_admin)){?>
+                <?php if(in_array($_COOKIE['user_group_id'],$inventory_user_admin)){?>
                 <input class="submit" id="submit" type="button" value="提交" onclick="javascript:addOrderProductToInv_pre();">
                 <?php } ?>
                 
@@ -1008,7 +1017,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
     
 <div style="display: none">
     <div comment="Used for alert but hide">
-        <audio id="player3" src="view/sound/ding.mp3">
+        <audio id="player3" src="view/sound/ding.wav">
             Your browser does not support the <code>audio</code> element.
         </audio>
     </div>
@@ -1024,6 +1033,18 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
 <div id="overlay">
         
 </div>
+
+
+    <script>
+        $(document).ready(function(){
+            var today=new Date();
+            var year=today.getFullYear();
+            var month=today.getMonth()+1;
+            var day=today.getDate();
+
+            $('#date_start').val(year+"-"+month+"-"+day );
+        });
+    </script>
     <script>
         
         window.product_weight_info = new Array();
@@ -1076,136 +1097,50 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
 
     $(document).ready(function () {
         startTime();
-        var warehouse_id = $("#warehouse_id").text();
-         $.ajax({
+        getOrderByStatus();
+        $.ajax({
             type : 'POST',
-            url : 'invapi.php',
+            url : 'invapi.php?vali_user=1',
             data : {
-                method : 'getPurchaseOrders',
-                date : '<?php echo $date_array[2]['date']; ?>',
-                order_status_id : 0,
-                warehouse_id :warehouse_id,
-                
-                
+                method : 'getPurchaseOrderStatus',
+                data:{
+                    stock_section_type_id: 8,
+                    warehouse_id: '<?php echo $_COOKIE['warehouse_id'];?>',
+                }
             },
             success : function (response , status , xhr){
                 //console.log(response);
 
-                if(response){
-                    
-                    var jsonData = $.parseJSON(response);
-                    
-
-
-                    if(jsonData.status == 999){
-                        alert(jsonData.msg);
-                        location.href = "inventory_login.php?return=w_i.php";
-                    }
-
-                    var html = '';
-                    
-                    var each_i_num = 1;
-                    
-                    $.each(jsonData.data, function(index, value){
-                        
-                        if(1==1 ){
-                            var t_status_class = '';
-
-
-
-                            
-                            if(value.order_status_id == 1){
-                                t_status_class = "style = 'background-color:#ffff99;'";
-
-                            }
-                            if(value.order_status_id == 2){
-                                //t_status_class = "";
-                            }
-                            if(value.order_status_id == 3){
-                                t_status_class = "style = 'background-color:#666666;'";
-                            }
-                            if(value.order_status_id == 5){
-                                //t_status_class = "";
-                            }
-                            if(value.order_status_id == 6){
-                                t_status_class = "style = 'background-color:#666666;'";
-                            }
-
-
-                            html += '<tr station_id="'+value.station_id+'">';
-                            html += '<td '+t_status_class+'>'+value.order_id;
-                             html += '<input type="hidden" id="order_comment_'+value.order_id+'" value="'+value.order_comment+'">';
-
-
-                            html +='</td>';
-
-                            html += '<td '+t_status_class+'>'+value.st_name+'</td>';
-                            html += '<td '+t_status_class+'>'+value.plan_quantity+'</td>';
-                            html += '<td '+t_status_class+'>'+value.quantity+'</td>';
-
-
-
-
-
-
-
-
-                            html += '<td '+t_status_class+'>'+value.os_name+'</td>';
-                            html += '<td>';
-                            html += '<button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+');">查看</button>';
-                            if(value.order_status_id == 2){
-                                html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">开始入库</button>';
-                            }    
-
-
-                            html += '</td>';
-                            html += '</tr>';
-                            html += '';
-                        }
-                        each_i_num++;
-                    });
-                    
-                        
-                    
-                    
-                    $('#ordersList').html(html);
-                    console.log('Load Stations');
-                }
-            },
-            complete : function(){
-                $.ajax({
-                    type : 'POST',
-                    url : 'invapi.php?vali_user=1',
-                    data : {
-                        method : 'getPurchaseOrderStatus'
-                    },
-                    success : function (response , status , xhr){
-                        //console.log(response);
-
                         if(response){
-                            var jsonData = eval(response);
+                            var jsonData = $.parseJSON(response);
                             if(jsonData.status == 999){
                                 alert("未登录，请登录后操作");
                                 window.location = 'inventory_login.php?return=w_i.php';
                             }
                             var html = '<option value=0>-请选择订单状态-</option>';
-                            $.each(jsonData, function(index, value){
+                            $.each(jsonData.result, function(index, value){
                                 html += '<option value='+ value.order_status_id +' >' + value.name + '</option>';
                             });
+                            var html2 = "";
+                            $.each(jsonData.result2, function(index1, value1){
+                                html2 += '<option value='+ value1.stock_section_id +' >' + value1.name + '</option>';
+                            });
                             $('#orderStatus').html(html);
+                            $('#show_local_stock_area').html(html2);
 
-                            console.log('Load Stations');
-                        }
-                    }
-                });
-
-               
-                
-                
-                
+                    //console.log('Load Stations');
+                }
             }
-            
         });
+        orderInventory(48252);
+
+
+
+
+
+        // }
+
+        // });
 
 
         //Alert Sound Settings
@@ -1257,32 +1192,36 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         $('#invMethods').hide();
         $("#orderListTable").hide();
         $('#productList').show();
+        $("#submit_del").show();
         
         $("#searchPurchaseOrder").hide();
         
        
        
-        $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button>'+'鲜世纪采购入库');
+        $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button>'+'');
         var order_comment = $("#order_comment_"+order_id).val();
         $("#show_order_comment").html(order_comment);
         
         $("#current_order_id").val(order_id);
         getOrderSortingList(order_id,0);
+
     }
     
     function orderInventoryView(order_id){
         $('#invMethods').hide();
         $("#orderListTable").hide();
+        $("#submit_del").hide();
         $('#productList').show();
         
         $("#searchPurchaseOrder").hide();
         
        
-        $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button>'+'鲜世纪采购入库');
+        $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button>'+'');
         var order_comment = $("#order_comment_"+order_id).val();
         $("#show_order_comment").html(order_comment);
         $("#current_order_id").val(order_id);
         getOrderSortingList(order_id,1);
+
     }
 
 
@@ -1315,14 +1254,48 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         locateInput();
     }
 
+
+     function getPurchaseInfo(order_id){
+         var warehouse_id = $("#warehouse_id").text();
+         $.ajax({
+             type : 'POST',
+             url : 'invapi.php',
+             data : {
+                    method: 'getPurchaseInfo',
+                data:{
+                    order_id: order_id,
+                    warehouse_id: warehouse_id,
+                }
+             },
+             success:function(response){
+
+                if(response){
+                    var jsonData = $.parseJSON(response);
+                    console.log(jsonData);
+                    var  html = '';
+                    html +='采购单:'+ jsonData.purchase_order_id;
+                    html += '/'
+                    html +="供应商:" + jsonData.name;
+
+                    $("#purchase_info").html(html);
+                }
+             }
+         });
+     }
+
+
     function getOrderSortingList(order_id,is_view){
+
+        var warehouse_id = $("#warehouse_id").text();
+
         $('#barcodescanner').show();
         $.ajax({
             type : 'POST',
             url : 'invapi.php',
             data : {
                 method : 'getPurchaseOrderSortingList',
-                order_id : order_id
+                order_id : order_id ,
+                warehouse_id : warehouse_id,
             },
             success : function (response , status , xhr){
                 var html = '<td colspan="4">正在载入...</td>';
@@ -1443,6 +1416,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             },
             complete : function(){
                 getProductName();
+                getPurchaseInfo(order_id);
             }
         });
     }
@@ -1832,11 +1806,11 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         }
         */
         
-       if(id.length == 4 && !check_in_array(id,window.no_scan_product_id_arr)){
-            alert("不能输入商品ID，必须扫描");
-            return false;
-        }
-        
+//       if(id.length == 4 && !check_in_array(id,window.no_scan_product_id_arr)){
+//            alert("不能输入商品ID，必须扫描");
+//            return false;
+//        }
+//
         if(id.length == 4){
            
             id = parseInt(id);
@@ -1892,6 +1866,17 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             }
            
         }
+
+        //兼容为29开头的商品内码，如2900300100405，是29开头，取3～5位数为商品编号
+        if(id.length == 13){
+            var internalFlag = parseInt(id.substr(0,2));
+            var internalId = parseInt(id.substr(2,5));
+
+            if(internalFlag == 29 && parseInt(window.product_id_arr[internalId]) == internalId){
+                id = internalId;
+            }
+        }
+
         //id = parseInt(id);
         if(window.product_id_arr[id] > 0){
             
@@ -1917,10 +1902,10 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 
                 $("#current_do_product").val(id);
                 
-                $("#product_name").html($("#info"+id).html());
+                $("#product_name").html(id+''+$("#info"+id).html());
                 $("#current_do_tj").html('<span id="tj'+id+'" style="" onclick="javascript:tjStationPlanProduct(\''+id+'\')" class="invopt">提交</span>');
                 $("#current_product_plan").html($("#old_plan"+id).val()+'<span style="display:none;" name="productId" id="pid'+id+'">' + $("#pid"+id).html() + '</span>');
-                $("#current_product_quantity").html( '<input class="qty"  id="'+id+'" value="'+$("#"+id).val()+'"><input type="hidden" id="plan'+ id +'" value="'+$("#plan"+id).val()+'"><input type="hidden" id="old_plan'+ id +'" value="'+$("#old_plan"+id).val()+'"><input type="hidden" id="do'+id+'" value="0">');
+                $("#current_product_quantity").html( '<input class="qty"  style="border:1px solid;" id="'+id+'" value="'+$("#"+id).val()+'"><input type="hidden" id="plan'+ id +'" value="'+$("#plan"+id).val()+'"><input type="hidden" id="old_plan'+ id +'" value="'+$("#old_plan"+id).val()+'"><input type="hidden" id="do'+id+'" value="0">');
                 
                
                 $("#current_product_quantity_change").html('<input style="height:3em;width:3em;" class="qtyopt" type="button" value="+" onclick="javascript:qtyadd(\''+id+'\')"><input style="height:3em;width:3em;" class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus(\''+id+'\')"><input style="height:3em;width:3em;" class="qtyopt style_green" type="button" value="-10" onclick="javascript:qtyminus10(\''+id+'\')"><input style="height:3em;width:3em;" class="qtyopt style_green" type="button" value="-50" onclick="javascript:qtyminus50(\''+id+'\')">');
@@ -2270,9 +2255,16 @@ alert(arr);
     }
 
     function tjStationPlanProduct(id){
+        showOverlay();
+        var do_quantity = parseInt($("#plan"+id).val())-parseInt($("#"+id).val());
+        if (parseInt($("#"+id).val()) < 0 || parseInt($("#plan"+id).val()) < parseInt($("#"+id).val())) {
+            alert("待投篮数量不能为负或者大于计划数量");
+            hideOverlay();
+            return true;
+        }
+        $("#do"+id).val(do_quantity);
         addOrderProductStation(id);
         
-        hideOverlay();
          var html = '';
         html += '<tr class="barcodeHolder"  id="bd'+ id +'">' +
                             '<td class="prodlist" id="td'+id+'" ><span name="productBarcode" style="display:none;" >' + id + '</span> <span name="productId" id="pid'+id+'">' + $("#pid"+id).html() + '</span>	<br /><span id="info'+ id +'">'+$("#product_name").html()+'</span>      </td>' +
@@ -2347,8 +2339,8 @@ function tjStationPlanProduct2(id){
                         alert("未登录，请登录后操作");
                         window.location = 'inventory_login.php?return=w_i.php';
                     }
-                    if(jsonData.status == 0){
-                        alert(jsonData.msg);
+                    if(jsonData.status != 1){
+                        alert(jsonData.memo);
                         return false;
                     }
 
@@ -2369,6 +2361,9 @@ function tjStationPlanProduct2(id){
                     var jsonData = $.parseJSON(response);
                     return jsonData.status;
                 }
+            },
+            complete: function () {
+                hideOverlay();
             }
         });
     } 
@@ -2414,7 +2409,8 @@ function tjStationPlanProduct2(id){
 
 
     function addOrderProductToInv_pre(){
-        showOverlay();
+        // showOverlay();
+        $("#submit").hide();
         var order_id = $('#current_order_id').val();
         var warehouse_id = $("#warehouse_id").text();
          $.ajax({
@@ -2440,6 +2436,8 @@ function tjStationPlanProduct2(id){
                         addPurchaseOrderProductToInv();
                     }else{
                         hideOverlay();
+                        $("#submit").show();
+
                         return false;
                     }
                 }
@@ -2544,7 +2542,7 @@ function tjStationPlanProduct2(id){
         if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][4]){
             var add_type = 5;
         }
-        <?php if(in_array($_COOKIE['inventory_user'], $inventory_user_admin)){?> 
+        <?php if(in_array($_COOKIE['user_group_id'], $inventory_user_admin)){?>
             var add_type = 3;
         <?php } ?>
 
@@ -2886,12 +2884,17 @@ function tjStationPlanProduct2(id){
     
     function getOrderByStatus(){
         var order_status_id = $("#orderStatus").val();
-        var select_date = $("#select_date").val();
+        var select_date = $("#date_start").val();
         var purchase_order_id = $("#input_purchase_order_id").val();
         var warehouse_id = $("#warehouse_id").text();
+        var order_type = $("#ordertype").val();
+
+        if (order_type == 1) {
+        $("#in").show();
+            $("#out").hide();
         $.ajax({
             type : 'POST',
-            url : 'invapi.php',
+            url : 'invapi.php?method=getPurchaseOrders',
             data : {
                 method : 'getPurchaseOrders',
                 date : select_date,
@@ -2903,25 +2906,31 @@ function tjStationPlanProduct2(id){
             success : function (response , status , xhr){
                 //console.log(response);
 
-                if(response){
-                    
-                    var jsonData = $.parseJSON(response);
-                    
+                    if(response){
 
+                        var jsonData = $.parseJSON(response);
+                        if(jsonData.status == 999){
+                            // alert(jsonData.msg);
+                            location.href = "inventory_login.php?return=w_i.php";
+                        }
 
-                    if(jsonData.status == 999){
-                        alert(jsonData.msg);
-                        location.href = "inventory_login.php?return=w_i.php";
-                    }
+                        var html = '';
 
-                    var html = '';
-                    
-                    var each_i_num = 1;
-                    
-                    $.each(jsonData.data, function(index, value){
-                        
-                        if(1==1 ){
-                            var t_status_class = '';
+                        var each_i_num = 1;
+                        var total_quantity = 0;
+                        var total_quantity_repack = 0;
+                        var total_need_quantity = 0;
+                        var total_need_quantity_repack = 0;
+                        var total_need_orders = 0;
+                        var total_orders = 0;
+
+                        $.each(jsonData.data, function(index, value){
+                            total_quantity += parseInt(value.quantity_one);
+                            total_quantity_repack += parseInt(value.quantity_two);
+                            total_orders += 1;
+
+                            if(1==1 ){
+                                var t_status_class = '';
 
 
 
@@ -2943,49 +2952,243 @@ function tjStationPlanProduct2(id){
                                 //t_status_class = "";
                             }
 
+//                                if (value.extend !== "") {
+                                    html += '<tr station_id="' + value.station_id + '">';
+                                    html += '<td ' + t_status_class + '>' + value.order_id +'[采购单]<br />['+ value.date_deliver +']<br/>';
+                                    // console.log(value);
+                                    if (value.need_delivery_service == 1) {
+                                        total_need_orders += 1;
+                                        total_need_quantity += parseInt(value.quantity_one);
+                                        total_need_quantity_repack += parseInt(value.quantity_two);
 
-                            html += '<tr station_id="'+value.station_id+'">';
-                            html += '<td '+t_status_class+'>'+value.order_id;
-                            html += '<input type="hidden" id="order_comment_'+value.order_id+'" value="'+value.order_comment+'">';
+                                        html += '<span style="color:red;">需要提供卸货服务</span>';
+                                    }
+//                                    else {
+//                                        html += '<span style="color:red;">不需要提供卸货</span>';
+//                                    }
+                                    html += '<input type="hidden" id="order_comment_' + value.order_id + '" value="' + value.order_comment + '">';
 
                             html +='</td>';
 
-                            html += '<td '+t_status_class+'>'+value.st_name+'</td>';
-                            html += '<td '+t_status_class+'>'+value.plan_quantity+'</td>';
-                            html += '<td '+t_status_class+'>'+value.quantity+'</td>';
+                                    html += '<td '+t_status_class+'>'+value.st_name;
+                                    html += '<br />';
+                                    html +=  '<span>'+ '['+'采购:'+  value.lastname +  value.firstname  +']'+ '</span>' ;
+                                    html += '</td>';
+                                    html += '<td '+t_status_class+'>'+value.plan_quantity+'</td>';
+                                    html += '<td '+t_status_class+'>'+value.quantity+'</td>';
+                                    html += '<td '+t_status_class+'>'+value.os_name+'</td>';
+                                    html += '<td>';
+                                    var result = false;
+                                    if (value.extend !== "") {
+                                        $.each(value.extend, function (k, v) {
+                                            if (parseInt(v.order_status_id) == 2) {
+                                                result = true;
+                                            }
+                                        });
+                                        html += '<button id="show_'+value.order_id+'" class="invopt" style="display: inline" onclick="javascript:hide_gift_tr('+value.order_id+');">显示赠品单</button><br />';
+
+                                    }
+                                    //  html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">开始入库</button>';
+                                html += '<button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+');">查看</button>';
+                                    if (result) {//有赠品
+                                        html += '<strong>赠品未收完，请先收赠品</strong>';
+                                    } else {//没有赠品
+                                        if(value.order_status_id == 2){
+                                            //超计划到货期大于过3天，或提前到货超过5天不可以收货，仓主管账户可做异常收货
+                                            if((parseInt(value.date_diff) >= -5 && parseInt(value.date_diff) <= 3) || is_admin == 1){
+                                                html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">开始入库</button>';
+                                            }else{
+                                                html += '<br /><span style="font-size: 0.9rem; color: #fa6800">超期不可收货</span>';
+                                            }
+                                        }
+                                    }
 
 
 
+                                    html += '</td>';
+                                    html += '</tr>';
+                                    if (value.extend !== "") {
+                                    $.each(value.extend,function (k,v) {
+                                        if (value.extend == null) {
+                                            return false;
+                                        }else{
+                                            if (value.need_delivery_service == 1) {
+                                                total_need_quantity += parseInt(v.quantity_one);
+                                                total_need_quantity_repack += parseInt(v.quantity_two);
+
+                                            }
+                                            total_quantity += parseInt(v.quantity_one);
+                                            total_quantity_repack += parseInt(v.quantity_two);
+                                            html +='<tr id="getColor" style="display:none;" class= "hide_'+v.related_order+'">';
+                                            html +='<td ></td>';
+                                            html +='<td style="background-color:yellow;" >'+'['+ '赠品单' +']<br />'+v.purchase_order_id+'</td>';
+                                            html +='<td >'+v.quantity+'</td>';
+                                            html +='<td >'+parseInt(v.quantity-v.sort_num)+'</td>';
+                                            html +='<td >'+v.name+'</td>';
+                                            html += '<td>';
+                                            //超计划到货期大于过3天，或提前到货超过5天不可以收货，仓主管账户可做异常收货
+
+                                            html += '<button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+v.purchase_order_id+');">查看</button>';
+                                            if(v.order_status_id == 2 && value.order_status_id == 2) {
+
+                                                if ((parseInt(value.date_diff) >= -5 && parseInt(value.date_diff) <= 3) || is_admin == 1) {
+                                                    html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory(' + v.purchase_order_id + ');">开始入库</button>';
+                                                } else {
+                                                    html += '<br /><span style="font-size: 0.9rem; color: #fa6800">超期不可收货</span>';
+                                                }
+                                            }
+                                            html += '</td>';
+                                            html +='</tr>';
+                                        }
+                                    });
+
+                                    html += '';
+                                }
+//                                else {//没有赠品
+//                                    html += '<tr station_id="' + value.station_id + '">';
+//                                    html += '<td ' + t_status_class + '>' + value.order_id +'['+ '采购单' +']';
+//                                    html += '<input type="hidden" id="order_comment_' + value.order_id + '" value="' + value.order_comment + '">';
+//                                    html +='</td>';
+//                                    html += '<td '+t_status_class+'>'+value.st_name;
+//                                    html += '<br />';
+//                                    html +=  '<span>'+ '['+'采购:'+  value.lastname +  value.firstname  +']'+ '</span>' ;
+//                                    html += '</td>';
+//                                    html += '<td '+t_status_class+'>'+value.plan_quantity+'</td>';
+//                                    html += '<td '+t_status_class+'>'+value.quantity+'</td>';
+//                                    html += '<td '+t_status_class+'>'+value.os_name+'</td>';
+//                                    html += '<td>';
+//                                    html += '<button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+');">查看</button>';
+//                                    //  html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">开始入库</button>';
+//                                    if(value.order_status_id == 2){
+//                                        //超计划到货期大于过3天，或提前到货超过5天不可以收货，仓主管账户可做异常收货
+//
+//                                        if((parseInt(value.date_diff) >= -5 && parseInt(value.date_diff) <= 3) || is_admin == 1){
+//                                            html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">开始入库</button>';
+//                                        }else{
+//                                            html += '<br /><span style="font-size: 0.9rem; color: #fa6800">超期不可收货</span>';
+//                                        }
+//                                    }
+//                                    html += '</td>';
+//                                    html += '</tr>';
+//                                }
+//
+//
+                            }
+                            each_i_num++;
+                        });
 
 
-
-
-
-                            html += '<td '+t_status_class+'>'+value.os_name+'</td>';
-                            html += '<td>';
-                            html += '<button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+');">查看</button>';
-                            if(value.order_status_id == 2){
-                                html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">开始入库</button>';
-                            }    
-
-
-                            html += '</td>';
-                            html += '</tr>';
-                            html += '';
-                        }
-                        each_i_num++;
-                    });
-                    
-                        
-                    
-                    
-                    $('#ordersList').html(html);
-                    console.log('Load Stations');
+                        $('#ordersList').html(html);
+                        $('#table_title').html("计划到货"+total_orders+"单，共"+(total_quantity+total_quantity_repack)+"件(整件"+total_quantity+"件，散件"+total_quantity_repack+"件）其中卸货服务"+total_need_orders+"单，共"+(total_need_quantity+total_need_quantity_repack)+"件（整件"+total_need_quantity+"件，散件"+total_need_quantity_repack+"件）");
+//                    console.log('Load Stations');
+                    }
                 }
-            }
-            
-            
+
+
         });
+    }
+
+
+        if(order_type ==  2){
+            $("#in").hide();
+            $("#out").show();
+
+            $.ajax({
+                type: 'POST',
+                url: 'invapi.php',
+                data: {
+                    method: 'getPurchaseTypeOrders',
+                   data : {
+                       date: select_date,
+                       order_status_id: order_status_id,
+                       purchase_order_id: purchase_order_id,
+                       warehouse_id: warehouse_id,
+                   }
+
+                },
+                success: function (response, status, xhr) {
+                    //console.log(response);
+
+                    if (response) {
+
+                        var jsonData = $.parseJSON(response);
+
+
+                        if (jsonData.status == 999) {
+                            alert(jsonData.msg);
+                            location.href = "inventory_login.php?return=w_i.php";
+                        }
+
+                        var html = '';
+
+                        var each_i_num = 1;
+
+                        $.each(jsonData.data, function (index, value) {
+
+                            if (1 == 1) {
+                                var t_status_class = '';
+
+
+                                if (value.order_status_id == 1) {
+                                    t_status_class = "style = 'background-color:#ffff99;'";
+
+                                }
+                                if (value.order_status_id == 2) {
+                                    //t_status_class = "";
+                                }
+                                if (value.order_status_id == 3) {
+                                    t_status_class = "style = 'background-color:#666666;'";
+                                }
+                                if (value.order_status_id == 5) {
+                                    //t_status_class = "";
+                                }
+                                if (value.order_status_id == 6) {
+                                    //t_status_class = "";
+                                }
+
+
+                                html += '<tr station_id="' + value.station_id + '">';
+                                html += '<td ' + t_status_class + '>' + value.order_id +'['+ '退货单' +']';
+                                html += '<input type="hidden" id="order_comment_' + value.order_id + '" value="' + value.order_comment + '">';
+
+                                html += '</td>';
+
+                                html += '<td ' + t_status_class + '>' + value.st_name + '</td>';
+                                html += '<td ' + t_status_class + '>' + value.plan_quantity + '</td>';
+                                html += '<td ' + t_status_class + '>' + value.quantity + '</td>';
+
+
+                                html += '<td ' + t_status_class + '>' + value.os_name + '</td>';
+                                html += '<td>';
+                                html += '<button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView(' + value.order_id + ');">查看</button>';
+                                if (value.order_status_id == 2) {
+                                    html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory(' + value.order_id + ');">开始出库</button>';
+                                }
+
+
+                                html += '</td>';
+                                html += '</tr>';
+                                html += '';
+                            }
+                            each_i_num++;
+                        });
+
+
+                        $('#ordersList').html(html);
+                        // console.log('Load Stations');
+                    }
+                }
+
+
+            });
+
+
+
+
+
+
+        }
+
         
     }
 
@@ -3025,7 +3228,25 @@ window.check_product_arr[16] = 6986;
         window.no_scan_product_id_arr[<?php echo $key;?>] = <?php echo $value;?>;
     <?php } ?>
 
-
+    function hide_gift_tr(id){
+        var show_id = ".hide_"+id;
+        var text_id = "#show_"+id;
+        var text1 = "显示赠品单";
+        var text2 = "隐藏赠品单";
+        var hide_order_history = $(text_id).text();
+//        console.log(text_id);
+//        console.log(show_id);
+//        console.log(hide_order_history);
+//        console.log(text1);
+//        console.log(text2);
+        if (hide_order_history == text1) {
+            $(show_id).each(function(){ $(this).show(); });
+            $(text_id).html(text2);
+        } else if (hide_order_history == text2) {
+            $(show_id).each(function(){ $(this).hide(); });
+            $(text_id).html(text1);
+        }
+    }
 
 function check_in_array(stringToSearch, arrayToSearch) {
  for (s = 0; s < arrayToSearch.length; s++) {
@@ -3036,6 +3257,7 @@ function check_in_array(stringToSearch, arrayToSearch) {
  }
  return false;
 }
+
     </script>
 </body>
 </html>

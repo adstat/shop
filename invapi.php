@@ -2,10 +2,12 @@
 date_default_timezone_set('Asia/Shanghai');
 require_once 'config.php';
 
-
-
+//exit('ERROR: ');
+//exit(DIR_PATH.'/api/xmlrpc/v1/xmlrpc.php');
 //Load PHP XMLRPC
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc.php';
+//exit(SITE_URI . '/api/xmlrpc/v1/index_warehouse.php');
+
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpcs.php';
 require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc_wrappers.php';
 
@@ -13,11 +15,10 @@ require_once DIR_PATH.'/api/xmlrpc/v1/xmlrpc_wrappers.php';
 
 
 define('APIURL', SITE_URI . '/api/xmlrpc/v1/index_warehouse.php');
+//exit(SITE_URI . '/api/xmlrpc/v1/index_warehouse.php');
 
 define('APIOROGIN', 1); //API
 define('APIKEY', 'xsj_dev_mode_origin_01');
-
-
 
 
 
@@ -80,6 +81,8 @@ function rpcRequest($post){
     $response = $client->send($msg);
 
     if($response->faultcode()==0) {
+//        exit(($response->value()));
+
         $result = php_xmlrpc_decode($response->value());
         exit(json_encode($result));
     }
@@ -132,6 +135,10 @@ $method = isset($_POST['method']) ? $_POST['method'] : false;
 //Method Filter
 $basic_method = array(
     'find_order',
+    'getAccomplishFrame',
+    'getwarningInformation',
+    'delOneProductInv',
+    'getFrameProductNumber',
     'short_regist',
     'getInvComment',
     'getProductID',
@@ -170,8 +177,22 @@ $basic_method = array(
     'getDeliverStatus',
     'submitDeliverStatus',
     'getWarehouseId',
+    'getUseWarehouseId',
     'getWarehouseProductId',
     'submitcheck',
+    'get_order_deliver_status_history',
+    'checkTail',
+
+
+    //获取仓库分拣人员
+    'getinventoryname',
+    'getinventorynamerepack',
+    //班组长缺货未分拣处理
+    'foreman_check_product',
+    'get_foreman_check_product',
+    'submit_foreman_check_product',
+    'get_foreman_check_results',
+
  //整单退货
     'getIssueOrderInfo',
     'getIssueReason',
@@ -185,6 +206,185 @@ $basic_method = array(
     //司机确认收到退货
     'showDeliverConfirm',
     'warehouseConfirmReturnProduct',
+
+    //仓库调拨
+    'getWarehouseRequisition',
+    'getNewWarehouseRequisition',
+    'searchRequisition',
+    'searchRequisitionNew',
+    'viewItem',
+    'startShipment',
+    'startShipmentNew',
+    'makeGetReadyLists',
+    'getRelevantProductID',
+    'submitProduct',
+    'submitProductNew',
+    'submitRelevantProduct',
+    'submitProducts',
+    'submitProductsNew',
+    'submitProductsLists',
+    'relevantViewItem',
+    'addPurchaseOrderRelevantToInv',
+    'getProductInformation',
+    //分拣班组长核查任务
+    'submitCheckProductInformation',
+    'getProductsInformation',
+    'submitCheckProductResult',
+    'getCheckOrderInformation',
+    'cancelCheckOrderProduct',
+    'submitCheckOrderResult',
+    'getCheckOrderInformation',
+    'getOrderCheckInformation',
+    'getDeliverOrderToCheck',
+    'getCheckOrderInStockArea',
+    //缺货提醒
+    'shortReminder',
+    'getReminderList',
+    'confirmReminder',
+    'confirmReplenishment',
+    'getInfo',
+    //缺货单个确认
+
+    'confirmReturnSingleProduct',
+    //快消当面退
+    'confirmReturnBadSingleProduct',
+
+    //出库基础信息录入
+    'submitCorrectionOutOrder',
+    //出库订单商品信息核对
+    'showOrderProducts',
+
+    //采购单信息
+    'getPurchaseInfo',
+    'getPurchaseTypeOrders',
+
+    //更新分拣码
+    'changeProductSku',
+    //货架上货
+    'confirmReturnShelves',
+
+    //移库操作
+    'getTransferInfo',
+    'addTranserMission',
+    'addTranserMission1',
+    'getTransferMission',
+    'changeTransferValuse',
+    'getTransferProductInfo',
+    'addChangeProductTransfer',
+    'ChangeProductTransferStatus',
+    'getTransfer',
+    //盘点
+    'confirmCheckSingleProduct',
+    'changeCheckSingleProduct',
+    // 回收篮框
+    'getOrderByFrame',
+    'submitFrameInStatus',
+    'confirmFrameInStatus',
+    'checkContainer',
+    'selectContainer',
+'searchContainer',
+    'show_container_detail',
+    //分区分拣
+    'getOrderSpareSortingUser',
+    'insertOrderDistrSpare',
+    'getOrderInfoByCount',
+    'confirmOrderInfoByCount',
+    'addOrderInfoByCount',
+    'getOrderInfoBySpareComment',
+    'addInvComment',
+    //移仓
+    'palletMove',
+    'updateStocksChecks',
+    'getStockChecks',
+    'deleteStockChecks',
+    'getWarehouseSection',
+    'updateStockChecks',
+    'addStockInventory',
+    'getStockChecksMove',
+    'addStockMove',
+    'getStockChecksIn',
+    'delectStockMOve',
+    'addStockIn',
+    'addStockMoveTransfer',
+    'confirmTransfer',
+    //移库分页
+    'getTransferMissionNUM',
+    //手动添加移库商品
+    'manualAddTransfer',
+    //分拣/存货信息录入更新
+    'getWarehouseTransferInfo',
+    //仓库分区
+    'getProductSectionType',
+    'confirmOut',
+    'confirmIn',
+    'getStockSectionProduct',
+    'getSkuProductId',
+    'getProductAllSingleInfo',
+    'deleteStockSectionPorduct',
+    'getInventoryOrderSoring',
+    'addOrderInvComment',
+    //外仓发过来的do单与本仓合单
+    'getRelevantInfoByInput',
+    'get_order_information_to_merge',
+    'catOrderProductInfo',
+    'submitReturnProduct',
+    // 分配DO 到调拨单
+    'getAllotDoOrder',
+    'getDoOrderStatus',
+    'addDoOrderRelevant',
+    'getRelevantInfoByCount',
+    'confirmDoRelevant',
+    'confirmDoRelevantC',
+    'addConsolidatedRelevant',
+    'getRelevantInfoByProduct',
+    'addConsolidatedRelevant',
+    'addConsolidatedDoInfo',
+    'updateDoRelevantC',
+    'getAutoOrders',
+    'print_relevants_merge',
+    'merge_relevant_orders',
+    'delete_merge_relevant_orders',
+    'update_relevant_orders',
+    'get_merge_order_status',
+    'getContainerInformation',
+    'get_frame_vg_list_status',
+    'get_frame_vg_list_unique',
+    'updateDoRelevant',
+    //浦西没到货修改订单状态
+    'updateDoStatus',
+    'mergeDeliverOrder',
+    //删除分拣数据
+    'deleteOrderSorting',
+    'checkContainerId',
+    'addWarehouseContainer',
+    'getProductDeliver',
+    'getContainerDeliver',
+
+    //新调拨单申请 Alex 20180310 －开始
+    'getTransferBoxes',
+    'addTransferOrder',
+    'getTransferOrder',
+    'cancelTransferOrder',
+    //新调拨单申请 Alex 20180310 - 结束
+
+    'getOrderContainerHistory',
+
+    //仓库可售库存管理
+    'getInventorySortingReturn',
+    'addInventorySortingReturn',
+    'updateInvComment',
+
+    //删除框里的商品
+    'deleteContainerProduct',
+
+    //整件批次分拣
+    'getBoxBatchInfo',
+    'getBoxBatchOrders',
+    'addBoxBatchOrder',
+    'updateBoxBatchOrder',
+    'cancelBoxBatchOrder',
+    'submit_box_product_batch',
+    'getBoxBatchOrderItem'
 );
 
 if(in_array($method, $basic_method)){
@@ -281,8 +481,16 @@ if($method == 'getOrders'){
     $data['date'] = $date;   
     $data['order_status_id'] = isset($_POST['order_status_id']) ? (int)$_POST['order_status_id'] : 0;
     $data['station_id'] = isset($_POST['station_id']) ? (int)$_POST['station_id'] : 0; //New
+    $data['search_type'] = isset($_POST['search_type']) ? (int)$_POST['search_type'] : 0; //New
+
     $data['inventory_user'] = isset($_POST['inventory_user']) && $_POST['inventory_user']  ? $_POST['inventory_user'] : 0;
     $data['warehouse_id'] = isset($_POST['warehouse_id']) && $_POST['warehouse_id']  ? $_POST['warehouse_id'] : 0;
+    $data['warehouse_repack'] = isset($_POST['warehouse_repack']) && $_POST['warehouse_repack']  ? $_POST['warehouse_repack'] : 0;
+    $data['user_repack'] = isset($_POST['user_repack']) && $_POST['user_repack']  ? $_POST['user_repack'] : 0;
+    $data['psize'] = isset($_POST['psize']) && $_POST['psize']  ? $_POST['psize'] : 0;
+    $data['start_row'] = isset($_POST['start_row']) && $_POST['start_row']  ? $_POST['start_row'] : 0;
+    $data['order_type'] = isset($_POST['order_type']) && $_POST['order_type']  ? $_POST['order_type'] : 0;
+    $data['search_deliver_order_id'] = isset($_POST['search_deliver_order_id']) && $_POST['search_deliver_order_id']  ? $_POST['search_deliver_order_id'] : 0;
     //$data['orderList'] = isset($_POST['orderList']) && sizeof($_POST['orderList']) ? $_POST['orderList'] : array(0); //New
     
     $orders = init('getOrders', $id, json_encode($data), 1); //Get Stations
@@ -296,15 +504,19 @@ if($method == 'getOrders'){
     //echo "<pre>";print_r($orders);exit;
     exit(json_encode($orders));
 }
+
+
 if($method == 'getPurchaseOrders'){
     //$userInfo = ('getUserInfoByUid', 0, '', 0) //Get
     //exit(json_encode($userInfo));
 
     $date = !empty($_POST['date']) ? $_POST['date'] : '';
-    $data['date'] = $date;   
+    $data['date_end'] = !empty($_POST['date_end']) ? $_POST['date_end'] : '';
+    $data['date'] = $date;
     $data['order_status_id'] = $_POST['order_status_id'];
     $data['purchase_order_id'] = !empty($_POST['purchase_order_id']) ? $_POST['purchase_order_id'] : '';
     $data['warehouse_id'] = $_POST['warehouse_id'];
+    $data['handle_product'] = $_POST['handle_product'];
     $orders = init('getPurchaseOrders', $id, json_encode($data), 1); //Get Stations
     
     foreach($orders['data'] as $key=>$value){
@@ -338,7 +550,9 @@ if($method == 'getInventoryUserOrder'){
     $data['order_status_id'] = isset($_POST['order_status_id']) ? (int)$_POST['order_status_id'] : 0;
     $data['warehouse_id'] = $_POST['warehouse_id'];
     $data['inventory_user'] = $_COOKIE['inventory_user'];
-    
+    $data['warehouse_repack'] = $_POST['warehouse_repack'];
+    $data['user_repack'] = $_POST['user_repack'];
+    $data['warehouse_id'] = $_POST['warehouse_id'];
 
     
     $orders = init($method, $id, json_encode($data), 1); //Get Stations
@@ -363,8 +577,12 @@ if($method == 'ordered'){
     $date = !empty($_POST['date']) ? $_POST['date'] : '';
     $data['order_status_id'] = isset($_POST['order_status_id']) ? $_POST['order_status_id'] : '';
     $data['product_id'] = isset($_POST['product_id']) ? $_POST['product_id'] : '';
-    $data['deliver_date'] = $date;
+    $data['deliver_date'] = !empty($_POST['deliver_date']) ? $_POST['deliver_date'] :$date;
     $data['warehouse_id'] = $_POST['warehouse_id'];
+    $data['warehouse_repack'] = $_COOKIE['warehouse_repack'];
+    $data['user_repack'] = $_COOKIE['user_repack'];
+    $data['user_warehouse_id'] = $_POST['user_warehouse_id'];
+
     $orders = init('ordered', $id, json_encode($data), 1); //Get Stations
 
    
@@ -384,7 +602,11 @@ if($method == 'getOrderss'){
     $data['deliver_date'] = $_POST['deliver_date'];
     $data['area_id_list'] = $_POST['area_id_list'];
     $data['warehouse_id'] = $_POST['warehouse_id'];
-   
+    $data['new_warehouse_id'] = $_POST['new_warehouse_id'];
+    $data['warehouse_repack'] = $_POST['warehouse_repack'];
+    $data['user_repack'] = $_POST['user_repack'];
+    $data['deliver_order_repack'] = $_POST['deliver_order_repack'];
+    $data['user_warehouse_id'] = $_POST['user_warehouse_id'];
     $orders = init('getOrderss', $id, json_encode($data), 1); //Get Stations
     
     
@@ -397,12 +619,37 @@ if($method == 'orderdistr'){
     $data['date'] = $date;   
     $data['order_id'] = $_POST['order_id'];
 	$data['inventory_name'] = $_POST['inventory_name'];	
+	$data['add_user_name_id'] = $_COOKIE['inventory_user_id'];
 	$data['product_id'] = $_POST['product_id'];
     $data['warehouse_id'] = $_POST['warehouse_id'];
+    $data['warehouse_repack'] = $_POST['warehouse_repack'];
+    $data['user_repack'] = $_POST['user_repack'];
 	$orders = init('orderdistr', $id, json_encode($data), 1); //Get Stations
     
     foreach($orders['data'] as $key=>$value){
         if($value['added_by'] && $value['added_by']!=$_COOKIE['inventory_user']){
+            //$orders['data'][$key]['no_inv'] = 1;
+        }
+    }
+
+    //echo "<pre>";print_r($orders);exit;
+    exit(json_encode($orders));
+}
+/*zx
+自动领单*/
+if($method == 'auto_order_distr'){
+	$date = !empty($_POST['date']) ? $_POST['date'] : '';
+    $data['date'] = $date;
+    $data['order_id'] = $_POST['order_id'];
+	$data['inventory_name'] = $_POST['inventory_name'];
+	$data['product_id'] = $_POST['product_id'];
+    $data['warehouse_id'] = $_POST['warehouse_id'];
+    $data['warehouse_repack'] = $_POST['warehouse_repack'];
+    $data['user_repack'] = $_POST['user_repack'];
+	$orders = init('auto_order_distr', $id, json_encode($data), 1); //Get Stations
+
+    foreach($orders['data'] as $key=>$value){
+        if($value['added_by'] && $value['added_by'] != $_COOKIE['inventory_user']){
             //$orders['data'][$key]['no_inv'] = 1;
         }
     }
@@ -416,6 +663,9 @@ if($method == 'orderRedistr'){
     $data['date'] = $date;   
     $data['order_id'] = $_POST['order_id'];
     $data['ordclass'] = $_POST['ordclass'];
+    $data['warehouse_repack'] = $_POST['warehouse_repack'];
+    $data['user_repack'] = $_POST['user_repack'];
+
 	$orders = init('orderRedistr', $id, json_encode($data), 1); //Get Stations
     
 
@@ -453,12 +703,78 @@ if($method == 'getOrderSortingList'){
 
     $data = array(
         'order_id' => $order_id,
-        'is_view' => $_POST['is_view']
+        'is_view' => $_POST['is_view'],
+        'warehouse_id'=> $_POST['warehouse_id'],
+        'warehouse_repack' => $_COOKIE['warehouse_repack'],
+        'user_repack' => $_COOKIE['user_repack'],
+        'user_group_id'=>$_COOKIE['user_group_id'],
+        'repack'=>$_POST['repack'],
+        'frame_num'=> !empty($_POST['frame_num']) ? $_POST['frame_num'] : '' ,
     );
 
     $sorting = init($method, $id, json_encode($data), 1); //TODO use new method 'getSortingList' instead of 'getPlannedList'
 
     exit(json_encode($sorting));
+}
+if($method == 'getOrderAreaList'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+
+
+    $order_id = isset($_POST['order_id']) ? $_POST['order_id'] : exit();
+
+    $data = array(
+        'order_id' => $order_id,
+        'is_view' => $_POST['is_view'],
+        'warehouse_id'=> $_POST['warehouse_id'],
+        'warehouse_transfer_area_id'=> $_POST['warehouse_transfer_area_id'],
+        'warehouse_repack' => $_COOKIE['warehouse_repack'],
+        'user_repack' => $_COOKIE['user_repack'],
+        'repack'=>$_POST['repack'],
+    );
+
+    $sorting = init($method, $id, json_encode($data), 1); //TODO use new method 'getSortingList' instead of 'getPlannedList'
+
+    exit(json_encode($sorting));
+}
+if($method == 'updateStockSectionArea'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+
+
+    $order_id = isset($_POST['order_id']) ? $_POST['order_id'] : exit();
+
+    $data = array(
+        'order_id' => $order_id,
+        'status' => $_POST['status'],
+        'warehouse_id'=> $_POST['warehouse_id'],
+        'product_id' => $_POST['product_id'],
+        'stock_section_id' => $_POST['stock_section_id'],
+        'stock_section_ids' => $_POST['stock_section_ids'],
+    );
+
+    $sorting = init($method, $id, json_encode($data), 1); //TODO use new method 'getSortingList' instead of 'getPlannedList'
+
+    exit(json_encode($sorting));
+}
+if($method == 'getWarehouseTransferArea'){
+    //$userInfo = ('getUserInfoByUid', 0, '', 0) //Get
+    //exit(json_encode($userInfo));
+    $date = !empty($_POST['date']) ? $_POST['date'] : '';
+    $data = array();
+    $data['warehouse_transfer_area_id'] = isset($_POST['warehouse_transfer_area_id']) ? $_POST['warehouse_transfer_area_id'] : 0;
+    $data['warehouse_id'] = isset($_POST['warehouse_id']) ? $_POST['warehouse_id'] : 0;
+    $data['date'] = $date;
+    $product_weight_info = init($method, $id, json_encode($data), 1); //Get Stations
+    exit(json_encode($product_weight_info));
 }
 
 if($method == 'getPurchaseOrderSortingList'){
@@ -468,12 +784,13 @@ if($method == 'getPurchaseOrderSortingList'){
         exit(json_encode($invInfo));
     }
 
-    
-    
+
+    $warehouse_id = $_POST['warehouse_id'];
     $order_id = isset($_POST['order_id']) ? $_POST['order_id'] : exit();
 
     $data = array(
-        'order_id' => $order_id
+        'order_id' => $order_id,
+        'warehouse_id' => $warehouse_id,
     );
 
     $sorting = init($method, $id, json_encode($data), 1); //TODO use new method 'getSortingList' instead of 'getPlannedList'
@@ -514,7 +831,7 @@ if($method == 'getSortingProductInfo'){ //TODO Same as getProductInfo, but add s
         elseif(strlen($m) == 12 || strlen($m) == 13){
             $product_id = (int)substr($m, 1-(12-strlen($m)), 5);
         }
-        elseif(strlen($m) == 4){
+        elseif(strlen($m) <= 6){
             $product_id = $m;
         }
         else{
@@ -553,6 +870,45 @@ if($method == 'addOrderProductStation'){
         'inventory_user' => $_COOKIE['inventory_user'],
         'product_barcode_arr' => $product_barcode_arr,
         'warehouse_id' =>$_POST['warehouse_id'],
+        'warehouse_repack'=>$_POST['warehouse_repack'],
+        'user_repack' =>$_POST['user_repack'],
+        'container_id' => $_POST['frame_vg_product'],
+        'inventory_user_id' => $_COOKIE['inventory_user_id'],
+        'frame_vg_list' => $_POST['frame_vg_list'],
+        'frame_count' => $_POST['frame_count'],
+    );
+
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+if($method == 'addOrderProductStationes'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+    
+    $product_barcode_arr = array();
+    if(!empty($_POST['product_barcode_arr'])){
+        foreach ($_POST['product_barcode_arr'][$product_id] as $k=>$v){
+                $product_barcode_arr[] = $v;
+        }
+    }
+    
+    $data = array(
+        'product_id' => $product_id,
+        'order_id' => $_POST['order_id'],
+        'product_quantity' => isset($_POST['product_quantity']) ? $_POST['product_quantity'] : 0 ,
+        'inventory_user' => $_COOKIE['inventory_user'],
+        'product_barcode_arr' => $product_barcode_arr,
+        'warehouse_id' =>$_POST['warehouse_id'],
+        'warehouse_repack'=>$_POST['warehouse_repack'],
+        'user_repack' =>$_POST['user_repack'],
+        'container_id' => $_POST['container_id'],
+        'inventory_user_id' => $_COOKIE['inventory_user_id'],
+        'frame_vg_list' => $_POST['frame_vg_list'],
+        'frame_count' => $_POST['frame_count'],
     );
 
     $planned = init($method, 0, json_encode($data), $station_id);
@@ -587,6 +943,8 @@ if($method == 'addPurchaseOrderProductStation'){
         'product_id' => $product_id,
         'order_id' => $_POST['order_id'],
         'product_quantity' => isset($_POST['product_quantity']) ? $_POST['product_quantity'] : 0 ,
+        'transfer_area' => isset($_POST['transfer_area']) ? $_POST['transfer_area'] : 0 ,
+        'transfer_area_item' => isset($_POST['transfer_area_item']) ? $_POST['transfer_area_item'] : 0 ,
         'inventory_user' => $_COOKIE['inventory_user'],
         'warehouse_id'=>$_POST['warehouse_id'],
         'product_barcode_arr' => $product_barcode_arr
@@ -610,7 +968,12 @@ if($method == 'addOrderProductToInv_pre'){
         'station_id' => $station_id,
         'station' => array('from_station_id'=>1,'to_station_id'=>1),
         'order_id' => $_POST['order_id'],
-        'timestamp' => time()
+        'warehouse_id' => $_POST['warehouse_id'],
+        'go_warehouse_id' => $_POST['go_warehouse_id'],
+        'timestamp' => time(),
+        'warehouse_repack'=>$_COOKIE['warehouse_repack'],
+        'user_repack'=>$_COOKIE['user_repack'],
+        'frame_vg_list'=>$_COOKIE['frame_vg_list'],
         
     );
     $planned = init($method, 0, json_encode($data), $station_id);
@@ -659,7 +1022,8 @@ if($method == 'addOrderProductToInv'){
         'boxCount' => isset($_POST['boxCount']) ? $_POST['boxCount'] : 0,
         'timestamp' => time(),
         'add_user_name' => $_COOKIE['inventory_user'],
-        'date' => date("Y-m-d", time())
+        'date' => date("Y-m-d", time()),
+        'warehouse_id'=>$_COOKIE['warehouse_id'],
         
         
     );
@@ -686,8 +1050,13 @@ if($method == 'addFastMoveSortingToInv'){
         'frame_vg_list' => isset($_POST['frame_vg_list']) ? $_POST['frame_vg_list'] : 0,
         'timestamp' => time(),
         'add_user_name' => $_COOKIE['inventory_user'],
+        'add_user_name_id' => $_COOKIE['inventory_user_id'],
         'date' => date("Y-m-d", time()),
         'warehouse_id' =>$_POST['warehouse_id'],
+        'warehouse_repack'=>$_POST['warehouse_repack'],
+        'user_repack'=>$_POST['user_repack'],
+        'user_group'=>$_COOKIE['user_group_id'],
+
 
     );
     $planned = init($method, 0, json_encode($data), $station_id);
@@ -714,13 +1083,41 @@ if($method == 'addPurchaseOrderProductToInv'){
         'add_user_name' => $_COOKIE['inventory_user'],
         'date' => date("Y-m-d", time()),
         'warehouse_id'=>$_POST['warehouse_id'],
+        'user_id'=>$_COOKIE['inventory_user_id'],
         
     );
     $planned = init($method, 0, json_encode($data), $station_id);
 
     exit(json_encode($planned));
 }
+if($method == 'updateStockSectionProduct'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+    if(date("H:i",time()) > "21:30" && date("H:i",time()) < "21:40" ){
+        $invInfo = array('msg'=>"晚上21：30 -- 21：40 不能入库",'status'=>3);
+        exit(json_encode($invInfo));
+    }
 
+    $data = array(
+        'station_id' => $station_id,
+        'station' => array('from'=>1,'to'=>1),
+        'order_id' => $_POST['order_id'],
+        'timestamp' => time(),
+        'add_user_name' => $_COOKIE['inventory_user_id'],
+        'date' => date("Y-m-d", time()),
+        'warehouse_id'=>$_POST['warehouse_id'],
+        'areanames'=>$_POST['areanames'],
+        'product_ids'=>$_POST['product_ids'],
+        'transfer_area'=>$_POST['transfer_area'],
+        'update_qunity'=>$_POST['update_qunity'],
+        'update_section'=>$_POST['update_section'],
+    );
+    $planned = init($method, 0, json_encode($data), $station_id);
+    exit(json_encode($planned));
+}
 
 if($method == 'delOrderProductToInv'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
@@ -736,6 +1133,7 @@ if($method == 'delOrderProductToInv'){
         'order_id' => $_POST['order_id'],
         'timestamp' => time(),
         'add_user_name' => $_COOKIE['inventory_user'],
+        'inventory_user_id' => $_COOKIE['inventory_user_id'],
         'date' => date("Y-m-d", time())
         
         
@@ -744,7 +1142,30 @@ if($method == 'delOrderProductToInv'){
 
     exit(json_encode($planned));
 }
-
+//if($method == 'warningInformation'){
+//    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+//    if(empty($_COOKIE['inventory_user'])){
+//        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+//        exit(json_encode($invInfo));
+//    }
+//
+//
+//    $data = array(
+//        'station_id' => $station_id,
+//        'station' => array('from'=>1,'to'=>1),
+//        'start_time' => $_POST['start_time'],
+//        'end_time' => $_POST['end_time'],
+//        'timestamp' => time(),
+//        'add_user_name' => $_COOKIE['inventory_user'],
+//        'inventory_user_id' => $_COOKIE['inventory_user_id'],
+//        'date' => date("Y-m-d", time())
+//
+//
+//    );
+//    $planned = init($method, 0, json_encode($data), $station_id);
+//
+//    exit(json_encode($planned));
+//}
 
 
 if($method == 'delPurchaseOrderProductToInv'){
@@ -764,6 +1185,33 @@ if($method == 'delPurchaseOrderProductToInv'){
         'date' => date("Y-m-d", time())
         
         
+    );
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+//删除调拨单中间表数据
+if($method == 'delPurchaseOrderRelevantToInv'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+     if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+
+    $data = array(
+        'station_id' => $station_id,
+        'station' => array('from'=>1,'to'=>1),
+        'relevant_id' => $_POST['relevant_id'],
+        'warehouse_id' => $_POST['warehouse_id'],
+        'date_added' => $_POST['date_added'],
+        'product_id' => $_POST['product_id'],
+        'container_id' => $_POST['container_id'],
+        'timestamp' => time(),
+        'add_user_name' => $_COOKIE['inventory_user'],
+        'date' => date("Y-m-d", time())
+
+
     );
     $planned = init($method, 0, json_encode($data), $station_id);
 
@@ -917,6 +1365,7 @@ if($method == 'addOrderNum'){
         'frame_count' => $_POST['frame_count'],
         'incubator_count' => $_POST['incubator_count'],
         'inv_comment' => $_POST['inv_comment'],
+        'inv_spare_comment' => $_POST['inv_spare_comment'],
         'foam_count' => $_POST['foam_count'],
         'frame_mi_count' => $_POST['frame_mi_count'],
         'incubator_mi_count' => $_POST['incubator_mi_count'],
@@ -929,6 +1378,9 @@ if($method == 'addOrderNum'){
         'frame_meat_list' => $_POST['frame_meat_list'],
         'frame_mi_list' => $_POST['frame_mi_list'],
         'frame_ice_list' => $_POST['frame_ice_list'],
+        'warehouse_id' => $_COOKIE['warehouse_id'] ,
+        'frame_vg_product'=>$_POST['frame_vg_product'],
+        'add_user_id' => $_COOKIE['inventory_user_id'],
         
     );
     
@@ -1097,7 +1549,9 @@ if($method == 'addCheckFrameIn'){
         
         'timestamp' => time(),
         'add_user_name' => $_COOKIE['inventory_user_id'],
-        'frame_list' => $_POST['frame_list']
+        'frame_list' => $_POST['frame_list'],
+        'warehouse_id' => $_POST['warehouse_id'],
+
         
     );
     $planned = init($method, 0, json_encode($data), $station_id);
@@ -1155,6 +1609,104 @@ if($method == 'addReturnDeliverProduct'){
     
     exit(json_encode($planned));
 }
+//盘点
+if($method == 'submitStockChecksProduct'){
+
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+    $dataInv = array();
+
+    //删除尾部逗号
+
+    if(substr($products, strlen($products)-1,1) == ','){
+        $products = substr($products, 0,-1);
+    }
+
+    //原始数据格式[ID]:[qty]:[boxqty],...
+    //Exp.: "8921:3:18,7145:1:1,8763:1:1"
+    $productsBarcodeWithQtyRaw = explode(',',$products);
+
+    $productsWithQty = array();
+    foreach($productsBarcodeWithQtyRaw as $m){
+        $n = explode(':',$m);
+        $productsBarcodeWithQty[$n[0]] = array(
+            'product_id' => $n[0],
+            'quantity' => $n[1],
+            'box_quantity' => $n[2]
+        );
+    }
+
+    $dataInv['products'] = $productsBarcodeWithQty;
+    $dataInv['timestamp'] = time();
+    $dataInv['add_user_name'] = $_COOKIE['inventory_user_id'];
+    $dataInv['warehouse_id'] = $_POST['warehouse_id'];
+    $dataInv['changeStockCheckProduct'] = $_POST['changeStockCheckProduct'];
+    $dataInv['pallet_number'] = $_POST['pallet_number'];
+    $dataInv['warehouse_section_id'] = $_POST['warehouse_section_id'];
+    $dataInv['inventory_user_id'] = $_POST['inventory_user_id'];
+    $dataInv['add'] = $_POST['add'];
+
+    $planned = init($method, 0, json_encode($dataInv), $station_id);
+
+    exit(json_encode($planned));
+}
+
+
+if($method == 'addReturnDeliverBadProduct'){
+
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+    $dataInv = array();
+
+    //删除尾部逗号
+
+    if(substr($products, strlen($products)-1,1) == ','){
+        $products = substr($products, 0,-1);
+    }
+
+    //原始数据格式[ID]:[qty]:[boxqty],...
+    //Exp.: "8921:3:18,7145:1:1,8763:1:1"
+    $productsBarcodeWithQtyRaw = explode(',',$products);
+
+    $productsWithQty = array();
+    foreach($productsBarcodeWithQtyRaw as $m){
+        $n = explode(':',$m);
+        $productsBarcodeWithQty[$n[0]] = array(
+            'product_id' => $n[0],
+            'quantity' => $n[1],
+            'box_quantity' => $n[2]
+        );
+    }
+
+    $dataInv['products'] = $productsBarcodeWithQty;
+    $dataInv['timestamp'] = time();
+    $dataInv['order_id'] = $_POST['order_id'];
+    $dataInv['return_reason'] = $_POST['return_reason'];
+    $dataInv['add_user_name'] = $_COOKIE['inventory_user_id'];
+    $dataInv['warehouse_id'] = $_POST['warehouse_id'];
+
+    //判断isBack是否设置，重要参数
+    if(isset($_POST['isBack'])){
+        $dataInv['isBack'] = (int)$_POST['isBack'];
+    }
+    else{
+        $invInfo = array('msg'=>"关键参数未设置，请刷新页面",'status'=>998);
+        exit(json_encode($invInfo));
+    }
+    $dataInv['isRepackMissing'] = isset($_POST['isRepackMissing']) ? $_POST['isRepackMissing']: 0;
+
+    $planned = init($method, 0, json_encode($dataInv), $station_id);
+
+    exit(json_encode($planned));
+}
+
+
 
 
 
@@ -1171,10 +1723,32 @@ if($method == 'checkFrameCanIn'){
         
         'timestamp' => time(),
         'add_user_name' => $_COOKIE['inventory_user_id'],
-        'frame_list' => $_POST['frame_list']
+        'frame_list' => $_POST['frame_list'],
+        'warehouse_id' => $_POST['warehouse_id']
         
     );
     
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+if($method == 'checkFrameCanInput'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+     if(empty($_COOKIE['inventory_user_id'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+
+    $data = array(
+
+        'timestamp' => time(),
+        'add_user_name' => $_COOKIE['inventory_user_id'],
+        'frame_list' => $_POST['frame_list'],
+        'warehouse_id' => $_POST['warehouse_id']
+
+    );
+
     $planned = init($method, 0, json_encode($data), $station_id);
 
     exit(json_encode($planned));
@@ -1193,13 +1767,34 @@ if($method == 'getSkuProductInfo'){
     
     $data = array(
         'sku' => $_POST['sku'],
-        'warehouse_id' => $_POST['warehouse_id'],
+        'warehouse_id'=> $_POST['warehouse_id']
     );
     
     $planned = init($method, 0, json_encode($data), $station_id);
 
     exit(json_encode($planned));
 }
+
+//仓库盘点
+if($method == 'getStockChecksProductInfo'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+
+    if(empty($_COOKIE['inventory_user'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+    $data = array(
+        'sku' => $_POST['sku'],
+        'warehouse_id'=> $_POST['warehouse_id']
+    );
+
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+
+
 
 if($method == 'changeProductSection'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
@@ -1213,7 +1808,9 @@ if($method == 'changeProductSection'){
         'productId' => $_POST['productId'],
         'productSection' => isset($_POST['productSection'])?$_POST['productSection']:'',
         'productBarCode' => isset($_POST['productBarCode'])?$_POST['productBarCode']:'',
-        'inventory_user' => $_COOKIE['inventory_user']
+        'inventory_user' => $_COOKIE['inventory_user'],
+        'warehouse_id' =>  $_POST['warehouse_id'],
+
     );
 
     $return = init($method, 0, json_encode($data), $station_id);
@@ -1231,6 +1828,7 @@ if($method == 'getProductSectionInfo'){
 
     $data = array(
         'productSection' => isset($_POST['productSection'])?$_POST['productSection']:'',
+        'warehouse_id' => $_POST['warehouse_id'],
     );
 
     $return = init($method, 0, json_encode($data), $station_id);
@@ -1245,10 +1843,16 @@ if($method == 'getSkuProductInfoInv'){
         $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
         exit(json_encode($invInfo));
     }
-    
+
+    $warehouse_id = $_POST['warehouse_id'] ? $_POST['warehouse_id'] : false;
+    if(!$warehouse_id){
+        exit(json_decode(array('status'=>0, 'msg'=>'Warehouse ID is missing.')));
+    }
+
     $data = array(
         'sku' => $_POST['sku'],
-        'product_id' => isset($_POST['product_id']) ? $_POST['product_id'] : 0
+        'product_id' => isset($_POST['product_id']) ? $_POST['product_id'] : 0,
+        'warehouse_id' => $warehouse_id
     );
     
     $planned = init($method, 0, json_encode($data), $station_id);
@@ -1623,7 +2227,6 @@ if($method == 'inventoryVegCheckProduct'){
 
 if($method == 'inventory_login'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
-
     $username = $_POST['username'];
     $password = $_POST['password'];
     $warehouse_id = $_POST['warehouse_id'];
@@ -1638,10 +2241,16 @@ if($method == 'inventory_login'){
     if($return['status'] == 1){
         exit(json_encode($return));
     }else{
-        setcookie("inventory_user",$return['user']['username'],time()+2*3600+8*3600);
-        setcookie("inventory_user_id",$return['user']['user_id'],time()+2*3600+8*3600);
-        setcookie("warehouse_id",$return['user']['warehouse_id'],time()+2*3600+8*3600);
-        setcookie("warehouse_title",$return['user']['title'],time()+2*3600+8*3600);
+        $cookie_time = time()+2*3600+8*3600;
+        setcookie("inventory_user",$return['user']['username'],$cookie_time);
+        setcookie("inventory_user_id",$return['user']['user_id'],$cookie_time);
+        setcookie("warehouse_id",$return['user']['warehouse_id'],$cookie_time);
+        setcookie("warehouse_title",$return['user']['title'],$cookie_time);
+        setcookie("user_group_id" , $return['user']['user_group_id'],$cookie_time);
+        setcookie("warehouse_repack" , $return['user']['warehouse_repack'],$cookie_time);
+        setcookie("user_repack" , $return['user']['user_repack'],$cookie_time);
+        setcookie("to_warehouse_id" , $return['user']['to_warehouse_id'],$cookie_time);
+        setcookie("warehouse_is_dc" , $return['user']['is_dc'],$cookie_time);
         exit(json_encode($return));
     }
 
@@ -1674,6 +2283,50 @@ if($method == 'getAddedReturnDeliverProduct'){
         'isBack' => isset($_POST['isBack'])?(int)$_POST['isBack']:0,
         'isRepackMissing' => isset($_POST['isRepackMissing']) ? (int)$_POST['isRepackMissing']: 0,
         'warehouse_id' => $_POST['warehouse_id'],
+        'product_id' => $_POST['product_id'],
+        'isReturnShelves'=>$_POST['isReturnShelves'],
+        'user_group_id'=>$_POST['user_group_id'],
+    );
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+
+//盘点
+if($method == 'getAddedStcokChecksProduct'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user_id'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+    $data = array(
+        'date' => isset($_POST['searchDate'])? date('Y-m-d', strtotime($_POST['searchDate'])) :date("Y-m-d", time()),
+        'add_user_name' => $_COOKIE['inventory_user_id'],
+        'warehouse_id' => $_POST['warehouse_id'],
+//        'product_id' => $_POST['product_id'],
+        'pallet_number' => $_POST['pallet_number'],
+    );
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+
+if($method == 'getAddedBadReturnDeliverProduct'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user_id'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+    $data = array(
+        'date' => isset($_POST['searchDate'])? date('Y-m-d', strtotime($_POST['searchDate'])) :date("Y-m-d", time()),
+        'add_user_name' => $_COOKIE['inventory_user_id'],
+        'isBack' => isset($_POST['isBack'])?(int)$_POST['isBack']:0,
+        'isRepackMissing' => isset($_POST['isRepackMissing']) ? (int)$_POST['isRepackMissing']: 0,
+        'warehouse_id' => $_POST['warehouse_id'],
+        'product_id' => $_POST['product_id'],
+
     );
     $planned = init($method, 0, json_encode($data), $station_id);
 
@@ -1683,6 +2336,24 @@ if($method == 'getAddedReturnDeliverProduct'){
 if($method == 'disableReturnDeliverProduct'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
    if(empty($_COOKIE['inventory_user_id'])){
+        $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
+        exit(json_encode($invInfo));
+    }
+
+    $data = array(
+        'date' => date("Y-m-d", time()),
+        'add_user_id' => $_COOKIE['inventory_user_id'],
+        'return_deliver_product_id' => isset($_POST['return_deliver_product_id'])?(int)$_POST['return_deliver_product_id']:0
+    );
+    $data = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($data));
+}
+
+//报损当面
+if($method == 'disableReturnBadDeliverProduct'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+    if(empty($_COOKIE['inventory_user_id'])){
         $invInfo = array('msg'=>"未登录，请登录后操作",'status'=>999);
         exit(json_encode($invInfo));
     }
@@ -1721,7 +2392,8 @@ if($method == 'getInventoryOut'){
    
     
     $data = array(
-        'date' => date("Y-m-d", time())
+        'date' => date("Y-m-d", time()),
+        'warehouse_id' => $_POST['warehouse_id'] ? $_POST['warehouse_id'] : 0
     );
     $planned = init($method, 0, json_encode($data), $station_id);
 
@@ -1769,18 +2441,46 @@ if($method == 'getInventoryCheck'){
 
 if($method == 'getInventoryCheckSingle'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
-   
-    
+
+    $warehouse_id = $_POST['warehouse_id'] ? $_POST['warehouse_id'] : false;
+
+    if(!$warehouse_id){
+        exit(json_decode(array('status'=>0, 'msg'=>'Warehouse ID is missing.')));
+    }
+
     $data = array(
-        'date' => $_POST['getdate'] ? $_POST['getdate'] : date("Y-m-d", time())
+        'date' => $_POST['getdate'] ? $_POST['getdate'] : date("Y-m-d", time()),
+        'warehouse_id' => $warehouse_id
     );
-    
-    
     
     $planned = init($method, 0, json_encode($data), $station_id);
 
     exit(json_encode($planned));
 }
+//根据日期查询盘盈盘亏结果
+if($method == 'getinventoryCheckSingleDate'){
+    //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
+
+    $warehouse_id = $_POST['warehouse_id'] ? $_POST['warehouse_id'] : false;
+
+    if(!$warehouse_id){
+        exit(json_decode(array('status'=>0, 'msg'=>'Warehouse ID is missing.')));
+    }
+
+    $data = array(
+        'date' => $_POST['getdate'] ? $_POST['getdate'] : date("Y-m-d", time()),
+        'warehouse_id' => $warehouse_id
+    );
+
+    $planned = init($method, 0, json_encode($data), $station_id);
+
+    exit(json_encode($planned));
+}
+
+
+
+
+
 if($method == 'getInventoryVegCheck'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
    
@@ -1818,10 +2518,15 @@ if($method == 'getOrderStatus'){
 
 if($method == 'getPurchaseOrderStatus'){
     //Expect Data: $data= '{"date":"2015-06-26", "date_gap":"0"}';
-   
-    
-    $data = array(
 
+    $warehouse_id = $_POST['data']['warehouse_id'] ? $_POST['data']['warehouse_id'] : false;
+    $stock_section_type_id = $_POST['data']['stock_section_type_id'] ? $_POST['data']['stock_section_type_id'] : false;
+    if(!$warehouse_id){
+        exit(json_decode(array('status'=>0, 'msg'=>'Warehouse ID is missing.')));
+    }
+    $data = array(
+        'warehouse_id' => $warehouse_id,
+        'stock_section_type_id' => $stock_section_type_id,
     );
     $planned = init($method, 0, json_encode($data), $station_id);
     //$planned = array();

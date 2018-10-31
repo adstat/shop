@@ -1,18 +1,25 @@
 <?php
+//exit('服务器更新中，请稍候...');
+
+
 
 if( !isset($_GET['auth']) || $_GET['auth'] !== 'xsj2015inv'){
     exit('Not authorized!');
 }
 include_once 'config_scan.php';
 
-$inventory_user_admin = array('alex','leibanban','wuguobiao');
+$inventory_user_admin = array('1');
 if(empty($_COOKIE['inventory_user'])){
     //重定向浏览器 
     header("Location: inventory_login.php?return=i.php"); 
     //确保重定向后，后续代码不会被执行 
     exit;
 }
+//$product_return_limit=[2,3,772,596,869,918,976,1264,1003,1368,1315,872,1450,1448,1490,1455,1624,1473,1456,1991,1791,1794];//商品报损
+$product_return_limit=[2,3,918,875,976,1003,1368,872,1450,1448,1490,1794,1991,1559,1453,2236];//商品报损
 
+//$product_add_limit=[2,711,527,777,919,976,874,873,1450,1455,1368,1315,872,1448,1384,1456,1624,1592,1490,725,1600,1794,1991,2156,1559];//盘盈盘亏
+$product_add_limit=[2,872,1368,1384,1455,1624,4,1455,1781,2199,2231,2232,2233,2234];//盘盈盘亏, 20180917回收盘点权限
 ?>
 <html>
 <head>
@@ -161,6 +168,20 @@ if(empty($_COOKIE['inventory_user'])){
             box-shadow: 0.1em rgba(0, 0, 0, 0.2);
             float: right;
         }
+        .btn{
+            background-color: #DF0000;
+            padding: 0.3em 0.8em;
+            margin:0.1em 0.1em;
+            font-size: 1em;
+            text-decoration: none;
+            border: 0.1em solid #CC0101;
+            border-radius: 0.2em;
+            color: #ffffff;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+            /*float: right;*/
+        }
 
         #inventory{
             width: 100%;
@@ -187,11 +208,15 @@ if(empty($_COOKIE['inventory_user'])){
         }
 
         .qty{
-            width:2em;
+            width:8em;
             height:1.2em;
             font-size: 1.5em;
             text-align: center;
             background: none;
+        }
+
+        .invchk_qty{
+            width:2.1rem;
         }
 
         #inv_control{
@@ -292,6 +317,25 @@ if(empty($_COOKIE['inventory_user'])){
             box-shadow: 0.1em rgba(0, 0, 0, 0.2);
         }
 
+        #productsHold3 td{
+            background-color:#d0e9c6;
+            color: #000;
+            height: 2.5em;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        #productsHold3 th{
+            padding: 0.3em;
+            background-color:#8fbb6c;
+            color: #000;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+
         .submit_s{
             padding: 0.2em 0.2em;
             margin:0.1em 0.1em;
@@ -303,6 +347,19 @@ if(empty($_COOKIE['inventory_user'])){
             text-align: center;
             box-shadow: 0.1em rgba(0, 0, 0, 0.2);
         }
+
+
+        .input_default{
+            height: 1.8rem;
+            font-size:1rem;
+            margin: 0.1rem 0;
+
+            background-color: #e3e3e3;
+            border-radius: 0.2rem;
+            box-shadow: 0.1rem rgba(0, 0, 0, 0.2);
+            padding-left: 0.2rem;
+        }
+
 
 
         #invMovesHold th{
@@ -429,14 +486,21 @@ if(empty($_COOKIE['inventory_user'])){
             $('#product').focus();
         });
         <?php } ?>
+
+        var global = {};
+        global.warehouse_id = '<?php echo $_COOKIE['warehouse_id'];?>';
+
     </script>
 </head>
 <body>
     <button class="invopt" id="return_index" style="display:none;width:4em;" onclick="javascript:location.reload();">返回</button>
     <div align="right"><?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <span onclick="javascript:logout_inventory_user();">退出</span></div>
+    <div  style="display: none" id="inventory_user_id"> <?php echo $_COOKIE['inventory_user_id'];?> </div>
     <div  style="display: none" id="warehouse_id"> <?php echo $_COOKIE['warehouse_id'];?> </div>
     <div align="center" style="display:block; margin:0.5em auto" id="logo"><img src="view/image/logo.png" style="width:6em"/></div>
-
+    <div id="showButton" hidden align="center"  style="text-align:center">
+        <input class="btn" id="" onclick="showInformation()" style="" type="button" value="开始盘点">
+    </div>
     <div id="login" align="center" style="margin:0.5em auto; display: none">
         <input name="pwd" id="pwd" rows="1" maxlength="18" style="font-size: 1.5em; background-color: #b9def0" />
         <input class="submit_s style_green" type="button" value ="登陆" onclick="javascript:login();">
@@ -444,234 +508,315 @@ if(empty($_COOKIE['inventory_user'])){
 
     <div id="content" style="display: block">
         <div align="center" style="margin:0.5em auto;">
-          
+
         </div>
         <div align="center" style="margin:0.5em auto;">
-            
+
         </div>
         <div id="message" class="message style_ok" style="display: none;"><!-- Insert Inventory Control Message Here--></div>
         <div id="inv_control" align="center">
             <div id="invMethods">
-               <?php if(!strstr($_COOKIE['inventory_user'],'scfj') ){ ?>
-               <button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:location='w_i.php?auth=xsj2015inv'">采购入库</button>
-                <!--<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:alert('请到采购单入库页面操作入库');">采购入库</button>-->
-               <button id="inventoryOut" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryOut');">商品报损</button>
+               <button id="inventoryIn" class="invopt" style="display: none" onclick="javascript:location='w_i.php?auth=xsj2015inv'">采购入库</button>
+                <button id="inventoryInSorting" class="invopt" style="display: none" onclick="javascript:location='w_dis.php?auth=xsj2015inv'">订单分配页面</button>
 
-               <?php if(in_array($_COOKIE['inventory_user'],array("alex","wuguobiao","liuhe"))){ ?>
-                   <button id="inventoryCheck" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryCheck');">库存盘点</button>
-                   <button id="inventoryChange" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryChange');">转促销品</button>
-               <?php } ?>
-
-               <!--<button id="inventoryAdjust" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryAdjust');">库存调整</button>-->
-               <button id="inventoryCheckSingle" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryCheckSingle');">盘盈盘亏</button>
-               <button id="productSection" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('productSection');">货位条码</button>
-               <button id="inventoryReturn" class="invopt" style="display: inline" onclick="javascript:location='r.php?auth=xsj2015inv&ver=db'">出库回库</button>
+                <?php if( in_array($_COOKIE['warehouse_id'],[29])){  ?>
+                    <button id="inventoryInFastDistrW2" class="invopt" style="background-color:#31b0d5; display: none" onclick="javascript:location='w2.php?auth=xsj2015inv'">原快消整件-临(W2)</button>
                 <?php } ?>
-               
-               <?php if(strstr($_COOKIE['inventory_user'],'scfj') || in_array($_COOKIE['inventory_user'], $inventory_user_admin) ){ ?>
-               <br><br>
-               <button id="inventoryVegCheck" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryVegCheck');">蔬菜库存盘点</button>
-                 
-                 <?php } ?>
-                <div></div> <button id="locationVerification" class="invopt" style="display: block" onclick="javascript:location='location_verifi.php?auth=xsj2015inv&ver=db'">货位核查</button>
-                <div><button  id="InterWarehouseAllocation" class="invopt"   onclick="allocation_warehouse();">仓库出库</button></div></div>
-               
-               
 
+                <?php if( in_array($_COOKIE['warehouse_id'],[12,23,21])){  ?>
+                    <button id="inventoryInFastDistr" class="invopt" style="display: none" onclick="javascript:location='w4.php?auth=xsj2015inv'">快消分拣页面</button>
+                <?php } else { ?>
+                <button id="inventoryInFastDistr" class="invopt" style="display: none" onclick="javascript:location='w2.php?auth=xsj2015inv'">快消分拣页面</button>
+                <?php } ?>
+                <?php if(!empty($_COOKIE['warehouse_is_dc']) && (in_array($_COOKIE['user_group_id'], $inventory_user_admin) || $_COOKIE['user_group_id']==22)){  ?>
+                    <button id="inventoryBatchSorting" class="invopt" style="" onclick="javascript:location='sortingBatch.php?auth=xsj2015inv&ver=db'">整件波次分拣</button>
+                <?php } ?>
+                <button id="inventoryInFreshDistr" class="invopt" style="display: none" onclick="javascript:location='w.php?auth=xsj2015inv'">生鲜分拣页面</button>
+                <!--<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:alert('请到采购单入库页面操作入库');">采购入库</button>-->
+               <button id="inventoryOut" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('inventoryOut');">商品报损</button>
+                   <button id="inventoryCheck" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('inventoryCheck');">冷冻冷藏盘点</button>
+                <button id="freshBasket" class="invopt" style="display: none" onclick="javascript:location='l.php?auth=xsj2015inv'">生鲜篮筐</button>
+                   <button id="inventoryChange" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('inventoryChange');">转促销品</button>
+               <!--<button id="inventoryAdjust" class="invopt" style="display: inline" onclick="javascript:inventoryMethodHandler('inventoryAdjust');">库存调整</button>-->
+               <button id="inventoryCheckSingle" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('inventoryCheckSingle');">盘盈盘亏</button>
+
+               <button id="productSection" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('productSection');">货位分拣码管理</button>
+
+                <button id="productSku" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('productSku');">零售条码管理</button>
+               <button id="inventoryReturn" class="invopt" style="display: none" onclick="javascript:location='r.php?auth=xsj2015inv&ver=db'">出库回库</button>
+               <br><br>
+               <button id="inventoryVegCheck" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('inventoryVegCheck');">蔬菜库存盘点</button>
+                <button id="locationVerification" class="invopt" style="display: none" onclick="javascript:location='location_verifi.php?auth=xsj2015inv&ver=db'">货位核查</button>
+                <button id="InventoryTransfer" class="invopt" style="display: none" onclick="javascript:location='transfer.php?auth=xsj2015inv&ver=db'">移库操作</button>
+                <button class="invopt"  onclick="javascript:location='warningInfomation.php?auth=xsj2015inv&ver=db'">异常查询</button>
+                <button class="invopt"  onclick="javascript:location='operate_manager_report.php?auth=xsj2015inv&ver=db'">仓库班组日报</button>
+                <button class="invopt"  onclick="javascript:location='retentionOrder.php?auth=xsj2015inv&ver=db'">异常报表查询</button>
+                <div><button  id="InterWarehouseAllocation" class="invopt"  style="display: none"  onclick="allocation_warehouse();">仓内调拨单操作</button></div>
+                <?php if($_COOKIE['warehouse_id'] == 12 || !empty($_COOKIE['warehouse_is_dc'])){  ?>
+                <div><button  id="allot_do" class="invopt"   style="display: block"   onclick="javascript:location='allot_do.php?auth=xsj2015inv&ver=db'" >整件波次单调拨申请</button></div>
+                <?php } ?>
+                <div><button  id="allot_new_warehouse" class="invopt"   style="display: block"   onclick="javascript:location='allocation_new_warehouse.php?auth=xsj2015inv&ver=db'" >仓间调拨单操作</button></div>
+
+                <div><button  id="shortageReminder" class="invopt"   style="display: none"  onclick="shortageReminder();">缺货提醒列表</button></div>
+                <div><button  id="stockChecks" class="invopt"   style="display: none"   onclick="javascript:location='stock_checks.php?auth=xsj2015inv&ver=db'" >分拣/存货区信息录入</button></div>
+<!--                <div><button  id="stockChecksMove" class="invopt"   style="display: none"   onclick="javascript:location='stock_checks_move.php?auth=xsj2015inv&ver=db'" >搬仓出库</button></div>-->
+<!--                <div><button  id="stockChecksIn" class="invopt"   style="display: none"   onclick="javascript:location='stock_checks_in.php?auth=xsj2015inv&ver=db'" >搬仓入库</button></div>-->
+<!--                <div><button  id="stockChecksTransfer" class="invopt"   style="display: none"   onclick="javascript:location='stock_checks_transfer.php?auth=xsj2015inv&ver=db'" >搬仓移库</button></div>-->
+<!--                <div><button  id="stockContainerTransfer" class="invopt"   style="display: inline"   onclick="javascript:location='container_stock_move.php?auth=xsj2015inv&ver=db'" >周转筐出货</button></div>-->
+                <?php if( $_COOKIE['warehouse_repack'] == 1){  ?>
+                <button id="orderDeliverOut" class="invopt" style="display: block" onclick="javascript:location='consolidated_order.php?auth=xsj2015inv&ver=db'">合单确认</button>
+                <?php } ?>
+<!--                --><?php //if( $_COOKIE['warehouse_id'] != 21 && empty($_COOKIE['warehouse_is_dc'])){  ?>
+                    <button id="get_come_deliver_order_to_merge" class="invopt" style="display: block" onclick="javascript:location='get_come_deliver_order_to_merge.php?auth=xsj2015inv&ver=db'">合单</button>
+
+                    <!--                    <button id="orderDeliverOut" class="invopt" style="display: block" onclick="javascript:location='consolidated_no_relevant.php?auth=xsj2015inv&ver=db'">浦东篮筐收货</button>-->
+<!--                --><?php //} ?>
+<!--                --><?php //if( $_COOKIE['warehouse_id'] == 12 ||  $_COOKIE['warehouse_id'] == 14 ){  ?>
+                <button id="containerManage" class="invopt" style="display: block" onclick="javascript:location='containerManage.php?auth=xsj2015inv&ver=db'">周转筐查询</button>
+<!--                    --><?php //} ?>
+                <?php if($_COOKIE['warehouse_id'] == 12 || !empty($_COOKIE['warehouse_is_dc'])){  ?>
+                    <div><button  id="stockChecksTransfer" class="invopt"     onclick="javascript:location='transferOrder.php?auth=xsj2015inv&ver=db'" >扫描调拨</button></div>
+                <?php  }?>
+                <button id="allot_state" onclick="javascript:location='allotState.php?auth=xsj2015inv&ver=db'" class="invopt" type="button">配送状态</button>
+                <div><button  id="inventoryReturnQian" class="invopt"     onclick="javascript:location='inventoryReturn.php?auth=xsj2015inv&ver=db'" >可售库存返回</button></div>
+                <?php if( in_array($_COOKIE['user_group_id'],[1,22,24])){  ?>
+                <div><button  id="makeOrderCheckingLog" class="invopt"     onclick="javascript:location='make_order_checking_log.php?auth=xsj2015inv&ver=db'" >班组长核查任务</button></div>
+                <div><button  id="foreman_check_product_return" class="invopt"     onclick="javascript:location='foreman_check_product_return.php?auth=xsj2015inv&ver=db'" >班组长缺货未分拣处理</button></div>
+                <?php } ?>
+                <!--                --><?php //if($_COOKIE['warehouse_id'] == 22 || $_COOKIE['warehouse_id'] == 17){  ?>
+                    <div><button  id="orderDeliverInfo" class="invopt" onclick="javascript:location='orderDeliverInfo.php?auth=xsj2015inv&ver=db'" >更新货位</button></div>
+<!--                --><?php // }?>
+<!--                <div><button  id="makeOrderCheckingLog" class="invopt"     onclick="javascript:location='allocation_new_warehouse_old_zx.php?auth=xsj2015inv&ver=db'" >新仓内调拨操作</button></div>-->
+                <div><button   class="invopt"     onclick="javascript:location='containers_scan.php?auth=xsj2015inv&ver=db'" >周转筐批量排查</button></div>
             </div>
+
+
+
+        </div>
             <div id="shelfLifeStrict" style="display: none"></div>
             <div id="inventoryCheckMsg"style="display:none; margin:0.3rem; padding:0.3rem; color:#5e5e5e; font-style: italic; background-color: #ffff66; border: 1px dashed #5e5e5e;">库存盘点功能更新，目前鲜生鲜仓使用。</div>
-            <div id="productList" name="productList" method="POST" style="display: none;">
-                <table id="productsHold" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
-                    <tr>
-                        <th style="width:2em">ID</th>
-                        <th align="left" style="width:2em;">ID/名称</th>
-                        <th style="width:2em">价格</th>
-                        <th style="width:5em;" id="check_single_title">今日已提交</th>
-                        <th style="width:3em">数量</th>
-                        <th style="width:5em">操作</th>
-                    </tr>
-                    <tbody id="productsInfo">
-                        <!-- Scanned Product List -->
-                    </tbody>
-                </table>
-
-                <div id="barcodescanner" style="display: none">
-                    <form method="get" onsubmit="handleProductList(); return false;">
-                        <input name="product" id="product" rows="1" maxlength="19" onclick="javascript:clickProductInput();" autocomplete="off" placeholder="点击激活开始扫描" style="ime-mode:disabled;"/>
-                        <input class="addprod style_green" type="submit" value ="添加" style="font-size: 1em; padding: 0.2em">
-                    </form>
-                </div>
-                <script type="text/javascript">
-                    $("input[name='product']").keyup(function(){
-                        var tmptxt=$(this).val();
-                        $(this).val(tmptxt.replace(/\D|^0/g,''));
-
-                        if(tmptxt.length >= 4){
-                            handleProductList();
-                        }
-                        $(this).val("");
-                    }).bind("paste",function(){
-                            var tmptxt=$(this).val();
-                            $(this).val(tmptxt.replace(/\D|^0/g,''));
-                        });
-                    //$("input[name='product']").css("ime-mode", "disabled");
-                </script>
-
-                <div id="singleProductBarcodeScanner" style="display: none">
-                    <table border="1" style="width:100%;" cellpadding=2 cellspacing=3>
+            <div id="showMsg">
+                <div id="productList" name="productList" method="POST" style="display: none;">
+                    <table id="productsHold" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
                         <tr>
-                            <th style="width:3.3rem">ID<input type="text" id="getSkuProductInfoAnchor" style="float: left; width:1px" onfocus="javascript:$(this).blur();" /></th>
-                            <td colspan="2" id="singleProductId"></td>
+                            <th style="width:2rem">ID</th>
+                            <th align="left">ID/名称</th>
+                            <th style="width:2rem">价格</th>
+                            <th id="check_single_title">已提交</th>
+                            <th style="width:2.1rem">数量</th>
+                            <th id="show_add_user" style="width:5rem;display: none;">操作人</th>
+                            <th id="show_add_time" style="width:5rem;display: none;" >操作时间</th>
+                            <th style="width:5rem">操作</th>
                         </tr>
-                        <tr>
-                            <th>箱码</th>
-                            <td colspan="2" id="singleProductSku"></td>
-                        </tr>
-                        <tr>
-                            <th>品名</th>
-                            <td colspan="2" id="singleProductName"></td>
-                        </tr>
-                        <tr>
-                            <th>货位</th>
-                            <td id="singleProductSection"></td>
-                            <td style="width: 2.4rem"><input class="addprod style_green" type="submit" value ="查找" style="font-size: 1em; padding: 0.2em" onclick="javascript:getProductSectionInfo($('#singleProductSection').text());"></td>
-                        </tr>
-                        <tr>
-                            <th>新货位</th>
-                            <td colspan="2"><input type="text" style="font-size: 1rem" placeholder="输入新货位" id="newProductSection" maxlength="15" value="" /></td>
-                        </tr>
-                        <tr>
-                            <th>69码</th>
-                            <td colspan="2" id="singleProductBarCode"></td>
-                        </tr>
-                        <tr>
-                            <th>新69码</th>
-                            <td colspan="2"><input type="text" style="font-size: 1rem" placeholder="输入69码" id="newProductBarCode" maxlength="15" value="" /></td>
-                        </tr>
-                    </table>
-
-                    <form method="post" onsubmit="getSkuProductInfo(); return false;">
-                        <input name="singleProduct" id="singleProduct" rows="1" maxlength="19" autocomplete="off" placeholder="点击扫描或输入" style="ime-mode:disabled;"/>
-                        <input class="addprod style_green" type="submit" value ="确认" style="font-size: 1em; padding: 0.2em">
-                    </form>
-                </div>
-                <div id="productSubmitOptions" style="display: none">
-                    <input class="submit" id="submitProduct" type="button" value="更新货位" onclick="javascript:changeProductSection();">
-                    <input class="submit" id="submitProduct" type="button" value="更新零售条码" onclick="javascript:changeProductBarcode();">
-
-                    <div style="float:none; clear:both;"></div>
-                    <div style=" border-top: 1px solid #333333;margin-top: 15px; width: 100%; display: block"></div>
-                    <table border="1" style="width:100%;" cellpadding="2" cellspacing="3">
-                        <caption style="text-align: left">
-                                货位：<input class="defaultInput" id="productSectionInput" value="" placeholder="输入货位查询" length="12" />
-                                <input class="addprod style_green" type="submit" value ="查找" style="font-size: 1em; padding: 0.2em" onclick="javascript:getProductSectionInfo($('#productSectionInput').val());">
-                        </caption>
-                        <tr>
-                            <th>编号</th>
-                            <th>商品名称</th>
-                            <th>总库存</th>
-                            <th>操作</th>
-                        </tr>
-                        <tbody id="productSectionInfo">
+                        <tbody id="productsInfo">
+                            <!-- Scanned Product List -->
                         </tbody>
                     </table>
-                </div>
-                <script type="text/javascript">
-                    //$("input[name='singleProduct']").keyup(function(){
-                    //    var tmptxt=$(this).val();
-                    //$(this).val(tmptxt.replace(/\D|^0/g,'')); //输入非数字时替换删除
-                    //if(tmptxt.length >= 4){
-                    //    getSkuProductInfo(); //4位以上时查找商品
-                    //}
-                    //$(this).val(""); //不可输入，输入时替换删除
-                    //});
 
+                    <div id="barcodescanner" style="display: none">
+                        <form method="get" onsubmit="handleProductList(); return false;">
+                            <input name="product" id="product" rows="1" maxlength="19" onclick="javascript:clickProductInput();" autocomplete="off" placeholder="点击激活开始扫描" style="ime-mode:disabled;"/>
+                            <input class="addprod style_green" type="submit" value ="添加" style="font-size: 1em; padding: 0.2em">
+                        </form>
+                    </div>
+                    <script type="text/javascript">
+    //                    $("input[name='product']").keyup(function(){
+    //                        var tmptxt=$(this).val();
+    //                        $(this).val(tmptxt.replace(/\D|^0/g,''));
+    //
+    //                        if(tmptxt.length >= 4){
+    //                            handleProductList();
+    //                        }
+    //                        $(this).val("");
+    //                    }).bind("paste",function(){
+    //                            var tmptxt=$(this).val();
+    //                            $(this).val(tmptxt.replace(/\D|^0/g,''));
+    //                        });
+    //                    //$("input[name='product']").css("ime-mode", "disabled");
+                    </script>
 
-                    //                    .bind("paste",function(){
-                    //                        var tmptxt=$(this).val();
-                    //                        $(this).val(tmptxt.replace(/\D|^0/g,''));
-                    //                        alert('3333');
-                    //                    });
-                    //$("input[name='product']").css("ime-mode", "disabled");
-                </script>
-
-
-                
-                <div style="display: none;" id="remark_div">
-                    <table border="1" style="width:100%;" cellpadding="2" cellspacing="3">
-                        <tbody>
+                    <div id="singleProductBarcodeScanner" style="display: none">
+                        <table border="1" style="width:100%;" cellpadding=2 cellspacing=3>
                             <tr>
-                                <th style="width:3.3rem">ID</th>
-                                <td class="singleProductId"></td>
+                                <th style="width:3.3rem">ID<input type="text" id="getSkuProductInfoAnchor" style="float: left; width:1px" onfocus="javascript:$(this).blur();" /></th>
+                                <td colspan="2" id="singleProductId"></td>
                             </tr>
                             <tr>
-                                <th>箱码</th>
-                                <td class="singleProductSku"></td>
+                                <th>分拣码</th>
+                                <td colspan="2" id="singleProductSku"></td>
+                            </tr>
+                            <tr id = "new_sku_barcode">
+                                <th>新拣码</th>
+                                <td colspan="2"><input type="text" style="font-size: 1rem" placeholder="输入新分拣码" id="newProductSkuBarCode" maxlength="20" value="" /></td>
                             </tr>
                             <tr>
                                 <th>品名</th>
-                                <td class="singleProductName"></td>
+                                <td colspan="2" id="singleProductName"></td>
                             </tr>
                             <tr>
                                 <th>货位</th>
-                                <td class="singleProductSection"></td>
+                                <td id="singleProductSection"></td>
+                                <td style="width: 2.4rem"><input class="addprod style_green" type="submit" value ="查找" style="font-size: 1em; padding: 0.2em" onclick="javascript:getProductSectionInfo($('#singleProductSection').text());"></td>
                             </tr>
+                            <tr id = "new_product_section">
+                                <th>新货位</th>
+                                <td colspan="2"><input type="text" style="font-size: 1rem" placeholder="输入新货位" id="newProductSection" maxlength="15" value="" /></td>
+                            </tr>
+                            <tr id="retail_barcode">
+                                <th >69码</th>
+                                <td colspan="2" id="singleProductBarCode"></td>
+                            </tr>
+                            <tr id = "new_retail_barcode">
+                                <th>新69码</th>
+                                <td colspan="2"><input type="text" style="font-size: 1rem" placeholder="输入69码" id="newProductBarCode" maxlength="15" value="" /></td>
+                            </tr>
+                        </table>
+
+                        <form method="post" onsubmit="getSkuProductInfo(); return false;">
+                            <input name="singleProduct" id="singleProduct" rows="1" maxlength="19" autocomplete="off" placeholder="点击扫描或输入" style="ime-mode:disabled;"/>
+                            <input class="addprod style_green" type="submit" value ="确认" style="font-size: 1em; padding: 0.2em">
+                        </form>
+                    </div>
+                    <div id="productSubmitOptions" style="display: none">
+                        <?php if( $_COOKIE['warehouse_id'] != 21 || ($_COOKIE['warehouse_id'] == 21 && in_array($_COOKIE['user_group_id'],[1,24,23]))){  ?>
+                        <input class="submit" id="submitProduct" type="button" value="更新货位" onclick="javascript:changeProductSection();">
+                        <input class="submit" id="submitProductSku" type="button" value="更新分拣码" onclick="javascript:changeProductSku();">
+                        <input class="submit" id="submitProductBarcode" type="button" value="更新零售条码" onclick="javascript:changeProductBarcode();">
+                        <?php } ?>
+                        <div style="float:none; clear:both;"></div>
+                        <div style=" border-top: 1px solid #333333;margin-top: 15px; width: 100%; display: block"></div>
+                        <table border="1" style="width:100%;" cellpadding="2" cellspacing="3">
+                            <caption style="text-align: left">
+                                    货位：<input class="defaultInput" id="productSectionInput" value="" placeholder="输入货位查询" length="12" />
+                                    <input class="addprod style_green" type="submit" value ="查找" style="font-size: 1em; padding: 0.2em" onclick="javascript:getProductSectionInfo($('#productSectionInput').val());">
+                            </caption>
                             <tr>
-                                <th>69码</th>
-                                <td class="singleProductBarCode"></td>
+                                <th>编号</th>
+                                <th>商品名称</th>
+                                <th>总库存</th>
+                                <th>操作</th>
                             </tr>
-                        </tbody>
-                    </table>
-                    <table border="1" style="width:100%; margin-top: 10px;" cellpadding="2" cellspacing="3">
-                        <caption>近期库存变动</caption>
-                        <tbody>
-                            <tr>
-                                <th>日期</th>
-                                <th>变动类型</th>
-                                <th>数量</th>
-                            </tr>
-                            <tbody id="singleProductinventoryInfo">
+                            <tbody id="productSectionInfo">
                             </tbody>
-                        </tbody>
-                    </table>
-                    <br />
-                    调整原因：<select id="remark">
-                        <!--<option value=""></option>
-                        <option value="库存核查盘点与系统一致">库存核查盘点与系统一致</option>
-                        <option value="盘点错误调整">盘点错误调整</option>
-                        <option value="商品规格数据有误调整">商品规格数据有误调整</option>
-                        <option value="入库入错调整">入库入错调整</option>
-                        <option value="发错规格调整">发错规格调整</option>
-                        <option value="发错口味调整">发错口味调整</option>
-                        <option value="赠品库存调整">赠品库存调整</option>
-                        <option value="情况不明">情况不明</option>-->
-                        
-                        <option value=""></option>
-                        <option value="盘盈盘亏">盘盈盘亏</option>
-                        <option value="赠品库存调整">赠品库存调整</option>
-                        <option value="发错口味调整">发错口味调整</option>
-                        <option value="入库入错调整">入库入错调整</option>
-                        
-                    </select><br><br>
-                    补充备注：<textarea id="remark_2" style="border:1px #cccccc solid;width: 20em;height: 10em; "></textarea>
-                </div>
+                        </table>
+                    </div>
+                    <script type="text/javascript">
+                        //$("input[name='singleProduct']").keyup(function(){
+                        //    var tmptxt=$(this).val();
+                        //$(this).val(tmptxt.replace(/\D|^0/g,'')); //输入非数字时替换删除
+                        //if(tmptxt.length >= 4){
+                        //    getSkuProductInfo(); //4位以上时查找商品
+                        //}
+                        //$(this).val(""); //不可输入，输入时替换删除
+                        //});
 
-                <input type="hidden" name="method" id="method" value="" />
-                <div style="float:left">当前时间: <span id="currentTime"><?php echo date('Y-m-d H:i:s', time());?></span></div>
-                <br />
 
-                <div id="inventorySubmitOptions">
-                    <input class="submit" id="submit" type="button" value="提交" onclick="javascript:inventoryProcess();">
-                    <input class="submit style_yellow" type="button" value="获取商品信息" onclick="javascript:getProductName();">
+                        //                    .bind("paste",function(){
+                        //                        var tmptxt=$(this).val();
+                        //                        $(this).val(tmptxt.replace(/\D|^0/g,''));
+                        //                        alert('3333');
+                        //                    });
+                        //$("input[name='product']").css("ime-mode", "disabled");
+                    </script>
+
+
+
+                    <div style="display: none;" id="remark_div">
+                        <table border="1" style="width:100%;" cellpadding="2" cellspacing="3">
+                            <tbody>
+                                <tr>
+                                    <th style="width:3.3rem">ID</th>
+                                    <td class="singleProductId"></td>
+                                </tr>
+                                <tr>
+                                    <th>条码</th>
+                                    <td class="singleProductSku"></td>
+                                </tr>
+                                <tr>
+                                    <th>品名</th>
+                                    <td class="singleProductName"></td>
+                                </tr>
+                                <tr>
+                                    <th>货位</th>
+                                    <td class="singleProductSection"></td>
+                                </tr>
+                                <tr>
+                                    <th>69码</th>
+                                    <td class="singleProductBarCode"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+
+                        <table id="productsHold12" border="1" style="width:100%; display: none " cellpadding=2 cellspacing=3>
+                            <tr style="background:#8fbb6c;">
+                                <th >存货区区域</th>
+                                <th >存货区数量拣量</th>
+                            </tr>
+                            <tbody id="productsInfo12">
+                            <!-- Scanned Product List -->
+                            </tbody>
+                        </table>
+
+                        <table border="1" style="width:100%; margin-top: 10px;" cellpadding="2" cellspacing="3">
+                            <caption>近期库存变动</caption>
+                            <tbody>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>变动类型</th>
+                                    <th>数量</th>
+                                </tr>
+                                <tbody id="singleProductinventoryInfo">
+                                </tbody>
+                            </tbody>
+                        </table>
+                        <br />
+                        调整原因：<select id="remark">
+                            <!--<option value=""></option>
+                            <option value="库存核查盘点与系统一致">库存核查盘点与系统一致</option>
+                            <option value="盘点错误调整">盘点错误调整</option>
+                            <option value="商品规格数据有误调整">商品规格数据有误调整</option>
+                            <option value="入库入错调整">入库入错调整</option>
+                            <option value="发错规格调整">发错规格调整</option>
+                            <option value="发错口味调整">发错口味调整</option>
+                            <option value="赠品库存调整">赠品库存调整</option>
+                            <option value="情况不明">情况不明</option>-->
+
+                            <option value=""></option>
+                            <option value="盘盈盘亏">盘盈盘亏</option>
+                            <option value="赠品库存调整">赠品库存调整</option>
+                            <option value="发错口味调整">发错口味调整</option>
+                            <option value="入库入错调整">入库入错调整</option>
+
+                        </select><br><br>
+                        补充备注：<textarea id="remark_2" style="border:1px #cccccc solid;width: 20em;height: 10em; "></textarea>
+                    </div>
+
+                    <input type="hidden" name="method" id="method" value="" />
+                    <div style="float:left">当前时间: <span id="currentTime"><?php echo date('Y-m-d H:i:s', time());?></span></div>
                     <br />
-                    <?php if(in_array($_COOKIE['inventory_user'], $inventory_user_admin)){?>
-                        <input class="submit" id="submit_inv" type="button" value="提交盘点" onclick="javascript:addCheckProductToInv();">
-                        <input class="submit" id="submit_veg_inv" type="button" value="提交蔬菜盘点" onclick="javascript:addVegCheckProductToInv();">
-                    <?php } ?>
+
+                    <div id="inventorySubmitOptions">
+                        <input class="submit" id="submit" type="button" value="提交" onclick="javascript:inventoryProcess();">
+                        <input class="submit style_yellow" type="button" value="获取商品信息" onclick="javascript:getProductName();">
+
+                        <br />
+                        <?php if(in_array($_COOKIE['user_group_id'], $inventory_user_admin)){?>
+                            <input class="submit" id="submit_inv" type="button" value="提交盘点" onclick="javascript:addCheckProductToInv();">
+                            <input class="submit" id="submit_veg_inv" type="button" value="提交蔬菜盘点" onclick="javascript:addVegCheckProductToInv();">
+                        <?php } ?>
+                    </div>
+                    
+                    <!-- <input class="submit style_gray" type="button" value="取消" onclick="javascript:cancel();"> -->
                 </div>
-                <!-- <input class="submit style_gray" type="button" value="取消" onclick="javascript:cancel();"> -->
             </div>
+            <div>
+                        <br />
+                        <input class="submit" id ="singel_date" style="display: none" type="button" value="查找" onclick="javascript:getinventoryCheckSingleDate();">
+                        <input style="float: right ;display: none" class="input_default"  id="searchDate" type="text" value="<?php echo date('Y-m-d', time());?>">
+
+            </div>
+            
         </div>
         <div style="display: none">
             <div comment="Used for alert but hide">
@@ -681,7 +826,9 @@ if(empty($_COOKIE['inventory_user'])){
             </div>
         </div>
         <div style="float: none; clear: both"><hr style="border: 0.1em #999 dashed"></div>
+        
         <div id='move_list' align="center" style="display:none; margin:0.5em auto;">
+           
             <!-- Insert Move List -->
             <table id="invMovesHold" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
                 <tr>
@@ -731,12 +878,12 @@ if(empty($_COOKIE['inventory_user'])){
             </div>
         </div>
     </div>
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     <div id="productList2" name="productList2" method="POST" style="display: none;">
                 <table id="productsHold2" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
                     <tr>
@@ -745,6 +892,8 @@ if(empty($_COOKIE['inventory_user'])){
                         <th style="width:2em">价格</th>
                         <th style="width:4em;" id="check_single_title">系统库存</th>
                         <th style="width:4em">盘点数量</th>
+                        <th style="width:4em">分拣占用数量</th>
+                        <th style="width:4em">提交时间</th>
                         <th style="width:3em">盘点说明</th>
                         <th style="width:5em">操作</th>
                     </tr>
@@ -753,17 +902,63 @@ if(empty($_COOKIE['inventory_user'])){
                     </tbody>
                 </table>
 
-             
-               
+
+
     </div>
-    
-    
+
+
+    <div id="reminder" name="productList3" method="POST" style="display: none;">
+
+        <div id="div_date_start"  align="center" style="height: 70px;font-size: 15px">时间:<input id="date_start" name="date_start"  autocomplete="off" class="date" type="text" value=""  style="font-size: 15px; width:15.5em ;height: 40px;border:1px solid" data-date-format="YYYY-MM-DD-HH" id="input-date-end" >
+            <input type="button" value="开始查询" style="width: 90px; height: 20px; background: red" onclick="getReminderList();">
+
+        </div>
+
+
+        <script>
+            $(document).ready(function(){
+                // if(!window.localStorage){
+                //     alert("浏览器支持localstorage");
+                //     return false;
+                // }else{
+                //     //主逻辑业务
+                //     alert();
+                // }
+                var today=new Date();
+                var year=today.getFullYear();
+                var month=today.getMonth()+1;
+                var day=today.getDate();
+
+                $('#date_start').val(year+"-"+month+"-"+day );
+                $("#showMsg").hide();
+            });
+        </script>
+        <table id="productsHold3" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
+            <tr>
+                <th style="width:2em">ID</th>
+                <th align="left" style="width:2em;">商品ID/名称</th>
+                <th style="width:2em">货位号</th>
+                <th style="width:5em">操作</th>
+                <th style="width:2em">提交人</th>
+                <th style="width:2em;" id="check_single_title">时间</th>
+                <th>请选择确认原因</th>
+
+            </tr>
+            <tbody id="productsInfo3">
+            <!-- Scanned Product List -->
+            </tbody>
+        </table>
+
+
+
+    </div>
+
 
     <script>
-        
-     
+
+
      var do_user = '<?php echo $_COOKIE['inventory_user'];?>'
-        
+
     //JS Date Format Extend
     Date.prototype.Format = function(fmt)
     { //author: meizz
@@ -786,9 +981,9 @@ if(empty($_COOKIE['inventory_user'])){
 
     $(document).ready(function () {
         startTime();
-        
-        
-        
+
+        getperms();
+
 
         //Get RegMethod
         $.ajax({
@@ -864,13 +1059,78 @@ if(empty($_COOKIE['inventory_user'])){
             defaultVolume: 0.8
         };
         $("#player").player(settings);
+       <?php if(!empty($_GET['param']) && in_array($_GET['param'],['productSection','inventoryCheckSingle'])){ ?>
+            inventoryMethodHandler('<?php echo $_GET['param'];?>');
+        <?php  }?>
     });
 
 
 
 
+     //仓库报损权限
+     function getperms(){
+        var inventory_user_id = parseInt($("#inventory_user_id").text());
+        //var submit_bad_product ='<?php //echo $product_return_limit;?>//';
+        // var submit_bad_products = submit_bad_product.split(',');
+        // var result = false;
+        //  $.each(submit_bad_products, function(index,value){
+        //      if (inventory_user_id == value) {
+        //          result = true;
+        //      }
+        //  });
+        //  if (result) {
+        //     $("#inventoryOut").show();
+        // }
+         <?php if(in_array($_COOKIE['inventory_user_id'],$product_return_limit)){ ?>
+         $("#inventoryOut").show();
+         <?php } ?>
+        var warehouse_id = $("#warehouse_id").text();
+         var articleIdList = new Array();
+         var h3=$("button.invopt");
+         for (var i = 0;i< h3.length; i++) {
+             var articleId = h3.eq(i).attr("id");
+             var articleIdList = articleIdList.concat(articleId);
+         };
+
+         $.ajax({
+             type: 'POST',
+             url: 'invapi.php',
+             data: {
+                 method: 'getperms',
+                data : {
+                    inventory_user_id : inventory_user_id,
+                },
+             },
+             success :function (response){
+                 var jsonData = $.parseJSON(response);
+                 $.each(jsonData, function(index,value){
 
 
+                       if(value.perms){
+                           var perms = value.perms;
+                           var arr_perms = perms.split(",");
+                           $.each(arr_perms, function(index,val_id){
+                               var id = $.trim(val_id);
+                               $("#"+id).show();
+                           });
+                       }
+
+                     if(value.warehouse_id != 10){
+                         $("#inventoryInFreshDistr").hide();
+                         $("#inventoryVegCheck").hide();
+                         $("#inventoryCheck").hide();
+                         $("#freshBasket").hide();
+                         $("#inventoryChange").hide();
+                     }else{
+                        $("#inventoryInFastDistr").hide();
+                     }
+
+                 });
+
+             }
+         });
+
+     }
 
 
 
@@ -914,7 +1174,7 @@ if(empty($_COOKIE['inventory_user'])){
         if(method == 'inventoryCheck'){
             $('#inventoryCheckMsg').show();
         }
-        
+
         var methodId = "#"+method;
         $('#method').val(method);
         $('#label').html($(methodId).text());
@@ -928,6 +1188,7 @@ if(empty($_COOKIE['inventory_user'])){
 
         $("#inventorySubmitOptions").show();
         $("#productSubmitOptions").hide();
+        $("#showButton").show();
 
         $('title').html($(methodId).text() + '-鲜世纪库存管理');
         $('#logo').html('鲜世纪库存管理－'+$(methodId).text());
@@ -960,7 +1221,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                             if(jsonData.status == 999){
                                 alert(jsonData.msg);
-                                location.href = "inventory_login.php?return=w.php";
+                                location.href = "inventory_login.php?return=i.php";
                             }
                             var html = '';
                             $.each(jsonData, function(index,value){
@@ -977,12 +1238,12 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus(\''+ value.product_batch +'\')" >' +
                                     '</td>' +
                                     '</tr>';
-            
+
                             });
-                            
-                            
+
+
                             $('#productsInfo').append(html);
-                            
+
 
                         }
                     },
@@ -999,13 +1260,18 @@ if(empty($_COOKIE['inventory_user'])){
             $("#return_index").show();
             $("#remark_div").hide();
             $("#productList2").hide();
+            $("#show_add_user").show();
+            $("#show_add_time").show();
             $("#check_single_title").html("今日已提交");
             //获取今日已出库
             $.ajax({
                     type : 'POST',
                     url : 'invapi.php',
                     data : {
-                        method : 'getInventoryOut'
+                        method : 'getInventoryOut',
+                        data:{
+                            warehouse_id: <?php echo $_COOKIE['warehouse_id'];?>
+                        }
                     },
                     success : function (response , status , xhr){
                         if(response){
@@ -1015,7 +1281,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                             if(jsonData.status == 999){
                                 alert(jsonData.msg);
-                                location.href = "inventory_login.php?return=w.php";
+                                location.href = "inventory_login.php?return=i.php";
                             }
                             var html = '';
                             $.each(jsonData, function(index,value){
@@ -1024,7 +1290,9 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<td><span name="productBarcode" >' + value.product_batch + '</span><span style="display:none;" inputBarcode="'+value.product_batch+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct'+value.product_batch+'" >'+value.product_id+'</span><br /><span id="info'+ value.product_batch +'">'+value.product_id+'/'+value.NAME+'</span></td>' +
                                     '<td id="price'+value.product_batch+'">'+ value.price +'</td>' +
                                     '<td>'+(-value.sum_quantity)+'</td>' +
-                                    '<td><input class="qty" id="'+ value.product_batch +'" name="'+ value.product_batch +'" value="0"  /></td>' +
+                                    '<td><input class="qty" id="'+ value.product_batch +'" name="'+ value.product_batch +'" value="0"  readonly  /></td>' +
+                                    '<td><input class="qty" id="'+ value.add_user_name +'" name="'+ value.add_user_name +'"  readonly  />'+value.add_user_name+'</td>' +
+                                    '<td><input class="qty" id="'+ value.date_added +'" name="'+ value.date_added +'"   readonly  />'+value.date_added+'</td>' +
                                     '<td>' +
                                     '<input class="qtyopt" type="button" value="+" onclick="javascript:qtyadd(\''+ value.product_batch +'\')" >' +
                                     '<input class="qtyopt" type="button" value="+10" onclick="javascript:qtyaddt(\''+ value.product_batch +'\')" >' +
@@ -1032,12 +1300,12 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus(\''+ value.product_batch +'\')" >' +
                                     '</td>' +
                                     '</tr>';
-            
+
                             });
-                            
-                            
+
+
                             $('#productsInfo').append(html);
-                            
+
 
                         }
                     },
@@ -1070,7 +1338,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                             if(jsonData.status == 999){
                                 alert(jsonData.msg);
-                                location.href = "inventory_login.php?return=w.php";
+                                location.href = "inventory_login.php?return=i.php";
                             }
                             var html = '';
                             $.each(jsonData, function(index,value){
@@ -1087,12 +1355,12 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus(\''+ value.product_batch +'\')" >' +
                                     '</td>' +
                                     '</tr>';
-            
+
                             });
-                            
-                            
+
+
                             $('#productsInfo').append(html);
-                            
+
 
                         }
                     },
@@ -1126,7 +1394,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                             if(jsonData.status == 999){
                                 alert(jsonData.msg);
-                                location.href = "inventory_login.php?return=w.php";
+                                location.href = "inventory_login.php?return=i.php";
                             }
                             var html = '';
                             $.each(jsonData, function(index,value){
@@ -1143,12 +1411,12 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus(\''+ value.product_batch +'\')" >' +
                                     '</td>' +
                                     '</tr>';
-            
+
                             });
-                            
-                            
+
+
                             $('#productsInfo').append(html);
-                            
+
 
                         }
                     },
@@ -1157,7 +1425,7 @@ if(empty($_COOKIE['inventory_user'])){
                     }
                 });
         }
-        
+
         else if(method == 'inventoryCheck'){
             $('#getplanned').show();
             $('#barcodescanner').show();
@@ -1166,7 +1434,7 @@ if(empty($_COOKIE['inventory_user'])){
             $("#return_index").show();
             $("#remark_div").hide();
             $("#productList2").hide();
-            $("#check_single_title").html("今日已提交");
+            $("#check_single_title").html("已提交");
             //获取今日已出库
             $.ajax({
                     type : 'POST',
@@ -1182,7 +1450,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                             if(jsonData.status == 999){
                                 alert(jsonData.msg);
-                                location.href = "inventory_login.php?return=w.php";
+                                location.href = "inventory_login.php?return=i.php";
                             }
                             var html = '';
                             $.each(jsonData, function(index,value){
@@ -1191,7 +1459,7 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<td><span name="productBarcode" >' + value.product_batch + '</span><span style="display:none;" inputBarcode="'+value.product_batch+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct'+value.product_batch+'" >'+value.product_id+'</span><br /><span id="info'+ value.product_batch +'">'+value.product_id+'/'+value.NAME+'</span></td>' +
                                     '<td id="price'+value.product_batch+'">'+ value.price +'</td>' +
                                     '<td>'+value.sum_quantity+'</td>' +
-                                    '<td><input class="qty" id="'+ value.product_batch +'" name="'+ value.product_batch +'" value="0"  /></td>' +
+                                    '<td><input class="qty invchk_qty" id="'+ value.product_batch +'" name="'+ value.product_batch +'" value="0"  /></td>' +
                                     '<td>' +
                                     '<input class="qtyopt" type="button" value="+" onclick="javascript:qtyadd(\''+ value.product_batch +'\')" >' +
                                     '<input class="qtyopt" type="button" value="+10" onclick="javascript:qtyaddt(\''+ value.product_batch +'\')" >' +
@@ -1199,12 +1467,12 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus(\''+ value.product_batch +'\')" >' +
                                     '</td>' +
                                     '</tr>';
-            
+
                             });
-                            
-                            
+
+
                             $('#productsInfo').append(html);
-                            
+
 
                         }
                     },
@@ -1213,8 +1481,10 @@ if(empty($_COOKIE['inventory_user'])){
                     }
                 });
         }
-        
+
         else if(method == 'inventoryCheckSingle'){
+
+            $("#productsHold12").show();
             $('#getplanned').show();
             $('#barcodescanner').show();
             $("#submit_inv").hide();
@@ -1226,14 +1496,16 @@ if(empty($_COOKIE['inventory_user'])){
             $('#productsInfo2').html("");
             $("#remark").val("");
             $("#remark_2").val("");
-            
-             
+            $("#searchDate").show();
+            $("#singel_date").show();
+
             //获取今日已做盘盈盘亏
             $.ajax({
                     type : 'POST',
                     url : 'invapi.php',
                     data : {
                         method : 'getInventoryCheckSingle',
+                        warehouse_id : parseInt(global.warehouse_id),
                         getdate : '<?php echo isset($_GET['date']) ? $_GET['date'] : ''?>'
                     },
                     success : function (response , status , xhr){
@@ -1244,15 +1516,20 @@ if(empty($_COOKIE['inventory_user'])){
 
                             if(jsonData.status == 999){
                                 alert(jsonData.msg);
-                                location.href = "inventory_login.php?return=w.php";
+                                location.href = "inventory_login.php?return=i.php";
                             }
+
+                            if(jsonData.status == 0){
+                                alert(jsonData.msg);
+                            }
+
                             var html = '';
                             $.each(jsonData, function(index,value){
-                                
+
                                 var order_been_over = "";
                                 if(value.move_flag == 1){
                                     order_been_over = "style = 'background-color:#666666;'";
-                                
+
                                 }
                                 html += '<tr  class="barcodeHolder" id="bdst'+ value.inventory_sorting_id +'">' +
                                     '<td>'+value.product_id+'</td>' +
@@ -1260,13 +1537,15 @@ if(empty($_COOKIE['inventory_user'])){
                                     '<td id="price2'+value.product_batch+'">'+ value.price +'</td>' +
                                     '<td>'+value.inv_quantity+'</td>' +
                                     '<td><input class="qty" id=2_"'+ value.product_batch +'" name="'+ value.product_batch +'" value="'+value.quantity+'"  /></td>' +
+                                    '<td><input class="qty" id=oc_"'+ value.product_batch +'" name="'+ value.product_batch +'" value="'+value.occupy_quantity+'"  /></td>' +
+                                    '<td><input class="qty" id=up_"'+ value.product_batch +'" name="'+ value.product_batch +'" value="'+value.uptime+'"  /></td>' +
                                     '<td>'+value.remark+';'+value.remark_2+'</td>' +
                                     '<td '+  order_been_over  +' id="do_single_'+value.inventory_sorting_id+'">' ;
                                  if(value.move_flag == 1){
                                      html += '已提交';
-                                 }   
+                                 }
                                  else{
-                                     <?php if(in_array($_COOKIE['inventory_user'],array("alex","wuguobiao","wangshaokui"))){ ?>
+                                     <?php if(in_array($_COOKIE['user_group_id'],array("1","24","27"))){ ?>
                                     //if(do_user == 'yangyang'){
                                     //    if(value.remark == '赠品库存调整'){
                                     //        html +=   '未处理<input class="submit" type="button" id="sub_single_'+value.inventory_sorting_id+'" value="提交" onclick="javascript:addCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
@@ -1277,22 +1556,27 @@ if(empty($_COOKIE['inventory_user'])){
                                     //    }
                                     //}
                                     //else{
+
+
+
+                                     <?php if(in_array($_COOKIE['inventory_user_id'],$product_add_limit)){ ?>
                                         html +=   '未处理 <input class="submit" type="button" id="sub_single_'+value.inventory_sorting_id+'" value="提交" onclick="javascript:addCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
+                                     <?php } ?>
                                         html +=   '<input class="submit" type="button" id="can_single_'+value.inventory_sorting_id+'" value="删除" onclick="javascript:delCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
                                     //}
-                                    
+
                                      <?php }else{ ?>
                                          html += '未处理';
-                                     <?php } ?>    
-                                 } 
+                                     <?php } ?>
+                                 }
                                 html +=  '</td>' +
                                     '</tr>';
-            
+
                             });
-                            
-                            
+
+
                             $('#productsInfo2').append(html);
-                            
+
 
                         }
                     },
@@ -1314,9 +1598,30 @@ if(empty($_COOKIE['inventory_user'])){
             $("#return_index").show();
             $("#remark_div").hide();
             $("#productList2").hide();
-
+            $("#retail_barcode").hide();
+            $("#new_retail_barcode").hide();
+            $("#submitProductBarcode").hide();
             $("#singleProduct").focus();
         }
+        else if(method == 'productSku'){
+            //仅做商品库位更改无库存变更操作
+            $('#singleProductBarcodeScanner').show();
+            $("#productsHold").hide();
+
+            $("#inventorySubmitOptions").hide();
+            $("#productSubmitOptions").show();
+
+            $("#submit_veg_inv").hide();
+            $("#return_index").show();
+            $("#remark_div").hide();
+            $("#productList2").hide();
+            $("#submitProduct").hide();
+            $("#submitProductSku").hide();
+            $("#new_sku_barcode").hide();
+            $("#new_product_section").hide();
+            $("#singleProduct").focus();
+        }
+
         else if(method == 'inventoryVegCheck'){
             $('#getplanned').show();
             $('#barcodescanner').hide();
@@ -1341,7 +1646,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                         if(jsonData.status == 999){
                             alert(jsonData.msg);
-                            location.href = "inventory_login.php?return=w.php";
+                            location.href = "inventory_login.php?return=i.php";
                         }
                         var html = '';
                         $.each(jsonData, function(index,value){
@@ -1380,6 +1685,9 @@ if(empty($_COOKIE['inventory_user'])){
             $('#station').attr('disabled',"disabled");
         }
         locateInput();
+    }
+    function showInformation() {
+        $("#showMsg").toggle();
     }
 
     function getPlannList(){
@@ -1477,6 +1785,8 @@ if(empty($_COOKIE['inventory_user'])){
         $("#getSkuProductInfoAnchor").focus();
 
         var id = $('#singleProduct').val();
+        var warehouse_id = $("#warehouse_id").text();
+
         if(id !== ''){
             if(id.length >= 4){
                 var method = $('#method').val();
@@ -1485,7 +1795,8 @@ if(empty($_COOKIE['inventory_user'])){
                     url : 'invapi.php',
                     data : {
                         method : 'getSkuProductInfo',
-                        sku : id
+                        sku : id,
+                        warehouse_id : warehouse_id,
                     },
                     success : function (response , status , xhr){
                         if(response){
@@ -1497,18 +1808,22 @@ if(empty($_COOKIE['inventory_user'])){
                                 return false;
                             }
                             else{
-                                $('#singleProductId').html(jsonData.product_id);
-                                $('#singleProductSku').html(jsonData.sku);
+                                var repack_name = '散件';console.log(repack_name);
+                                if (jsonData.repack == 0) {
+                                    repack_name = "整件";
+                                }
+                                $('#singleProductId').html(jsonData.product_id + jsonData.ca_name);
+                                $('#singleProductSku').html(jsonData.sku_barcode);
                                 if(jsonData.status == 0){
-                                    $('#singleProductName').html("<del>"+ jsonData.name + "</del> 已下架");
+                                    $('#singleProductName').html("<del>"+ jsonData.name+repack_name + "</del> 已下架");
                                 }
                                 else{
-                                    $('#singleProductName').html(jsonData.name);
+                                    $('#singleProductName').html(jsonData.name+repack_name);
                                 }
                                 $('#singleProductSection').html(jsonData.inv_class_sort);
                                 $('#newProductSection').val(jsonData.inv_class_sort);
 
-                                $('#singleProductBarCode').html(jsonData.model);
+                                $('#singleProductBarCode').html(jsonData.retail_barcode);
                                 $('#newProductBarCode').val('');
 
                                 //$("#newProductBarCode").focus();
@@ -1542,7 +1857,7 @@ if(empty($_COOKIE['inventory_user'])){
          var productId = parseInt($("#singleProductId").html());
          var sku = $("#singleProductSku").html();
          var productSection = $("#newProductSection").val().trim();
-
+         var warehouse_id = $("#warehouse_id").text();
 
          if(!productId > 0){
              alert('商品不可为空');
@@ -1561,16 +1876,19 @@ if(empty($_COOKIE['inventory_user'])){
              data : {
                  method : 'changeProductSection',
                  productId : productId,
-                 productSection : productSection
+                 productSection : productSection,
+                 warehouse_id :warehouse_id,
              },
              success : function (response , status , xhr){
-                 if(response == "true"){
+                 var response = $.parseJSON(response);
+                 if(response == true){
                      console.log(response);
                      alert("货位号已更新");
 
-                     $('#singleProduct').val(sku);
+                     $('#singleProduct').val(productId);
                      $("#newProductSection").val("");
-                     getSkuProductInfo();
+                     getSkuProductInfo(productId);
+
                  }
                  else{
                      alert("货位号更新出错");
@@ -1581,11 +1899,64 @@ if(empty($_COOKIE['inventory_user'])){
          });
      }
 
+
+     function  changeProductSku(){
+         var productId = parseInt($("#singleProductId").html());
+         var sku = $("#singleProductSku").html();
+         var productBarCode = $("#newProductSkuBarCode").val().trim();
+         var warehouse_id = $("#warehouse_id").text();
+         var inventory_user = '<?php echo $_COOKIE['inventory_user'];?>';
+         if(!productId > 0){
+             alert('商品不可为空');
+             return;
+         }
+
+         if(productBarCode == ""){
+             alert('新的分拣码不可为空');
+             return;
+         }
+
+         $.ajax({
+             type : "POST",
+             url : 'invapi.php',
+             data : {
+                 method : 'changeProductSku',
+                 data:{
+                     productId : productId,
+                     productBarCode : productBarCode,
+                     warehouse_id : warehouse_id,
+                     sku :sku,
+                     inventory_user : inventory_user,
+                 },
+             },
+             success : function (response , status , xhr){
+                 var response = $.parseJSON(response);
+
+
+                 console.log(response);
+                 if(response == true){
+                     console.log(response);
+                     alert("分拣条码已更新");
+
+                     $('#singleProduct').val(productId);
+                     $("#newProductBarCode").val("");
+                     getSkuProductInfo(productId);
+                 }
+                 else{
+                     alert("分拣条码更新出错");
+                 }
+             },
+             complete : function(){
+             }
+         });
+
+     }
+
      function changeProductBarcode(){
          var productId = parseInt($("#singleProductId").html());
          var sku = $("#singleProductSku").html();
          var productBarCode = $("#newProductBarCode").val().trim();
-
+         var warehouse_id = $("#warehouse_id").text();
          if(!productId > 0){
              alert('商品不可为空');
              return;
@@ -1603,16 +1974,19 @@ if(empty($_COOKIE['inventory_user'])){
              data : {
                  method : 'changeProductSection',
                  productId : productId,
-                 productBarCode : productBarCode
+                 productBarCode : productBarCode,
+                 warehouse_id : warehouse_id,
              },
              success : function (response , status , xhr){
-                 if(response == "true"){
+                 var response = $.parseJSON(response);
+
+                 if(response == true){
                      console.log(response);
                      alert("条码已更新");
 
-                     $('#singleProduct').val(sku);
+                     $('#singleProduct').val(productId);
                      $("#newProductBarCode").val("");
-                     getSkuProductInfo();
+                     getSkuProductInfo(productId);
                  }
                  else{
                      alert("条码更新出错");
@@ -1624,6 +1998,7 @@ if(empty($_COOKIE['inventory_user'])){
      }
 
      function getProductSectionInfo(productSection){
+         var warehouse_id = $("#warehouse_id").text();
          if(productSection == ''){
              return '不可为空';
          }
@@ -1635,12 +2010,13 @@ if(empty($_COOKIE['inventory_user'])){
                  url : 'invapi.php',
                  data : {
                      method : 'getProductSectionInfo',
-                     productSection : productSection
+                     productSection : productSection,
+                     warehouse_id : warehouse_id,
                  },
                  success : function (response , status , xhr){
                      $('#productSectionInfo').html('<tr><th colspan="4">-</th></tr>');
                      if(response != 'false'){
-                         console.log(response);
+                         // console.log(response);
                          var jsonData = $.parseJSON(response);
                          var html = '';
                          $.each(jsonData, function(n,v){
@@ -1688,14 +2064,16 @@ if(empty($_COOKIE['inventory_user'])){
             if(id.length == 18){
                 var productId = parseInt(id.substr(0,4));
                 var price = parseInt(id.substr(4,5))/100;
-
-               
             }
-            if(id.length == 13 || id.length == 14  || id.length == 8 || id.length <= 6 || id.length == 18){
+
+
+
+
+            if(id.length == 13 || id.length == 14  || id.length == 8 || id.length >= 4 || id.length == 18){
                 ajax_id = id;
                 var method = $('#method').val();
-                
-                
+
+
 //                if(method == 'inventoryVegCheck' && id<5000){
 //                    alert("不能输入商品ID，必须扫描");
 //                    return false;
@@ -1705,10 +2083,10 @@ if(empty($_COOKIE['inventory_user'])){
 //                    alert("不能输入商品ID，必须扫描");
 //                    return false;
 //                }
-                
+
                 if(id.length == 18){
                     ajax_id = parseInt(id.substr(0,4));
-                    
+
                 }
 
                 var product_id = 0;
@@ -1718,7 +2096,7 @@ if(empty($_COOKIE['inventory_user'])){
                     data : {
                         method : 'getSkuProductInfo',
                         sku : ajax_id,
-                        warehouse_id : warehouse_id,
+                        warehouse_id : warehouse_id
                     },
                     success : function (response , status , xhr){
                         if(response){
@@ -1726,14 +2104,17 @@ if(empty($_COOKIE['inventory_user'])){
                             //var jsonData = eval(response);
                             var jsonData = $.parseJSON(response);
                             product_id = jsonData.product_id;
-
+                            var repack_name = '(散件)';
+                            if (jsonData.repack == 0) {
+                                repack_name = "(整件)";
+                            }
 
                             if(typeof(jsonData.price) == "undefined"){
                                 alert("未找到对应商品，请输入商品ID");
                                 $("#bd"+id).remove();
                             }
 
-                            $("#info"+id).html(jsonData.product_id+'/'+jsonData.name);
+                            $("#info"+id).html(jsonData.product_id+'/'+jsonData.name+repack_name);
                             $("#price"+id).html(jsonData.price);
                             $("#productBarcodeProduct"+id).html(jsonData.product_id);
                             $("#product_id_"+id).html(jsonData.product_id);
@@ -1745,7 +2126,7 @@ if(empty($_COOKIE['inventory_user'])){
                             }
                             $('.singleProductId').html(jsonData.product_id + ' ['+productStatus+']');
                             $('.singleProductSku').html(jsonData.sku);
-                            $('.singleProductName').html(jsonData.name);
+                            $('.singleProductName').html(jsonData.name+repack_name);
                             $('.singleProductSection').html(jsonData.inv_class_sort);
                             $('.singleProductBarCode').html(jsonData.model);
 
@@ -1765,7 +2146,8 @@ if(empty($_COOKIE['inventory_user'])){
                                 data : {
                                     method : 'getSkuProductInfoInv',
                                     sku : ajax_id,
-                                    product_id : product_id
+                                    product_id : product_id,
+                                    warehouse_id : warehouse_id
                                 },
                                 success : function (response , status , xhr){
                                     console.log("Inventory(stock move) Info:");
@@ -1783,11 +2165,11 @@ if(empty($_COOKIE['inventory_user'])){
                                                 return false;
                                             }
                                         }
-                                        
+
                                         $("#inv_"+id).html(jsonData.quantity);
 
                                         //单件商品信息在库位中列出，这里隐藏商品名，已免占用操作行宽度
-                                        $(".productBarcodeAndName").hide();
+                           //             $(".productBarcodeAndName").hide();
 
                                         //列出商品最近情况
                                         var html = '';
@@ -1806,8 +2188,16 @@ if(empty($_COOKIE['inventory_user'])){
                                         html += '<td>'+ jsonData.sortQty +'</td>';
                                         html += '</tr>';
 
-                                        $('#singleProductinventoryInfo').html(html);
+                                        //列出下单取消订单的量
+                                        html += '<tr style="background-color: #ffffaa">';
+                                        html += '<td>取消分拣单号：<br />'+jsonData.order_ids+'</td>';
+                                        html += '<td>已经取消的订单的量</td>';
+                                        html += '<td>'+ jsonData.cancelQuantity +'</td>';
+                                        html += '</tr>';
 
+                                        $('#singleProductinventoryInfo').html(html);
+                                        getStockSectionProduct(product_id);
+                                        getProductAllSingleInfo(product_id);
                                         if(jsonData.status == 999){
                                             alert("未登录，请登录后操作");
                                             window.location = 'inventory_login.php?return=i.php';
@@ -1829,14 +2219,14 @@ if(empty($_COOKIE['inventory_user'])){
                 console.log('Error barcode format');
                 return;
             }
-            
-            
+
+
             var html = '<tr class="barcodeHolder bd_num" id="bd'+ id +'">' +
                     '<td id="product_id_'+id+'"></td>' +
                 '<td><div class="productBarcodeAndName"><span name="productBarcode" >' + id + '</span><span style="display:none;" inputBarcode="'+id+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct'+id+'" ></span><br /><span id="info'+ id +'"></span></div></td>' +
                 '<td id="price'+id+'">'+  +'</td>' +
                 '<td><span id="inv_'+id+'"></span></td>' +
-                '<td style="width:4em;"><input class="qty" id="'+ id +'" name="'+ id +'" value="1"  /></td>' +
+                '<td style="width:2em;"><input style="width: 60px;" class="qty" id="'+ id +'" name="'+ id +'" value="1"   readonly  /></td>' +
                 '<td>' +
                 '<input class="qtyopt" type="button" value="+" onclick="javascript:qtyadd(\''+ id +'\')" >' +
                 '<input class="qtyopt" type="button" value="+10" onclick="javascript:qtyaddt(\''+ id +'\')" >' +
@@ -1898,24 +2288,24 @@ if(empty($_COOKIE['inventory_user'])){
                  window.scan_barcode = id;
                 var productId = parseInt(id.substr(0,4));
                 var price = parseInt(id.substr(4,5))/100;
-                
-               
+
+
             }
-            
+
 //                 if(id.length == 4 && !check_in_array(id,window.no_scan_product_id_arr)){
 //                    alert("不能输入商品ID，必须扫描");
 //                    return false;
 //                }
-                
+
             id = id.substr(0,4);
 
             if(id.length == 13 || id.length == 14  || id.length == 8 || id.length <= 6 || id.length == 18){
                 ajax_id = id;
-                
-                 
+
+
                 if(id.length == 18){
                     ajax_id = parseInt(id.substr(0,4));
-                    
+
                 }
                 $.ajax({
                     type : 'POST',
@@ -1931,17 +2321,20 @@ if(empty($_COOKIE['inventory_user'])){
                             //var jsonData = eval(response);
                             var jsonData = $.parseJSON(response);
 
-
                             if(typeof(jsonData.price) == "undefined"){
                                 alert("未找到对应商品，请输入商品ID");
                                 $("#bd"+id).remove();
                             }
-
-                            $("#info"+id).html(jsonData.product_id+'/'+jsonData.name);
+                            var repack_name = '(散件)';
+                            if (jsonData.repack == 0) {
+                                repack_name = "(整件)";
+                            }
+                            console.log(repack_name);
+                            $("#info"+id).html(jsonData.product_id+'/'+jsonData.name+repack_name);
                             $("#price"+id).html(jsonData.price);
                             $("#productBarcodeProduct"+id).html(jsonData.product_id);
                             $("#product_id_"+id).html(jsonData.product_id);
-                            
+
                             if(jsonData.status == 999){
                                 alert("未登录，请登录后操作");
                                 window.location = 'inventory_login.php?return=i.php';
@@ -1996,7 +2389,7 @@ if(empty($_COOKIE['inventory_user'])){
                 console.log('Error barcode format');
                 return;
             }
-            
+
             var html = '<tr class="barcodeHolder bd_num" id="bd'+ id +'">' +
                     '<td id="product_id_'+id+'"></td>' +
                 '<td><span name="productBarcode" >' + id + '</span><span style="display:none;" inputBarcode="'+id+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct'+id+'" ></span><br /><span id="info'+ id +'"></span></td>' +
@@ -2004,7 +2397,7 @@ if(empty($_COOKIE['inventory_user'])){
                 '<td><span id="inv_'+id+'"></span></td>' +
                 '<td style="width:4em;"><input class="qty" id="'+ id +'" name="'+ id +'" value="1"  /></td>' +
                 '<td>' +
-                
+
                 '</td>' +
                 '</tr>';
             $('#productsInfo').append(html);
@@ -2081,44 +2474,44 @@ if(empty($_COOKIE['inventory_user'])){
         var prodList = '';
         var m = 0;
         var num_err_flag = 0;
-        
+
         $('#productsInfo tr').each(function () {
-            
+
             var productBarcode = $(this).find('span[name=productBarcodeProduct]').html();
             var inputProductBarcode = $(this).find('span[name=productBarcodeProduct]').attr("inputBarcode");
-            
+
             var productBarcodeId = '#'+inputProductBarcode;
-            
+
             var productBarcodeQty = $(productBarcodeId).val();
-            
+
             if((productBarcodeQty < 0 || isNaN(productBarcodeQty)) && $("#method").val() != 'inventoryAdjust' && $("#method").val() != 'inventoryCheckSingle' ){
                 //alert(productBarcode);
                 //alert(productBarcodeQty);
                 //alert(typeof productBarcodeQty);
-                
+
                 num_err_flag = 1;
             }
-            
-            
+
+
             if(m == $("#productsInfo tr").length-1){
-                
+
                 if(parseInt(productBarcodeQty) > 0 || $("#method").val() == 'inventoryAdjust' || $("#method").val() == 'inventoryCheckSingle'){
-                    
+
                     prodList += productBarcode+':'+productBarcodeQty+'';
                 }
-                
+
             }
             else{
                 if(parseInt(productBarcodeQty) > 0 || $("#method").val() == 'inventoryAdjust' || $("#method").val() == 'inventoryCheckSingle'){
                     prodList += productBarcode+':'+productBarcodeQty+',';
                 }
-                
+
             }
 
             m++;
         });
-        
-        
+
+
         if(num_err_flag == 1){
             return 0;
         }
@@ -2131,41 +2524,41 @@ if(empty($_COOKIE['inventory_user'])){
         var prodList = '';
         var m = 0;
         var num_err_flag = 0;
-        
+
         $('#productsInfo tr').each(function () {
-            
+
             var productBarcode = $(this).find('span[name=productBarcodeProduct]').html();
             var inputProductBarcode = $(this).find('span[name=productBarcodeProduct]').attr("inputBarcode");
-            
+
             var productBarcodeId = '#inv_'+inputProductBarcode;
-            
+
             var productBarcodeQty = $(productBarcodeId).html();
-            
+
             if(isNaN(productBarcodeQty)){
                 //alert(productBarcode);
                 //alert(productBarcodeQty);
                 //alert(typeof productBarcodeQty);
-                
+
                 num_err_flag = 1;
             }
-            
-            
+
+
             if(m == $("#productsInfo tr").length-1){
-                
+
                     prodList += productBarcode+':'+productBarcodeQty+'';
-                
-                
+
+
             }
             else{
-                
+
                     prodList += productBarcode+':'+productBarcodeQty+',';
-                
-                
+
+
             }
 
             m++;
         });
-        
+
         if(num_err_flag == 1){
             return 0;
         }
@@ -2232,11 +2625,11 @@ if(empty($_COOKIE['inventory_user'])){
 
         //Avoid exist barcode
         if(id.length == 18){
-            
-            
+
+
             product_id = id.substr(0,4);
             var barCodeId = "#bd"+product_id;
-            
+
             if($(barCodeId).length > 0){
                 $('#product').val('');
 
@@ -2289,10 +2682,10 @@ if(empty($_COOKIE['inventory_user'])){
     function qtyadd2(id){
         id = id.toString();
         var productId = parseInt(id.substr(0,4));
-        
+
         var prodId = "#"+productId;
-        
-        
+
+
         if(window.product_inv_barcode_arr[productId]){
                     var inv_product_barcode_flag = false;
                      $.each(window.product_inv_barcode_arr[productId], function(index,value){
@@ -2306,14 +2699,14 @@ if(empty($_COOKIE['inventory_user'])){
                          return false;
                      }
                 }
-        
+
         if(window.product_barcode_arr[productId]&&window.product_barcode_arr[productId][id]){
                 alert("此商品已经扫描分拣了，不能重复扫描分拣同一件商品");
                 return false;
             }
-        
-        
-        
+
+
+
         /*
         if(window.product_barcode_arr[productId]){
             alert(23);
@@ -2361,18 +2754,18 @@ if(empty($_COOKIE['inventory_user'])){
 
     function qtyminus(id){
         var prodId = "#"+id;
-       
-       
+
+
         if($(prodId).val() > 1 || $("#method").val() == 'inventoryAdjust' || $("#method").val() == 'inventoryCheckSingle'){
             var qty = parseInt($(prodId).val()) - 1;
             $(prodId).val(qty);
         }
         else{
-            
+
             var barcodeId = '#bd'+id;
             $(barcodeId).remove();
         }
-        
+
         //locateInput();
 
         console.log(id+':'+qty);
@@ -2383,22 +2776,22 @@ if(empty($_COOKIE['inventory_user'])){
         var warehouse_id = $("#warehouse_id").text();
 
         var prodListWithQty = getProductBarcodeWithQty();
-        
+
         if(prodListWithQty == 0){
             alert("输入的数量不合法");return false;
         }
-        
+
         prodListWithQty_inv = '';
-        
+
         if($("#method").val() == "inventoryCheckSingle"){
             var prodListWithQty_inv = getProductBarcodeWithQty_inv();
-            
+
             if(prodListWithQty_inv == 0){
                 alert("商品的库存出错，请刷新页面重试或联系管理员");return false;
             }
         }
         var station = $('#station').val();
-        
+
         console.log('Process inventory method:'+method);
         console.log('Process inventory data:'+prodListWithQty);
 
@@ -2415,7 +2808,7 @@ if(empty($_COOKIE['inventory_user'])){
             alert('获取条码列表错误或还没有输入商品条码。');
             return false;
         }
-        
+
         var real_method = "";
         if(method == "inventoryIn"){
             real_method = "inventoryInProduct";
@@ -2437,13 +2830,13 @@ if(empty($_COOKIE['inventory_user'])){
         }
         if(method == "inventoryCheckSingle"){
             real_method = "inventoryCheckSingleProduct";
-           
+
             if($("#remark").val() == ''){
                 alert("请选择调整原因");
                 return false;
             }
         }
-        
+
         if(confirm('确认提交此次［'+$('#'+method).text()+'］操作？')){
             $('#submit').attr('class',"submit style_gray");
             $('#submit').attr('value',"正在提交...");
@@ -2470,13 +2863,13 @@ if(empty($_COOKIE['inventory_user'])){
 
                         var jsonData = $.parseJSON(response);
                         if(jsonData.status){
-                            
-                            
+
+
                             if(jsonData.status == 2){
                                 alert("商品 " + jsonData.product_id + " 不能转促销品");
                                 return false;
                             }
-                            
+
                             if(jsonData.status == 3){
                                 alert("超过盘点时间3个小时，不能做库存调整");
                                 return false;
@@ -2485,7 +2878,7 @@ if(empty($_COOKIE['inventory_user'])){
                                 alert("此商品还有未处理的盘盈盘亏操作，请先处理");
                                 return false;
                             }
-                            
+
                             $('#message').attr('class',"message style_ok");
                             $('#productsInfo').html('');
                             $('#productList').hide();
@@ -2502,7 +2895,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                         $('#message').show();
                         $('#message').html(jsonData.msg);
-                        
+
                         if(jsonData.status == 999){
                             alert("未登录，请登录后操作");
                             window.location = 'inventory_login.php?return=i.php';
@@ -2517,9 +2910,9 @@ if(empty($_COOKIE['inventory_user'])){
         }
     }
 
-    
+
     function addCheckSingleProductToInv(sorting_id){
-       
+
         var warehouse_id = $("#warehouse_id").text();
 
         if(confirm('确认提交此商品盘点调整操作？')){
@@ -2541,20 +2934,20 @@ if(empty($_COOKIE['inventory_user'])){
 
                         var jsonData = $.parseJSON(response);
                         if(jsonData.status){
-                            
-                            
+
+
                             if(jsonData.status == 2){
                                 alert("此商品盘点已处理，请不要重复提交");
                                 return false;
                             }
-                            
+
                             if(jsonData.status == 3){
                                 alert("超过盘点时间3个小时，不能做库存调整");
                                 return false;
                             }
-                            
+
                             $('#message').attr('class',"message style_ok");
-                           
+
                            $('#sub_single_'+sorting_id).hide();
                            $("#do_single_"+sorting_id).html("已提交");
 
@@ -2568,7 +2961,7 @@ if(empty($_COOKIE['inventory_user'])){
 
                         $('#message').show();
                         $('#message').html(jsonData.msg);
-                        
+
                         if(jsonData.status == 999){
                             alert("未登录，请登录后操作");
                             window.location = 'inventory_login.php?return=i.php';
@@ -2584,8 +2977,8 @@ if(empty($_COOKIE['inventory_user'])){
     }
 
 function delCheckSingleProductToInv(sorting_id){
-       
-        
+
+
 
         if(confirm('确认删除此商品盘点调整操作？')){
             $('#sub_single_'+sorting_id).attr('class',"submit style_gray");
@@ -2596,7 +2989,7 @@ function delCheckSingleProductToInv(sorting_id){
                 url : 'invapi.php',
                 data : {
                     method : 'delCheckSingleProductToInv',
-                    
+
                     sorting_id : sorting_id
                 },
                 success : function (response , status , xhr){
@@ -2606,20 +2999,20 @@ function delCheckSingleProductToInv(sorting_id){
 
                         var jsonData = $.parseJSON(response);
                         if(jsonData.status){
-                            
-                            
+
+
                             if(jsonData.status == 2){
                                 alert("此商品盘点已处理，请不要重复提交");
                                 return false;
                             }
-                            
+
                             if(jsonData.status == 3){
                                 alert("超过盘点时间3个小时，不能做库存调整");
                                 return false;
                             }
-                            
-                            
-                           
+
+
+
                            $('#bdst'+sorting_id).hide();
 
                             console.log('Inv. Process OK');
@@ -2630,7 +3023,7 @@ function delCheckSingleProductToInv(sorting_id){
                             console.log('Inv. Process Error.');
                         }
 
-                        
+
                         if(jsonData.status == 999){
                             alert("未登录，请登录后操作");
                             window.location = 'inventory_login.php?return=i.php';
@@ -2701,6 +3094,7 @@ function delCheckSingleProductToInv(sorting_id){
 
 
     function addCheckProductToInv(){
+
         var warehouse_id = $("#warehouse_id").text();
         if(confirm("确认盘点完成，提交盘点结果？")){
             $.ajax({
@@ -2714,12 +3108,12 @@ function delCheckSingleProductToInv(sorting_id){
                     if(response){
                         //var jsonData = eval(response);
                         var jsonData = $.parseJSON(response);
-                        
+
 
 
                         if(jsonData.status == 999){
                             alert("未登录，请登录后操作");
-                            window.location = 'inventory_login.php?return=w.php';
+                            window.location = 'inventory_login.php?return=i.php';
                         }
 
                         if(jsonData.status == 1){
@@ -2740,7 +3134,7 @@ function delCheckSingleProductToInv(sorting_id){
     }
 
 
-    
+
     function addVegCheckProductToInv(){
         var warehouse_id = $("#warehouse_id").text();
 
@@ -2756,12 +3150,12 @@ function delCheckSingleProductToInv(sorting_id){
                     if(response){
                         //var jsonData = eval(response);
                         var jsonData = $.parseJSON(response);
-                        
+
 
 
                         if(jsonData.status == 999){
                             alert("未登录，请登录后操作");
-                            window.location = 'inventory_login.php?return=w.php';
+                            window.location = 'inventory_login.php?return=i.php';
                         }
 
                         if(jsonData.status == 1){
@@ -2876,18 +3270,18 @@ function delCheckSingleProductToInv(sorting_id){
         });
         }
     }
-    
+
 function  allocation_warehouse(){
          location.href = "allocation_warehouse.php";
      }
-    
-    
+
+
     window.no_scan_product_id_arr = new Array();
     <?php foreach($no_scan_product_id_arr_i as $key=>$value){ ?>
         window.no_scan_product_id_arr[<?php echo $key;?>] = <?php echo $value;?>;
     <?php } ?>
-    
-  
+
+
 
     function check_in_array(stringToSearch, arrayToSearch) {
      for (s = 0; s < arrayToSearch.length; s++) {
@@ -2898,9 +3292,327 @@ function  allocation_warehouse(){
      }
      return false;
     }
-    
-    
     </script>
-    
+
+<script>
+    var  user_group_id  =  parseInt('<?php echo $_COOKIE['user_group_id'];?>');
+    var warehouse_id = parseInt($("#warehouse_id").text());
+    if (user_group_id == 22  && warehouse_id ==11 || warehouse_id == 12 || parseInt('<?php if(!empty($_COOKIE['warehouse_is_dc'])){ echo 1;}else{ echo 0;} ?>')>0) {
+        function getInfo(){
+            $.ajax({
+                type: 'POST',
+                url: 'invapi.php',
+                data: {
+                    method: 'getInfo',
+                    data: {
+                        warehouse_id: global.warehouse_id,
+                    },
+                },
+                success:function(response){
+
+                    var jsonData = $.parseJSON(response);
+
+                    if(jsonData.length !=0){
+                       alert('商品ID：'+jsonData.product_id  + jsonData.name+ ' 【货位号】'+jsonData.stock_area + '【缺货提醒】'  );
+                    }
+
+                }
+            });
+        }
+
+//        setInterval("getInfo()","300000");
+    }
+
+</script>
+<script>
+    function  shortageReminder(){
+        $("#inv_control").hide();
+        $("#logo").hide();
+        $("#reminder").show();
+        getReminderList();
+    }
+    function  getReminderList(){
+
+        var date_start = $("#date_start").val();
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            data: {
+                method: 'getReminderList',
+                data: {
+                    warehouse_id: global.warehouse_id,
+                    date : date_start ,
+                },
+            },
+            success:function(response){
+                if(response){
+                    console.log(response);
+                    var jsonData = $.parseJSON(response);
+
+                    var html = "";
+                    $.each(jsonData, function(index,v){
+
+                        html  +="<tr  id='reminder_" + v.product_id + "'>";
+                        if(v.status ==0){
+                            html  +="<td>"+ v.reminder_id + "<span style='background: red;'>" +'[待确认]'+"</span>"+"</td>";
+                        }
+                        if(v.status ==1){
+                            html  +="<td>"+ v.reminder_id +"<span style='background: yellow'>"+'[已确认待补货]'+"</span>"+"</td>";
+                        }
+                        if(v.status ==2){
+                            html  +="<td>"+ v.reminder_id +"<span>"+'[已补货]'+ "</span>"+"</td>";
+                        }
+
+                        html  +="<td>"+ v.product_id +'/'+ v.name  +"</td>";
+                        html  +="<td>"+ v.stock_area +"</td>";
+
+                        html  += "<td>";
+                        if(v.status ==0){
+                            html +='<input class="qtyopt "   style="width:3rem;" type="button" value="确认" onclick="javascript:confirmReminder(\''+ v.product_id +'\');" >'
+                        }
+                        if(v.status ==1 ){
+                            html +='<input class="qtyopt "  style="width:2rem;" type="button" value="补货" onclick="javascript:confirmReplenishment(\''+ v.product_id +'\');" >'
+                        }
+
+                        html  += "</td>";
+
+
+
+                        html  +="<td>"+ v.add_user +"</td>";
+
+                        if(v.status ==0){
+                            html  += "<td>";
+                            html  += "<div>";
+                            html  += "<select  style='width: 100%' id='select_" + v.product_id + "'>";
+                            html  += "<option  value='1'>"+ '货位上没货' +"</option>";
+                            html  += "<option  value='2'>"+ '分拣人员没找到货' +"</option>";
+                            html  += "<option  value='3'>"+ '仓库无货' +"</option>";
+                            html  += "</div>";
+                            html  += "</select>";
+                            html  +="</td>";
+                        }else{
+                            html += "<td>";
+                            html += "<div>"+ v.reason+"</div>";
+                            html += "</td>";
+                        }
+                        html  +="<td>"+ '最早提交时间：' +v.date_added+ ' /确认时间：'+ v.date_confirm+ ' /补货时间： '+ v.date_replenishment +"</td>";
+
+
+
+                        html  +="</tr>";
+                    });
+                    $("#productsInfo3").html(html);
+                }
+            }
+        });
+    }
+
+
+    function confirmReminder(id){
+
+        var  reason = $("#select_"+id).find("option:selected").text();
+        var inventoryuser = '<?php echo $_COOKIE['inventory_user'];?>';
+
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            data: {
+                method: 'confirmReminder',
+                data: {
+                    warehouse_id: global.warehouse_id,
+                    product_id : id ,
+                    reason : reason ,
+                    inventory_user : inventoryuser,
+
+                },
+            },
+            success:function(response){
+                if(response){
+                    alert('确认成功，有缺货请及时补货');
+                    getReminderList();
+                }
+            }
+        });
+    }
+
+    function  confirmReplenishment(id){
+        var inventoryuser = '<?php echo $_COOKIE['inventory_user'];?>';
+
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            data: {
+                method: 'confirmReplenishment',
+                data: {
+                    warehouse_id: global.warehouse_id,
+                    product_id : id ,
+                    inventory_user : inventoryuser,
+
+                },
+            },
+            success:function(response){
+                if(response){
+                    alert('确认成功，有缺货请及时补货');
+                    getReminderList();
+                }
+            }
+        });
+    }
+
+
+    //根据日期获取盘盈盘亏的数据
+    function getinventoryCheckSingleDate(){
+        var date = $("#searchDate").val();
+
+        $.ajax({
+            type : 'POST',
+            url : 'invapi.php',
+            data : {
+                method : 'getinventoryCheckSingleDate',
+                warehouse_id : parseInt(global.warehouse_id),
+                getdate : date,
+            },
+            success : function (response , status , xhr){
+                if(response){
+                    //console.log(response);
+                    //var jsonData = eval(response);
+                    var jsonData = $.parseJSON(response);
+
+                    if(jsonData.status == 999){
+                        alert(jsonData.msg);
+                        location.href = "inventory_login.php?return=i.php";
+                    }
+
+                    if(jsonData.status == 0){
+                        alert(jsonData.msg);
+                    }
+
+                    var html = '';
+                    $.each(jsonData, function(index,value){
+
+                        var order_been_over = "";
+                        if(value.move_flag == 1){
+                            order_been_over = "style = 'background-color:#666666;'";
+
+                        }
+                        html += '<tr  class="barcodeHolder" id="bdst'+ value.inventory_sorting_id +'">' +
+                            '<td>'+value.product_id+'</td>' +
+                            '<td><span name="productBarcode" >' + value.product_batch + '</span><span style="display:none;" inputBarcode="'+value.product_batch+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct2'+value.product_batch+'" >'+value.product_id+'</span><br /><span id="info2'+ value.product_batch +'">'+value.product_id+'/'+value.NAME+'</span></td>' +
+                            '<td id="price2'+value.product_batch+'">'+ value.price +'</td>' +
+                            '<td>'+value.inv_quantity+'</td>' +
+                            '<td><input class="qty" id=2_"'+ value.product_batch +'" name="'+ value.product_batch +'" value="'+value.quantity+'"  /></td>' +
+                            '<td><input class="qty" id=oc_"'+ value.product_batch +'" name="'+ value.product_batch +'" value="'+value.occupy_quantity+'"  /></td>' +
+                            '<td><input class="qty" id=up_"'+ value.product_batch +'" name="'+ value.product_batch +'" value="'+value.uptime+'"  /></td>' +
+                            '<td>'+value.remark+';'+value.remark_2+'</td>' +
+                            '<td '+  order_been_over  +' id="do_single_'+value.inventory_sorting_id+'">' ;
+                        if(value.move_flag == 1){
+                            html += '已提交';
+                        }
+                        else{
+                            <?php if(in_array($_COOKIE['user_group_id'],array("1","24","27"))){ ?>
+                            //if(do_user == 'yangyang'){
+                            //    if(value.remark == '赠品库存调整'){
+                            //        html +=   '未处理<input class="submit" type="button" id="sub_single_'+value.inventory_sorting_id+'" value="提交" onclick="javascript:addCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
+                            //       html +=   '<input class="submit" type="button" id="can_single_'+value.inventory_sorting_id+'" value="删除" onclick="javascript:delCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
+                            //    }
+                            //    else{
+                            //        html += '未处理';
+                            //    }
+                            //}
+                            //else{
+
+
+                            //盘盈盘亏权限
+                            <?php if(in_array($_COOKIE['inventory_user_id'],$product_add_limit)){ ?>
+                            html +=   '未处理 <input class="submit" type="button" id="sub_single_'+value.inventory_sorting_id+'" value="提交" onclick="javascript:addCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
+                            <?php } ?>
+                            html +=   '<input class="submit" type="button" id="can_single_'+value.inventory_sorting_id+'" value="删除" onclick="javascript:delCheckSingleProductToInv('+value.inventory_sorting_id+');">' ;
+                            //}
+
+                            <?php }else{ ?>
+                            html += '未处理';
+                            <?php } ?>
+                        }
+                        html +=  '</td>' +
+                            '</tr>';
+
+                    });
+
+
+                    $('#productsInfo2').html(html);
+
+
+                }
+            },
+            complete : function(){
+
+            }
+        });
+    }
+
+//获取不同区域的库存
+    function  getStockSectionProduct(product_id) {
+
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            data: {
+                method: 'getStockSectionProduct',
+                data: {
+                    warehouse_id: warehouse_id,
+                    product_id: product_id,
+                },
+            },
+            success: function (response) {
+                var jsonData = $.parseJSON(response);
+                if(jsonData) {
+                    var html = '';
+                    $.each(jsonData,function(i,v){
+                        html += "<tr style='background:#d0e9c6;' id='sparetr"+v.product_id+"'>";
+                        html += "<td  id='sparename"+ v.product_id+"'>"+"<span style='font-weight:bold'>"+   v.name ;
+                        html += "</td>";
+                        html += "<td id='spareneedsorted"+ v.product_id+"' >"+ v.quantity + "</td>";
+
+                        html += "</tr>";
+                    });
+
+                    $("#productsInfo12").html(html);
+                }
+            }
+        });
+    }
+
+
+    function  getProductAllSingleInfo(product_id) {
+
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            data: {
+                method: 'getProductAllSingleInfo',
+                data: {
+                    warehouse_id: warehouse_id,
+                    product_id: product_id,
+                },
+            },
+            success: function (response) {
+                var jsonData = $.parseJSON(response);
+                if(jsonData[0] == 1 ) {
+                    alert('有退货未确认');
+                }
+                if(jsonData[1] == 2 ) {
+                    alert('有退货未上架');
+                }
+//                if(jsonData == 3 ) {
+//                    alert('有退货未确认');
+//                }
+                if(jsonData[3] == 4 ) {
+                    alert('采购入库未放到存货区');
+                }
+            }
+        });
+    }
+
+</script>
 </body>
 </html>

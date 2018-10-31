@@ -48,9 +48,10 @@ if(empty($_COOKIE['inventory_user'])){
                 </div>
                 <div align="center" style=" font-size: 15px">出库类型:
                     <select name="out_type" id="input-out_type" class="form-control"  style="font-size: 20px;width:15.5em ;height: 40px;border:1px solid">
-                        <option value="">选择出库类型</option>
-                        <option value="1">出库单</option>
-                        <option value="2">仓间调拨单</option>
+<!--                        <option value="">选择出库类型</option>-->
+
+<!--                        <option value="2">仓间调拨单</option>-->
+                        <option value="3">仓内调拨单</option>
                     </select>
                     <div  style="margin-left:200px ;margin-top: 20px;">
                         <input type="button" value="开始查询" style="width: 90px; height: 20px; background: red" onclick="searchRequisition();">
@@ -128,6 +129,7 @@ if(empty($_COOKIE['inventory_user'])){
             <div><hr></div>
             <div>
                 <form id="form_return3" >
+                    <div id = "change_info" style="display: none ;background: yellow">保证需要转化的商品有足够的库存,库存不足的情况下请不要转化商品，否则会造成库存不准</div>
                     <table  border='1'cellspacing="0" cellpadding="0" id="warehouse_change3">
                         <thead>
                         <tr style="background:#8fbb6c;">
@@ -135,6 +137,8 @@ if(empty($_COOKIE['inventory_user'])){
                             <td>货位号</td>
                             <td>调拨数量</td>
                             <td>待投篮数量</td>
+                            <td id = "scale_name" style="display: none">转化商品ID</td>
+                            <td id = "scale_num" style="display: none">转化数量</td>
                             <td>操作</td>
                         </tr>
                         </thead>
@@ -145,7 +149,8 @@ if(empty($_COOKIE['inventory_user'])){
                     </table>
 
                 </form>
-                <input class="qtyopt"  type="button"  style="float: right" value="提交" onclick="javascript:submitProducts();" >
+                    <input class="qtyopt"  type="button"   id="button_re" style=" float: right ;"  value="提交" onclick="javascript:submitProducts();" >
+            <input class="qtyopt"   type="button"   id="button_ch" style=" float: right; display: none " value="提交" onclick="javascript:submitProducts1();" >
             </div>
         </div>
         <div style="display: none">
@@ -165,7 +170,7 @@ if(empty($_COOKIE['inventory_user'])){
         var month=today.getMonth()+1;
         var day=today.getDate();
 
-        $('#date_start').val(year+"-"+month+"-"+day );
+        $('#date_start').val(year+"-"+month+"-"+day);
     });
     $(document).ready(function(){
         var today=new Date();
@@ -193,44 +198,99 @@ if(empty($_COOKIE['inventory_user'])){
                 var jsonData = $.parseJSON(response);
                 if(response){
                     $.each(jsonData,function(i,v){
-                        html += "<tr id='"+ v.relevant_id+"'>";
-                        html += "<td>"+ v.relevant_id+ "</td>";
-                        html += "<td>"+ v.out_type+ "</td>";
-                        html += "<td>"+ v.title+ "</td>";
-                        html += "<td>"+ v.date_added+ "</td>";
-                        html += "<td>"+ v.username+ "</td>";
-                        html += "<td>"+ v.name+ "</td>";
-                        html += "<td>"+ v.comment+ "</td>";
 
-                        if(v.from_warehouse == cookie_warehouse_id){
 
-                            if(v.relevant_status_id !=2){
-                                html += "<td>";
-                                html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
-                                html += "</td>";
-                            }else if(v.relevant_status_id == 2){
-                                html += "<td>";
-                                html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
-                                html += '<hr>';
-                                html += '<input type="button" value="开始调库" style="background:red ;margin: 10px 0 10px 0;"  onclick="startShipment('+v.relevant_id +')">';
-                                html += "</td>";
+                        if(v.out_type == '3') {
+                            if(v.from_warehouse == cookie_warehouse_id){
+
+
+                            html += "<tr id='"+ v.relevant_id+"'>";
+                            html += "<td>"+ v.relevant_id+ "</td>";
+                            html += "<td>"+ v.out_type+ "</td>";
+                            html += "<td>"+ v.title+ "</td>";
+                            html += "<td>"+ v.date_added+ "</td>";
+                            html += "<td>"+ v.username+ "</td>";
+                            html += "<td>"+ v.name+ "</td>";
+                            html += "<td>"+ v.comment+ "</td>";
+
+                            if(v.from_warehouse == cookie_warehouse_id){
+
+                                if(v.relevant_status_id !=2){
+                                    html += "<td>";
+                                    html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }else if(v.relevant_status_id == 2){
+                                    html += "<td>";
+                                    html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += '<hr>';
+                                    html += '<input type="button" value="开始调库" style="background:red ;margin: 10px 0 10px 0;"  onclick="startShipment('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }
+
+                            }else{
+
+                                if(v.relevant_status_id !=4){
+                                    html += "<td>";
+                                    html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }else if(v.relevant_status_id == 4 && v.out_type !='1'){
+                                    html += "<td>";
+                                    html += '<input type="button"   value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += '<hr>';
+                                    html += '<input type="button"  value="开始入库" style="background:red ;margin: 10px 0 10px 0;"  onclick="startShipment('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }
+                            }
+
+                            html += "</tr>";
                             }
                         }else{
 
-                            if(v.relevant_status_id !=5){
-                                html += "<td>";
-                                html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
-                                html += "</td>";
-                            }else if(v.relevant_status_id == 5){
-                                html += "<td>";
-                                html += '<input type="button"   value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
-                                html += '<hr>';
-                                html += '<input type="button" value="开始入库" style="background:red ;margin: 10px 0 10px 0;"  onclick="startShipment('+v.relevant_id +')">';
-                                html += "</td>";
+                            html += "<tr id='"+ v.relevant_id+"'>";
+                            html += "<td>"+ v.relevant_id+ "</td>";
+                            html += "<td>"+ v.out_type+ "</td>";
+                            html += "<td>"+ v.title+ "</td>";
+                            html += "<td>"+ v.date_added+ "</td>";
+                            html += "<td>"+ v.username+ "</td>";
+                            html += "<td>"+ v.name+ "</td>";
+                            html += "<td>"+ v.comment+ "</td>";
+
+                            if(v.from_warehouse == cookie_warehouse_id){
+
+                                if(v.relevant_status_id !=2){
+                                    html += "<td>";
+                                    html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }else if(v.relevant_status_id == 2){
+                                    html += "<td>";
+                                    html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += '<hr>';
+                                    html += '<input type="button" value="开始调库" style="background:red ;margin: 10px 0 10px 0;"  onclick="startShipment('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }
+                            }else{
+
+                                if(v.relevant_status_id !=4){
+                                    html += "<td>";
+                                    html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }else if(v.relevant_status_id == 4 && v.out_type !='1'){
+                                    html += "<td>";
+                                    html += '<input type="button"   value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
+                                    html += '<hr>';
+                                    html += '<input type="button"  value="开始入库" style="background:red ;margin: 10px 0 10px 0;"  onclick="startShipment('+v.relevant_id +')">';
+                                    html += "</td>";
+                                }
                             }
+
+                            html += "</tr>";
+
+
                         }
 
-                        html += "</tr>";
+
+
+
                     });
 
                     $("#warehouse_product_relevant").html(html);
@@ -270,10 +330,14 @@ if(empty($_COOKIE['inventory_user'])){
                 }
             },
             success: function (response) {
+
                 var html = "";
                 var jsonData = $.parseJSON(response);
                 if(response){
                     $.each(jsonData,function(i,v){
+
+
+
                         html += "<tr id='"+ v.relevant_id+"'>";
                         html += "<td>"+ v.relevant_id+ "</td>";
                         html += "<td>"+ v.out_type+ "</td>";
@@ -298,11 +362,11 @@ if(empty($_COOKIE['inventory_user'])){
                             }
                         }else{
 
-                            if(v.relevant_status_id !=5){
+                            if(v.relevant_status_id !=4  ){
                                 html += "<td>";
                                 html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
                                 html += "</td>";
-                            }else if(v.relevant_status_id == 5){
+                            }else if(v.relevant_status_id == 4  && v.out_type !='3'){
                                 html += "<td>";
                                 html += '<input type="button" value="查看" style="background:red ;margin: 10px 0 10px 0;"  onclick="viewItem('+v.relevant_id +')">';
                                 html += '<hr>';
@@ -326,6 +390,7 @@ if(empty($_COOKIE['inventory_user'])){
     function  viewItem(relevant_id){
         $("#Initial_Page").hide();
         $("#View_Page").show();
+        var warehouse_id = $("#warehouse_id").text();
         $.ajax({
             type: 'POST',
             url: 'invapi.php',
@@ -333,6 +398,7 @@ if(empty($_COOKIE['inventory_user'])){
                 method: 'viewItem',
                 data: {
                     relevant_id: relevant_id,
+                    warehouse_id:warehouse_id,
                 }
             },
             success:function (response){
@@ -340,13 +406,24 @@ if(empty($_COOKIE['inventory_user'])){
                 var jsonData = $.parseJSON(response);
                 if(response){
                     $.each(jsonData,function(i,v) {
-                        html += "<tr id='view_" + v.product_id + "'>";
-                        html += "<td>" + v.product_id + "</td>";
-                        html += "<td>" + v.name + "</td>";
-                        html += "<td>" + v.product_section_title + "</td>";
-                        html += "<td>" + v.inventory + "</td>";
-                        html += "<td>" + v.num + "</td>";
-                        html += "</tr>";
+                        if(v.out_type == '3'){
+                            html += "<tr id='view_" + v.product_id + "'>";
+                            html += "<td>" + v.product_id + "</td>";
+                            html += "<td>" + v.name + "</td>";
+                            html += "<td>" + v.stock_area + "</td>";
+                            html += "<td>" + v.inventory + "</td>";
+                            html += "<td>" + v.scale_num + "</td>";
+                            html += "</tr>";
+                        }else{
+                            html += "<tr id='view_" + v.product_id + "'>";
+                            html += "<td>" + v.product_id + "</td>";
+                            html += "<td>" + v.name + "</td>";
+                            html += "<td>" + v.stock_area + "</td>";
+                            html += "<td>" + v.inventory + "</td>";
+                            html += "<td>" + v.num + "</td>";
+                            html += "</tr>";
+                        }
+
                     });
                     $("#warehouse_product_relevant2").html(html);
                 }
@@ -375,28 +452,78 @@ if(empty($_COOKIE['inventory_user'])){
                 var jsonData = $.parseJSON(response);
                      if(jsonData.product2){
                          $.each(jsonData.product2,function(i,v) {
-                             html += "<tr id='shipment_" + v.product_id + "' style='background-color: #d0e9c6 '>";
-                             html += "<td>" + v.product_id +"/"+v.name+"</td>";
-                             html += "<td>" + v.product_section_title + "</td>";
-                             html += "<td id='num3_"+v.product_id +"'>" + v.num + "</td>";
-                             html += "<td id='num4_"+v.product_id +"'>" + v.num + "</td>";
-                             html += "<td>"
-                             html +='<input class="qtyopt qtycolor"  type="button" id="button_id'+ v.product_id +'"  value="提交" onclick="javascript:submitProduct(\''+ v.product_id +'\');" >'
-                             html += "</td>";
-                             html += "</tr>";
+
+                             if(v.out_type == '3'){
+                                 $("#scale_num").show();
+                                 $("#scale_name").show();
+                                 $("#change_info").show();
+                                 $("#button_ch").show();
+                                 $("#button_re").hide();
+                                 html += "<tr id='shipment_" + v.product_id + "' style='background-color: #d0e9c6 '>";
+                                 html += "<td>" + v.product_id +"/"+v.name+"</td>";
+                                 html += "<td>" + v.stock_area + "</td>";
+                                 html += "<td id='num3_"+v.product_id +"'>" + v.num + "</td>";
+                                 html += "<td id='num4_"+v.product_id +"'>" + v.num + "</td>";
+                                 html += "<td id='name5_"+v.product_id +"'>" + v.comment + "</td>";
+                                 html += "<td id='num5_"+v.product_id +"'>" + v.scale_num + "</td>";
+                                 html += "<td>"
+                                 html +='<input class="qtyopt qtycolor"  type="button" id="button_id'+ v.product_id +'"  value="提交" onclick="javascript:submitProduct(\''+ v.product_id +'\');" >'
+                                 html += "</td>";
+                                 html += "</tr>";
+                             }else{
+                                 $("#button_ch").hide();
+                                 $("#button_re").show();
+
+                                 html += "<tr id='shipment_" + v.product_id + "' style='background-color: #d0e9c6 '>";
+                                 html += "<td>" + v.product_id +"/"+v.name+"</td>";
+                                 html += "<td>" + v.stock_area + "</td>";
+                                 html += "<td id='num3_"+v.product_id +"'>" + v.num + "</td>";
+                                 html += "<td id='num4_"+v.product_id +"'>" + v.num + "</td>";
+                                 html += "<td>"
+                                 html +='<input class="qtyopt qtycolor"  type="button" id="button_id'+ v.product_id +'"  value="提交" onclick="javascript:submitProduct(\''+ v.product_id +'\');" >'
+                                 html += "</td>";
+                                 html += "</tr>";
+                             }
+
                          });
                      }
+
                     if(jsonData.product1){
                         $.each(jsonData.product1,function(i,v) {
-                            html += "<tr id='shipment_" + v.product_id + "' style='background-color: yellow '>";
-                            html += "<td>" + v.product_id + "/" + v.name + "</td>";
-                            html += "<td>" + v.product_section_title + "</td>";
-                            html += "<td id='num3_" + v.product_id + "'>" + v.num + "</td>";
-                            html += "<td id='num4_" + v.product_id + "'>" + v.quantity + "</td>";
-                            html += "<td>"
-                            html += '<input class="qtyopt qtycolor"  type="button" id="button_id' + v.product_id + '"  value="提交" onclick="javascript:submitProduct(\'' + v.product_id + '\');" >'
-                            html += "</td>";
-                            html += "</tr>";
+
+                            if(v.out_type == '3'){
+                                $("#scale_num").show();
+                                $("#scale_name").show();
+                                $("#change_info").show();
+                                $("#button_ch").show();
+                                $("#button_re").hide();
+                                html += "<tr id='shipment_" + v.product_id + "' style='background-color: #ADADAD '>";
+                                html += "<td>" + v.product_id +"/"+v.name+"</td>";
+                                html += "<td>" + v.stock_area + "</td>";
+                                html += "<td id='num3_"+v.product_id +"'>" + v.num + "</td>";
+                                html += "<td id='num4_"+v.product_id +"'>" + v.quantity + "</td>";
+                                html += "<td id='name5_"+v.product_id +"'>" + v.comment + "</td>";
+                                html += "<td id='num5_"+v.product_id +"'>" + v.scale_num + "</td>";
+                                html += "<td>"
+                                html +='<input class="qtyopt qtycolor"  type="button" id="button_id'+ v.product_id +'"  value="提交" onclick="javascript:submitProduct(\''+ v.product_id +'\');" >'
+                                html += "</td>";
+                                html += "</tr>";
+                            }else {
+
+                                $("#button_ch").hide();
+                                $("#button_re").show();
+
+                                html += "<tr id='shipment_" + v.product_id + "' style='background-color: #ADADAD '>";
+                                html += "<td>" + v.product_id + "/" + v.name + "</td>";
+                                html += "<td>" + v.stock_area + "</td>";
+                                html += "<td id='num3_" + v.product_id + "'>" + v.num + "</td>";
+                                html += "<td id='num4_" + v.product_id + "'>" + v.quantity + "</td>";
+                                html += "<td>"
+                                html += '<input class="qtyopt qtycolor"  type="button" id="button_id' + v.product_id + '"  value="提交" onclick="javascript:submitProduct(\'' + v.product_id + '\');" >'
+                                html += "</td>";
+                                html += "</tr>";
+
+                            }
                         });
                     }
 
@@ -421,7 +548,7 @@ if(empty($_COOKIE['inventory_user'])){
     function handleProductList2(){
         var product_id = $("#bar_code").val();
         var relevant_id = $("#return_relevant_id").text();
-
+        var warehouse_id = $("#warehouse_id").text();
         $.ajax({
             type: 'POST',
             url: 'invapi.php',
@@ -430,6 +557,7 @@ if(empty($_COOKIE['inventory_user'])){
                 data: {
                     sku: product_id,
                     relevant_id :relevant_id,
+                    warehouse_id :  warehouse_id,
                 }
             },
             success:function(response){
@@ -437,7 +565,10 @@ if(empty($_COOKIE['inventory_user'])){
                 var status = jsonData.status;
                 if(status == 1){
                     alert('未找到对应商品，请输入正确的商品ID或条形码');
-                    $('#bar_code').val('');
+                    if (product_id.length>=6) {
+                        $('#bar_code').val('');
+                    }
+
                 }
                 if(status == 2) {
                     var html = "";
@@ -455,12 +586,18 @@ if(empty($_COOKIE['inventory_user'])){
                                var shoot =  parseInt(v.num) - 1;
                                 html += "<tr id='relevant_" + v.product_id + "'>";
                                 html += "<td>" + v.product_id +"/"+v.name+"</td>";
-                                html += "<td>" + v.product_section_title + "</td>";
+                                html += "<td>" + v.stock_area + "</td>";
                                 html += "<td id='num1_"+v.product_id +"'>" + v.num + "</td>";
                                 html += "<td id='num2_"+v.product_id +"'>" + shoot  + "</td>";
                                 html += "<td>";
+                                html +='<input class="qtyopt " type="button" id="button_id'+ product_id +'"  value="+10" onclick="javascript:qtyadd10(\''+ product_id +'\');" >'
+                                html +='<input class="qtyopt " type="button" id="button_id'+ product_id +'"  value="+20" onclick="javascript:qtyadd20(\''+ product_id +'\');" >'
+                                html +='<input class="qtyopt " type="button" id="button_id'+ product_id +'"  value="+50" onclick="javascript:qtyadd50(\''+ product_id +'\');" >'
                                 html +='<input class="qtyopt " type="button" id="button_id'+ product_id +'"  value="+" onclick="javascript:qtyadd3(\''+ product_id +'\');" >'
                                 html +='<input class="qtyopt "  id="button2_id'+ product_id +'" type="button" value="-" onclick="javascript:qtyminus3(\''+ product_id +'\');" >'
+                                html +='<input class="qtyopt "  id="button2_id'+ product_id +'" type="button" value="-10" onclick="javascript:qtyminus10(\''+ product_id +'\');" >'
+                                html +='<input class="qtyopt "  id="button2_id'+ product_id +'" type="button" value="-20" onclick="javascript:qtyminus20(\''+ product_id +'\');" >'
+                                html +='<input class="qtyopt "  id="button2_id'+ product_id +'" type="button" value="-50" onclick="javascript:qtyminus50(\''+ product_id +'\');" >'
                                 html +="</td>";
                                 html += "</tr>";
                             });
@@ -471,7 +608,6 @@ if(empty($_COOKIE['inventory_user'])){
                             $('#bar_code').val('');
                         }
                     }
-
 
                 }
             }
@@ -485,12 +621,74 @@ if(empty($_COOKIE['inventory_user'])){
             var sound = soundEffectInit();
             sound.playerSubmit.play();
             $("#shipment_"+id).css("background-color", "#ADADAD");
-
+            submitProduct(id);
         }else{
             $("#num2_"+id).text(parseInt(num4)-1);
             $("#num4_"+id).text(parseInt(num4)-1);
         }
     }
+
+
+    function qtyminus10(id){
+        var num4 =  $("#num4_"+id).text();
+
+
+        if(parseInt(num4)-10 >0 ){
+            $("#num2_"+id).text(parseInt(num4)-10);
+            $("#num4_"+id).text(parseInt(num4)-10);
+        }else if(parseInt(num4)-10 < 0 ){
+            alert('不能超过调拨数量');
+        }
+
+
+        if(parseInt(num4) == 0){
+            var sound = soundEffectInit();
+            sound.playerSubmit.play();
+            $("#shipment_"+id).css("background-color", "#ADADAD");
+            submitProduct(id);
+        }
+    }
+
+    function qtyminus20(id){
+        var num4 =  $("#num4_"+id).text();
+
+
+        if(parseInt(num4)-20 >0 ){
+            $("#num2_"+id).text(parseInt(num4)-20);
+            $("#num4_"+id).text(parseInt(num4)-20);
+        }else if(parseInt(num4)-20 < 0 ){
+            alert('不能超过调拨数量');
+        }
+
+
+        if(parseInt(num4) == 0){
+            var sound = soundEffectInit();
+            sound.playerSubmit.play();
+            $("#shipment_"+id).css("background-color", "#ADADAD");
+            submitProduct(id);
+        }
+    }
+
+    function qtyminus50(id){
+        var num4 =  $("#num4_"+id).text();
+
+
+        if(parseInt(num4)-50 >0 ){
+            $("#num2_"+id).text(parseInt(num4)-50);
+            $("#num4_"+id).text(parseInt(num4)-50);
+        }else if(parseInt(num4)-50 < 0 ){
+            alert('不能超过调拨数量');
+        }
+
+
+        if(parseInt(num4) == 0){
+            var sound = soundEffectInit();
+            sound.playerSubmit.play();
+            $("#shipment_"+id).css("background-color", "#ADADAD");
+            submitProduct(id);
+        }
+    }
+
 
     function qtyadd3(id){
         var num2 =  $("#num2_"+id).text();
@@ -506,6 +704,63 @@ if(empty($_COOKIE['inventory_user'])){
             $("#num4_"+id).text(num);
         }
     }
+
+
+    function qtyadd10(id){
+        var num2 =  $("#num2_"+id).text();
+        var num1 =  $("#num1_"+id).text();
+        if(parseInt(num2) >= 0){
+            $("#shipment_"+id).css("background-color", "#d0e9c6");
+        }
+
+
+
+        if(parseInt(num1)<=parseInt(num2)+10){
+            alert('不能超过调拨数量');
+        }else{
+            var num= parseInt(num2)+10;
+            $("#num2_"+id).text(num);
+            $("#num4_"+id).text(num);
+        }
+    }
+    function qtyadd20(id){
+        var num2 =  $("#num2_"+id).text();
+        var num1 =  $("#num1_"+id).text();
+        if(parseInt(num2) >= 0){
+            $("#shipment_"+id).css("background-color", "#d0e9c6");
+        }
+
+
+
+        if(parseInt(num1) <=parseInt(num2)+20){
+            alert('不能超过调拨数量');
+        }else{
+            var num= parseInt(num2)+20;
+            $("#num2_"+id).text(num);
+            $("#num4_"+id).text(num);
+        }
+    }
+    function qtyadd50(id){
+        var num2 =  $("#num2_"+id).text();
+        var num1 =  $("#num1_"+id).text();
+        if(parseInt(num2) >= 0){
+            $("#shipment_"+id).css("background-color", "#d0e9c6");
+        }
+
+
+
+        if(parseInt(num1) <=parseInt(num2)+50){
+            alert('不能超过调拨数量');
+        }else{
+            var num= parseInt(num2)+50;
+            $("#num2_"+id).text(num);
+            $("#num4_"+id).text(num);
+        }
+    }
+
+
+
+
 
     function submitProduct(product_id){
         var relevant_id = $("#return_relevant_id").text();
@@ -531,8 +786,9 @@ if(empty($_COOKIE['inventory_user'])){
             },
             success:function(response){
                 if(response){
-                    startShipment(relevant_id);
-                    alert('提交成功');
+                   // startShipment(relevant_id);
+                    $("#shipment_"+product_id).css("background-color", "#ADADAD");
+
                 }
             }
         });
@@ -554,8 +810,9 @@ if(empty($_COOKIE['inventory_user'])){
             productArray.push(v.childNodes[3].innerText) ;
             postData.push(productArray);
             productArray = [];
-            //品名为v.childNodes[0].innerText，缺货数量为v.childNodes[2].innerText，商品ID为v.id
+
         });
+
         if(confirm("确认提交么？")) {
             $.ajax({
                 type: 'POST',
@@ -568,13 +825,66 @@ if(empty($_COOKIE['inventory_user'])){
                         warehouse_user:warehouse_user,
                         postData: postData,
 
-                    }
+                    },
 
                 },
                 success: function (response) {
                     if (response) {
-
                         alert('提交成功');
+                        //location.reload();
+                    }
+                }
+            });
+        }
+    }
+
+
+    function submitProducts1(){
+        var warehouse_user = $("#warehouse_user").text();
+        var relevant_id = $("#return_relevant_id").text();
+        var warehouse_id = $("#warehouse_id").text();
+        var data = $("#warehouse_product_relevant3").find("tr");
+        var postData = [] ;
+        var productArray = [];
+        $.each(data,function(i,v){
+            productArray.push(v.id) ;
+            productArray.push(v.childNodes[0].innerText) ;
+            productArray.push(v.childNodes[1].innerText);
+            productArray.push(v.childNodes[2].innerText) ;
+            productArray.push(v.childNodes[3].innerText) ;
+            productArray.push(v.childNodes[4].innerText) ;
+            productArray.push(v.childNodes[5].innerText) ;
+            postData.push(productArray);
+            productArray = [];
+
+        });
+
+
+
+
+
+        if(confirm("确认提交么？")) {
+            $.ajax({
+                type: 'POST',
+                url: 'invapi.php',
+                data: {
+                    method: 'submitProducts',
+                    data: {
+                        warehouse_id:warehouse_id,
+                        relevant_id:relevant_id,
+                        warehouse_user:warehouse_user,
+                        postData: postData,
+
+                    },
+
+                },
+                success: function (response) {
+                    var jsonData = $.parseJSON(response);
+                    if (jsonData == 1 ) {
+                        alert('提交成功');
+                        location.reload();
+                    }else{
+                        alert ('提交的数量为零不能提交');
                     }
                 }
             });

@@ -6,7 +6,7 @@ include_once 'config_scan.php';
 //exit('系统繁忙，请稍候...');
 
 
-$inventory_user_admin = array('randy','alex','leibanban','yangyang','ckczy','liuhe','wuguobiao','wangshaokui');
+$inventory_user_admin = array('alex','liuhe','wuguobiao','wuguobiaosx','alex2','xiangyiao5');
 if(empty($_COOKIE['inventory_user'])){
     //重定向浏览器 
     
@@ -687,9 +687,13 @@ if(empty($_COOKIE['inventory_user'])){
     </script>
 </head>
 <body>
+    <div style="display: none" id="warehouse_id"><?php echo $_COOKIE['warehouse_id'];?></div>
     <script type="text/javascript">
-               var is_admin = 0;
-            </script>
+        var is_admin = 0;
+
+        var global = {};
+        global.warehouse_id = parseInt($("#warehouse_id").text());
+    </script>
     <div align="right"><?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <span onclick="javascript:logout_inventory_user();">退出</span>
         <?php if(in_array($_COOKIE['inventory_user'], $inventory_user_admin)){?> 
             <script type="text/javascript">
@@ -699,7 +703,6 @@ if(empty($_COOKIE['inventory_user'])){
         <?php } ?>
          <a href="inv_dif_data.php">查看未分拣数据</a>
     </div>
-    <div  style="display: none" id="warehouse_id"> <?php echo $_COOKIE['warehouse_id'];?> </div>
     <div align="center" style="display:block; margin:0.5em auto" id="logo"><img src="view/image/logo.png" style="width:6em"/> 订单分拣<button class="invopt style_gray" id="reload"  style="display: inline" onclick="javascript:location.reload();" disabled="disabled">载入中...</button></div>
 
     
@@ -868,7 +871,7 @@ if(empty($_COOKIE['inventory_user'])){
                         备注:<textarea id="inv_comment"></textarea><br>
                         <input type="hidden" id="frame_vg_list">
                         蔬菜框号：<input style="font-size: 1.4em;" id="input_vg_frame" name="input_vg_frame">
-                        <div id="vg_list" ></div>
+                        <div id="vg_list" style="min-height:40px" ></div>
                     </div>
                     <div id="inv_do_meat" style="border-bottom:1px dashed black;">
                         肉框数：<input type="text" id="frame_meat_count" ><br>
@@ -1182,7 +1185,7 @@ if(empty($_COOKIE['inventory_user'])){
 
     $(document).ready(function () {
         startTime();
-        var warehouse_id = $("#warehouse_id").text();
+        var warehouse_id = parseInt($("#warehouse_id").text());
 
          var html = '<td colspan="6">正在载入...</td>';
                 $('#ordersList').html(html);
@@ -1225,6 +1228,7 @@ if(empty($_COOKIE['inventory_user'])){
             data : {
                 method : 'getOrders',
                 station_id: 1,
+                warehouse_id: warehouse_id,
                 //inventory_user: inventory_user,
                 date : '<?php echo $date_array[2]['date']; ?>'
                 
@@ -1372,7 +1376,8 @@ if(empty($_COOKIE['inventory_user'])){
                         
                         html +='<input type="hidden" id="shipping_name_'+value.order_id+'" value="'+value.shipping_name+'"><input type="hidden" id="shipping_phone_'+value.order_id+'" value="'+value.shipping_phone+'"><input type="hidden" id="shipping_address_'+value.order_id+'" value="'+value.shipping_address_1+'"></td>';
                             
-                            if(<?php echo !in_array($_COOKIE['inventory_user'], $inventory_user_admin) ? 1 : 0;?> > 0){
+                            //if(<-- php echo !in_array($_COOKIE['inventory_user'], $inventory_user_admin) ? 1 : 0; --> > 0){
+                            if(0){
                                 if(window.inventory_user_order[value.order_id][1] > 0){
                                    html += '<td '+t_status_class+'>'+window.inventory_user_order[value.order_id][1]+'</td>'; 
                                    html += '<td '+t_status_class+'>'+(window.inventory_user_order[value.order_id][1] - value.inv_type_1)+'</td>';
@@ -1416,7 +1421,7 @@ if(empty($_COOKIE['inventory_user'])){
                         html += '<td '+t_status_class+'>'+value.added_by+'</td>';
                         html += '<td '+t_status_class+'>'+value.name+'</td>';
                         html += '<td '+t_status_class+'><button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+','+value.station_id+');">查看</button>';
-                        if((value.order_status_id == 2 || value.order_status_id == 5 || value.order_status_id == 8) && value.no_inv != 1){
+                        if((value.order_status_id == 2 || value.order_status_id == 5 || value.order_status_id == 8 || value.order_status_id == 4) && value.no_inv != 1){
                             html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+','+value.station_id+');">开始分拣</button>';
                         }
                         
@@ -1746,7 +1751,8 @@ if(empty($_COOKIE['inventory_user'])){
             data : {
                 method : 'getOrderSortingList',
                 order_id : order_id,
-                is_view : is_view
+                is_view : is_view,
+                warehouse_id : global.warehouse_id
             },
             success : function (response , status , xhr){
                 var html = '<td colspan="4">正在载入...</td>';
@@ -1769,25 +1775,25 @@ if(empty($_COOKIE['inventory_user'])){
                         
                         
                         if(window.inventory_user_order[order_id]&& window.inventory_user_order[order_id][1]){
-                            $("#inv_do_mi").remove();
-                            $("#inv_do_ice").remove();
-                            $("#inv_do_meat").remove();
+                            //$("#inv_do_mi").remove();  //Alex 2018-01-18
+                            //$("#inv_do_ice").remove(); //Alex 2018-01-18
+                            //$("#inv_do_meat").remove(); //Alex 2018-01-18
                         }
                         
                         if(window.inventory_user_order[order_id]&& window.inventory_user_order[order_id][2]){
-                            $("#inv_do_vg").remove();
-                            $("#inv_do_ice").remove();
-                            $("#inv_do_meat").remove();
+                            //$("#inv_do_vg").remove(); //Alex 2018-01-18
+                            //$("#inv_do_ice").remove(); //Alex 2018-01-18
+                            //$("#inv_do_meat").remove(); //Alex 2018-01-18
                         }
                         if(window.inventory_user_order[order_id]&& (window.inventory_user_order[order_id][3]|| window.inventory_user_order[order_id][5])){
-                            $("#inv_do_vg").remove();
-                            $("#inv_do_mi").remove();
-                            $("#inv_do_meat").remove();
+                            //$("#inv_do_vg").remove(); //Alex 2018-01-18
+                            //$("#inv_do_mi").remove(); //Alex 2018-01-18
+                            //$("#inv_do_meat").remove(); //Alex 2018-01-18
                         }
                         if(window.inventory_user_order[order_id]&&  window.inventory_user_order[order_id][4]){
-                            $("#inv_do_vg").remove();
-                            $("#inv_do_mi").remove();
-                            $("#inv_do_ice").remove();
+                            //$("#inv_do_vg").remove(); //Alex 2018-01-18
+                            //$("#inv_do_mi").remove(); //Alex 2018-01-18
+                            //$("#inv_do_ice").remove(); //Alex 2018-01-18
                         }
 
                         if(station_id == 1){
@@ -1817,11 +1823,12 @@ if(empty($_COOKIE['inventory_user'])){
                             window.product_barcode_arr_s[value.product_id] = {};
                             window.product_inv_barcode_arr[value.product_id] = value.product_barcode_arr;
                             
-                            if((window.inventory_user_order[order_id]&& window.inventory_user_order[order_id][1] && value.product_type_id == 1) ||
-                                (window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][2] && value.product_type_id == 2) ||
-                                (window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][3] && value.product_type_id == 3) ||
-                                (<?php echo in_array($_COOKIE['inventory_user'], $inventory_user_admin) ? 1 : 0;?> > 0)
-                            )
+                            //if((window.inventory_user_order[order_id]&& window.inventory_user_order[order_id][1] && value.product_type_id == 1) ||
+                            //    (window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][2] && value.product_type_id == 2) ||
+                            //    (window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][3] && value.product_type_id == 3) ||
+                            //    (<--php echo in_array($_COOKIE['inventory_user'], $inventory_user_admin) ? 1 : 0; --> > 0)
+                            //)
+                            if(1)
                             {
                                 count_plan_quantity = parseInt(value.plan_quantity) + parseInt(count_plan_quantity);
                                 count_quantity = parseInt(value.quantity) + parseInt(count_quantity);
@@ -2395,6 +2402,16 @@ if(empty($_COOKIE['inventory_user'])){
             }
             }
             
+        }
+
+        //兼容为29开头的商品内码，如2900300100405，是29开头，取3～5位数为商品编号
+        if(id.length == 13){
+            var internalFlag = parseInt(id.substr(0,2));
+            var internalId = parseInt(id.substr(2,5));
+
+            if(internalFlag == 29 && parseInt(window.product_id_arr[internalId]) == internalId){
+                id = internalId;
+            }
         }
         //id = parseInt(id);
         
@@ -3335,7 +3352,7 @@ function tjStationPlanProduct2(id){
 
     function getOrderByStatus(){
         var order_status_id = $("#orderStatus").val();
-        var warehouse_id  = $("#warehouse_id").val();
+        var warehouse_id  = parseInt($("#warehouse_id").text());
          $.ajax({
             type : 'POST',
             url : 'invapi.php',

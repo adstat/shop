@@ -1,5 +1,5 @@
 <?php
-    require_once '../../api/config.php';
+    require_once '../api/config.php';
     //exit('调试中,未分拣数据暂时停用');
     require_once(DIR_SYSTEM.'db.php');
     /*
@@ -10,7 +10,7 @@
 
 
 
-    $inventory_user_admin = array('alex','leibanban','wangshaokui');
+    $inventory_user_admin = array('alex','leibanban','wangshaokui','wuguobiao','wuguobiaosx');
     if(empty($_COOKIE['inventory_user'])){
         //重定向浏览器
 
@@ -18,6 +18,11 @@
 
         //确保重定向后，后续代码不会被执行
         exit;
+    }
+
+    $warehouse_id = isset($_COOKIE['warehouse_id']) ? $_COOKIE['warehouse_id'] : false;
+    if(!$warehouse_id){
+        exit("未设置仓库登录属性，请在分拣页面重新登录");
     }
 
     //当前日期
@@ -61,11 +66,11 @@
     //获取时间段内分拣的订单信息
     $result = array();
     if(sizeof($_POST)){
-        $sql = "select distinct order_id from oc_x_inventory_order_sorting where uptime between '".$checkStart."' and '".$checkEnd."'";
+        $sql = "select distinct deliver_order_id from oc_x_inventory_order_sorting where status = 1 and uptime between '".$checkStart."' and '".$checkEnd."'";
         $query = $db->query($sql);
         $sortOrderList = array(0);
         foreach($query->rows as $m){
-            $sortOrderList[] = $m['order_id'];
+            $sortOrderList[] = $m['deliver_order_id'];
         }
         $sortOrderListString = implode(',',$sortOrderList);
 
@@ -73,19 +78,23 @@
         //echo '<br />';
 
         $sql = "
-            select O.order_id, OD.inventory_name sorting_by, V.frame_count, V.box_count, V.inv_comment
-            from oc_order O
-            right join oc_order_distr OD on O.order_id = OD.order_id
+            select O.deliver_order_id, OD.inventory_name sorting_by, V.frame_count, V.box_count, V.inv_comment,doi.inv_comment inv_comment2
+            from oc_x_deliver_order O
+            right join oc_order_distr OD on O.deliver_order_id = OD.deliver_order_id
             left join oc_order_inv V on O.order_id = V.order_id
-            where O.order_id in (".$sortOrderListString.") and O.order_status_id in (".$queryOrderStatus.") and O.station_id = '".$station_id."'
+            left join oc_x_deliver_order_inv doi on doi.deliver_order_id = O.deliver_order_id
+            where O.deliver_order_id in (".$sortOrderListString.")
+                and O.order_status_id in (".$queryOrderStatus.")
+                and O.station_id = '".$station_id."'
+                and O.do_warehouse_id = '".$warehouse_id."'
             group by O.order_id
         ";
         $query = $db->query($sql);
         $orderInfoList = array();
         $orderList = array(0); //有效订单号
         foreach($query->rows as $m){
-            $orderInfoList[$m['order_id']] = $m;
-            $orderList[] = $m['order_id'];
+            $orderInfoList[$m['deliver_order_id']] = $m;
+            $orderList[] = $m['deliver_order_id'];
         }
         $orderListString = implode(',',$orderList);
 
@@ -100,29 +109,35 @@
             sum(AA.order_qty) order_qty,
             sum(if(BB.sort_qty is null, 0, BB.sort_qty)) sort_qty,
             sum(AA.order_qty) - sum(if(BB.sort_qty is null, 0, BB.sort_qty)) gap,
-            group_concat(concat(AA.order_id,'||', AA.order_qty - if(BB.sort_qty is null, 0, BB.sort_qty))) gap_list,
+            group_concat(concat(AA.deliver_order_id,'||', AA.order_qty - if(BB.sort_qty is null, 0, BB.sort_qty), '||',concat(AA.order_id,AA.warehouse))) gap_list,
             P.sku,
             P.model,
-            P.inv_class_sort
+            (sum(AA.order_qty) - sum(if(BB.sort_qty is null, 0, BB.sort_qty)))*AA.price gap_total,
+            ptw.stock_area inv_class_sort
             from (
-                select o.order_id, op.product_id, sum(op.quantity) order_qty
-                from oc_order o left join oc_order_product op on o.order_id  = op.order_id
-                where o.station_id = '".$station_id."' and o.order_id in (".$orderListString.")
-                group by o.order_id, op.product_id
+                select w.shortname warehouse, o.order_id, o.deliver_order_id, op.product_id, sum(op.quantity) order_qty, op.price
+                from oc_x_deliver_order o left join oc_x_deliver_order_product op on o.deliver_order_id  = op.deliver_order_id
+                    left join oc_x_warehouse w on o.warehouse_id = w.warehouse_id
+                where o.station_id = '".$station_id."' and o.deliver_order_id in (".$orderListString.")
+                group by o.deliver_order_id, op.product_id
             ) AA
             left join (
-                select A.order_id, A.product_id, sum(A.quantity) sort_qty
+                select A.deliver_order_id, A.product_id, sum(A.quantity) sort_qty
                 from oc_x_inventory_order_sorting A
-                where A.order_id in (".$orderListString.")
-                group by A.order_id, A.product_id
-            ) BB on AA.order_id = BB.order_id and AA.product_id = BB.product_id
+                where A.deliver_order_id in (".$orderListString.")
+                and A.status  = 1 
+                group by A.deliver_order_id, A.product_id
+            ) BB on AA.deliver_order_id = BB.deliver_order_id and AA.product_id = BB.product_id
             left join oc_product P on AA.product_id = P.product_id
+            left join oc_product_to_warehouse ptw on ptw.product_id = P.product_id and ptw.warehouse_id = '".$warehouse_id."' and ptw.do_warehouse_id = '".$warehouse_id."'
             group by AA.product_id having gap > 0
-        ";
+            order by gap_total desc";
 
         if($displayType == 2){
             $sql = "
                 select
+                AA.warehouse,
+                AA.deliver_order_id,
                 AA.order_id,
                 OD.inventory_name sorting_user,
                 AA.product_id,
@@ -133,23 +148,27 @@
                 AA.order_qty - if(BB.sort_qty is null, 0, BB.sort_qty) gap,
                 P.sku,
                 P.model,
-                P.inv_class_sort
+                (AA.order_qty - if(BB.sort_qty is null, 0, BB.sort_qty))*AA.price gap_total,
+                ptw.stock_area  inv_class_sort
                 from (
-                    select o.order_id, op.product_id, sum(op.quantity) order_qty
-                    from oc_order o left join oc_order_product op on o.order_id  = op.order_id
-                    where o.station_id = '".$station_id."' and o.order_id in (".$orderListString.")
-                    group by o.order_id, op.product_id
+                    select w.shortname warehouse, o.order_id, o.deliver_order_id, op.product_id, sum(op.quantity) order_qty, op.price
+                    from oc_x_deliver_order o left join oc_x_deliver_order_product op on o.deliver_order_id  = op.deliver_order_id
+                        left join oc_x_warehouse w on o.warehouse_id = w.warehouse_id
+                    where o.station_id = '".$station_id."' and o.deliver_order_id in (".$orderListString.")
+                    group by o.deliver_order_id, op.product_id
                 ) AA
                 left join (
-                    select A.order_id, A.product_id, sum(A.quantity) sort_qty, A.added_by
+                    select A.deliver_order_id, A.product_id, sum(A.quantity) sort_qty, A.added_by
                     from oc_x_inventory_order_sorting A
-                    where A.order_id in (".$orderListString.")
-                    group by A.order_id, A.product_id
-                ) BB on AA.order_id = BB.order_id and AA.product_id = BB.product_id
-                left join oc_order_distr OD on AA.order_id = OD.order_id
+                    where A.deliver_order_id in (".$orderListString.")
+                    and A.status = 1 
+                    group by A.deliver_order_id, A.product_id
+                ) BB on AA.deliver_order_id = BB.deliver_order_id and AA.product_id = BB.product_id
+                left join oc_order_distr OD on AA.deliver_order_id = OD.deliver_order_id
                 left join oc_product P on AA.product_id = P.product_id
-                group by AA.order_id, AA.product_id having gap > 0
-                order by AA.order_id, AA.product_id
+                left join oc_product_to_warehouse ptw on ptw.product_id = P.product_id and ptw.warehouse_id = '".$warehouse_id."' and ptw.do_warehouse_id = '".$warehouse_id."'
+                group by AA.deliver_order_id, AA.product_id having gap > 0
+                order by gap_total desc
             ";
         }
 
@@ -353,10 +372,11 @@
             }
             ?>
             <div class='message <?php echo $messageStyle; ?>'>
-                <?php echo $messageInfo; ?>
+                <?php echo '［测试:20180602更新显示分拣仓缺货］'.$messageInfo; ?>
             </div>
           <?php } ?>
 
+            <div><?php echo $_COOKIE['warehouse_title'];?></div>
             <form action="#" method="post">
                 <div style="margin: 3px;">
                     <span>分拣开始时间<input style="padding: 3px; font-size: 1rem; border: 1px solid #cccccc" type="datetime" name="checkStart" value="<?php echo $checkStart; ?>"></span>
@@ -395,19 +415,30 @@
                 <td>商品名称</td>
                 <td style="width: 3.2rem">商品数</td>
                 <td style="width: 3.2rem">未出库</td>
+                <td style="width: 3.2rem">金额</td>
             </tr>
             <?php $pivotOrderId = 0?>
             <?php foreach($result as $m){?>
                 <tr>
-                  <?php if($pivotOrderId == $m['order_id']){ ?>
+                  <?php if($pivotOrderId == $m['deliver_order_id']){ ?>
                     <td class="tdWhite"></td>
                   <?php } else{?>
-                    <td><?php echo $m['order_id'] . '<br /><span class="font08rem">[货位'.$orderInfoList[$m['order_id']]['inv_comment'].']</span><br /><span class="font08rem">[分拣'.$m['sorting_user'].']</span>'; ?></td>
+                    <td><?php
+                            echo $m['deliver_order_id'] .
+                                '
+                                <br /><span class="font08rem">[分拣位'.$orderInfoList[$m['deliver_order_id']]['inv_comment2'].']</span>
+                                <br /><span class="font08rem">[货位'.$orderInfoList[$m['deliver_order_id']]['inv_comment'].']</span>
+                                <br /><span class="font08rem">[分拣'.$m['sorting_user'].']</span>
+                                <br /><span class="font08rem">['.$m['order_id'].$m['warehouse'].']</span>
+                                ';
+                        ?>
+                    </td>
                   <?php } ?>
                     <td><?php echo $m['product_id']; ?></td>
                     <td><?php echo $m['name'] . '<br /><span class="font08rem">[分拣人:'.$m['sorting_by'].']</span>';?></td>
                     <td><?php echo $m['order_qty'];?></td>
                     <td><?php echo $m['gap'];?></td>
+                    <td><?php echo round($m['gap_total'],1);?></td>
                 </tr>
                 <?php $pivotOrderId = $m['order_id']; ?>
             <?php } ?>
@@ -418,9 +449,10 @@
                 <tr>
                     <td style="width: 3rem">商品号</td>
                     <td>商品名称</td>
-                    <td style="width: 4.5rem">订单分布</td>
+                    <td style="width: 5rem">订单分布</td>
                     <td style="width: 3.2rem">总订货</td>
                     <td style="width: 3.2rem">未出库</td>
+                    <td style="width: 3.2rem">金额</td>
                 </tr>
                 <?php foreach($result as $m){?>
                     <tr>
@@ -433,10 +465,15 @@
                                 $gapList = explode(',',$m['gap_list']);
                                 foreach($gapList as $n){
                                     $gapListInfo = explode('||',$n);
-                                    $gapListOrderId = $gapListInfo[0];
+                                    $gapListDoOrderId = $gapListInfo[0];
                                     $gapListQty = $gapListInfo[1];
+                                    $gapListOrderId = $gapListInfo[2];
                                     if($gapListQty>0){
-                                        $gapInfo .= '<div class="order_block">'.$gapListOrderId.'['.$gapListQty.']<br /><span class="font08rem">[货位'.$orderInfoList[$gapListOrderId]['inv_comment'].']</span><br /><span class="font08rem">[分拣'.$orderInfoList[$gapListOrderId]['sorting_by'].']</span></div>';
+                                        $gapInfo .= '<div class="order_block">'.$gapListDoOrderId.'['.$gapListQty.']
+                                            <br /><span class="font08rem">[分拣位'.$orderInfoList[$gapListDoOrderId]['inv_comment2'].']</span>
+                                            <br /><span class="font08rem">[货位'.$orderInfoList[$gapListDoOrderId]['inv_comment'].']</span>
+                                            <br /><span class="font08rem">[分拣'.$orderInfoList[$gapListDoOrderId]['sorting_by'].']</span>
+                                            <br /><span class="font08rem">['.$gapListOrderId.']</span></div>';
                                     }
                                 }
                             echo $gapInfo;
@@ -444,6 +481,7 @@
                         </td>
                         <td><?php echo $m['order_qty'];?></td>
                         <td><?php echo $m['gap'];?></td>
+                        <td><?php echo round($m['gap_total'],1);?></td>
                     </tr>
                 <?php } ?>
             </table>

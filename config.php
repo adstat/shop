@@ -1,8 +1,8 @@
 <?php
 ini_set('display_errors',0);
 
-define('SITE_URI','http://192.168.1.99/xsj');
-define('DIR_PATH','/opt/www/xsj');
+define('SITE_URI','http://localhost/shop');
+define('DIR_PATH','C:\phpStudy\PHPTutorial\WWW\shop');
 
 //define('SITE_URI','http://localhost/xsjb2b');
 //define('DIR_PATH','/Users/alexsun/htdocs/xsjb2b');
@@ -32,26 +32,56 @@ define('DIR_LOGS', DIR_PATH.'/www/system/logs/');
 define('DIR_MODIFICATION', DIR_PATH.'/www/system/modification/');
 define('DIR_CATALOG', DIR_PATH.'/www/catalog/');
 
-// DB
+//// DB
 define('DB_DRIVER', 'mysqli');
 define('DB_HOSTNAME', 'localhost');
-define('DB_USERNAME', 'b2badmin');
-define('DB_PASSWORD', 'dk2l3kms2me');
-define('DB_DATABASE', 'xsjb2b');
+define('DB_USERNAME', 'root');
+define('DB_PASSWORD', 'root');
+define('DB_DATABASE', 'test');
 define('DB_PREFIX', 'oc_');
 
-//线上昨日
-//define('DB_HOST', '139.129.213.223');
-//define('DB_USER', 'liangwenquanview');
-//define('DB_PW', 's923sdf33f3');
+define('DB_DRIVER_SLAVE', 'mysqli');
+define('DB_HOSTNAME_SLAVE', 'localhost');
+define('DB_USERNAME_SLAVE', 'root');
+define('DB_PASSWORD_SLAVE', 'root');
+define('DB_DATABASE_SLAVE', 'test');
+
+
+//define('DB_DRIVER', 'mysqli');
+//define('DB_HOSTNAME', '139.129.213.223');
+//define('DB_USERNAME', 'qinerjun');
+//define('DB_PASSWORD', 'dsl23lksdmml2');
 //define('DB_DATABASE', 'xsjb2b_lastday');
+//define('DB_PREFIX', 'oc_');
+
+/// DB
+//define('DB_DRIVER', 'mysqli');
+//define('DB_HOSTNAME', '139.129.213.223');
+//define('DB_USERNAME', 'zhangxiao');
+//define('DB_PASSWORD', 'Zx7215!~');
+//define('DB_DATABASE', 'xsjb2b_lastday');
+//define('DB_PREFIX', 'oc_');
+
+
+//线上昨日
+// define('DB_HOST', '139.129.213.223');
+// define('DB_USER', 'liangwenquanview');
+// define('DB_PW', 's923sdf33f3');
+// define('DB_DATABASE', 'xsjb2b_lastday');
 
 //Slave: Select
-define('DB_DRIVER_SLAVE', 'mysql');
-define('DB_HOSTNAME_SLAVE', 'localhost');
-define('DB_USERNAME_SLAVE', 'b2badmin');
-define('DB_PASSWORD_SLAVE', 'dk2l3kms2me');
-define('DB_DATABASE_SLAVE', 'xsjb2b');
+//define('DB_DRIVER_SLAVE', 'mysql');
+//define('DB_HOSTNAME_SLAVE', '139.129.213.223');
+//define('DB_USERNAME_SLAVE', 'qinerjun');
+//define('DB_PASSWORD_SLAVE', 'dsl23lksdmml2');
+//define('DB_DATABASE_SLAVE', 'xsjb2b_lastday');
+
+
+//define('DB_DRIVER_SLAVE', 'mysql');
+//define('DB_HOSTNAME_SLAVE', 'localhost');
+//define('DB_USERNAME_SLAVE', 'b2badmin');
+//define('DB_PASSWORD_SLAVE', 'dk2l3kms2me');
+//define('DB_DATABASE_SLAVE', 'xsjb2b');
 
 define('ALLOW_CANCEL',serialize(array(1,2)));
 define('ALLOW_M_DELIVER',serialize(array(1,2,4)));
@@ -210,28 +240,28 @@ $inventory_user_arr = array(
     //'wangyunying' => 'wangyunying' ,
     'wangshaokui' => 'skw98526', // 王少奎 仓库管理
 
-    // 姚红超	补货人员	盘盈盘亏 。货位条码。商品报损
+    // 姚红超  补货人员    盘盈盘亏 。货位条码。商品报损
     'yaohongchao' => 'yhc77631',
 
-    // 孙大玉	补货人员	盘盈盘亏 。货位条码。商品报损
+    // 孙大玉  补货人员    盘盈盘亏 。货位条码。商品报损
     'sundayu' => 'sdy98461',
 
-    // 和顺梅	补货人员	盘盈盘亏 。货位条码。商品报损
+    // 和顺梅  补货人员    盘盈盘亏 。货位条码。商品报损
     'heshunmei' => 'hsm89234',
 
-    // 汪小丽	补货人员	盘盈盘亏 。货位条码。商品报损
+    // 汪小丽  补货人员    盘盈盘亏 。货位条码。商品报损
     'wangxiaoli' => 'wxl49591',
 
-    // 李双	补货人员	盘盈盘亏 。货位条码。商品报损
+    // 李双   补货人员    盘盈盘亏 。货位条码。商品报损
     'lishuang' => 'ls89823',
 
-    // 闫勉丰	补货人员	盘盈盘亏 。货位条码。商品报损
+    // 闫勉丰  补货人员    盘盈盘亏 。货位条码。商品报损
     'yanmianfeng' => 'ymf99832',
 
-    // 周欢	收货人员	后台账号。采购入库提交权限
+    // 周欢   收货人员    后台账号。采购入库提交权限
     'zhouhuan' => 'zH31389',
 
-    // 韩婷婷	收货人员	后台账号。采购入库提交权限
+    // 韩婷婷  收货人员    后台账号。采购入库提交权限
     'hantingting' => 'Htt98231',
 
     'niudoudou' => 'ndd8931', //早班出库组长

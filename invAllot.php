@@ -1,7 +1,7 @@
 <?php
 //exit('调试中,未分拣数据暂时停用');
 
-require_once '../../api/config.php';
+require_once '../api/config.php';
 require_once(DIR_SYSTEM.'db.php');
 
 /*

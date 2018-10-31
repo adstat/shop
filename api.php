@@ -5,7 +5,7 @@ define('APIOROGIN', 1); //API
 define('APIKEY', 'wdf23447dkm316bf519d2juh5e47md56');
 
 //define('APIURL', 'http://localhost/b2b/api/xmlrpc/v1/index.php');
-define('APIURL', 'http://b2b.xianshiji.com/api/xmlrpc/v1/index.php');
+define('APIURL', 'http://localhost/api/xmlrpc/v1/index.php');
 
 define('DIR_ROOT', dirname(__FILE__).'/');
 define('DIR_PATH',DIR_ROOT . '../../');

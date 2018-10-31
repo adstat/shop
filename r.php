@@ -3,16 +3,17 @@ if( !isset($_GET['auth']) || $_GET['auth'] !== 'xsj2015inv'){
     exit('Not authorized!');
 }
 include_once 'config_scan.php';
-$inventory_user_admin = array('niudoudou','doormen','alex');
+$inventory_user_admin = array('1','21','22','23');
 if(empty($_COOKIE['inventory_user'])){
     //重定向浏览器 
-    header("Location: inventory_login.php?return=r.php&ver=db");
+    header("Location: inventory_login.php?return=i.php&ver=db");
     //确保重定向后，后续代码不会被执行 
     exit;
 }
 
-if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
-    exit("此功能仅限指定库管操作, 请返回");
+if(!in_array($_COOKIE['user_group_id'],$inventory_user_admin)){
+    echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+    exit("出库回库功能仅限指定人员操作, 请返回");
 }
 ?>
 <html>
@@ -205,6 +206,16 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             box-shadow: 0.1em rgba(0, 0, 0, 0.2);
             padding-left: 0.2em;
         }
+        #stock_area{
+            margin: 0.5em auto;
+            height: 1.5em;
+            font-size:0.9em;
+            background-color: #d0e9c6;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+            padding-left: 0.2em;
+        }
 
 
         .addprod{
@@ -330,6 +341,23 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         }
 
         #productsHold3 th{
+            padding: 0.3em;
+            background-color:#8fbb6c;
+            color: #000;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+
+        #productsHold4 td{
+            background-color:#d0e9c6;
+            color: #000;
+            height: 2.5em;
+
+            border-radius: 0.2em;
+            box-shadow: 0.1em rgba(0, 0, 0, 0.2);
+        }
+        #productsHold4 th{
             padding: 0.3em;
             background-color:#8fbb6c;
             color: #000;
@@ -490,6 +518,9 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
     </style>
 
     <script>
+        var global = {};
+        global.warehouse_id = '<?php echo $_COOKIE['warehouse_id'];?>';
+
         window.product_barcode_arr = {};
         window.product_inv_barcode_arr = {};
         <?php if(strstr($_COOKIE['inventory_user'],'scfj')){ ?>
@@ -500,7 +531,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
     </script>
 </head>
 
-    
+<button class="invopt" id="return_index_i" style="width:4em;" onclick="javascript:location='i.php?auth=xsj2015inv';">返回</button>
     <button class="invopt" id="return_index" style="display:none;width:4em;" onclick="javascript:location.reload();">返回</button>
     <div align="right"><?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <span onclick="javascript:logout_inventory_user();">退出</span></div>
 <div  style="display: none" id="inventory_user_id"> <?php echo $_COOKIE['inventory_user_id'];?> </div>
@@ -523,14 +554,18 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         <div id="inv_control" align="center">
             <div id="invMethods">
                 <button id="orderDeliverOut" class="invopt" style="display: block" onclick="javascript:location='change_orderstatus.php?auth=xsj2015inv&ver=db'">确认订单出库</button>
+                <button id="orderDeliverOut" class="invopt" style="display: block" onclick="javascript:location='fast_frame_in.php?auth=xsj2015inv&ver=db'">快消回收篮筐</button>
                 <button id="inventoryReturnProduct" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('inventoryReturnProduct');">出库缺货</button>
-                <button id="inventoryOrderMissing" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('inventoryOrderMissing');">库内丢失</button>
+                <button id="inventoryOrderMissing" class="invopt" style="display: none" onclick="javascript:inventoryMethodHandler('inventoryOrderMissing');">库内丢失</button>
                 <button id="deliverReturnProduct" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('deliverReturnProduct');">物流退货</button>
                 <button id="deliverReruenWholeProducts" class = 'invopt' style="display: block" onclick="javascript:inventoryMethodHandler('deliverReruenWholeProducts');  ">操作整单退货</button>
+                <button id="returnShelves" class = 'invopt' style="display: block" onclick="javascript:inventoryMethodHandler('returnShelves');  ">货架上货</button>
                 <button id="deliverReturnMissingProduct" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('deliverReturnMissingProduct');">回库散件缺货</button>
-                <button id="inventoryFrameIn" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('inventoryFrameIn');">回收篮框</button><br>
-
+                <button id="inventoryFrameIn" class="invopt" style="display: block" onclick="javascript:inventoryMethodHandler('inventoryFrameIn');">分拣回收篮框</button><br>
+                <div><button  id="outBasicInfo" class="invopt"  style="display: block;" onclick="outBasicInfo()">出库基础信息录入</button></div>
+                <button id="returnStockMoveProduct" class = 'invopt' style="display: block" onclick="javascript:inventoryMethodHandler('returnStockMoveProduct');  ">配送商品错误异常退回</button>
             </div>
+
 
             <div id="orderMissing" style="display: none">
                 <div id="missing_order_id">遗失订单 <input class="input_default" type="text" placeholder="订单号" name="missing_order_id"></div>
@@ -607,8 +642,12 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 
                 <input class="submit" id="submit_frame_check" type="button" value="确认检查" onclick="javascript:addCheckFrameCheck();">
                 
-                
+
                 <input class="submit" id="submit_frame_in" type="button" value="确认回收" onclick="javascript:addCheckFrameIn();">
+
+
+
+
                 <input class="submit" id="submit_frame_cage" type="button" value="确认到店" onclick="javascript:addCheckFrameCage();">
                <br>
                <br>
@@ -625,21 +664,26 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 <input type="button" class="submit"  style="display: none"  id="show_whole_order"  value="显示该订单所有商品" onclick="showOrderDetail();">
                 <input type="button" class="submit"  style="display: none"  id="show_deliver_confirm_order"  value="显示司机确认退货商品" onclick="showDeliverConfirm();">
                 <div id="order_id2" style="display:none;">订单号 <input placeholder="扫描订单号" style="font-size:1.2rem; width: 7rem" type="text" id="input_order_id2" name="input_order_id2">   </div>
+                <input type="button" class="submit"  style="display: none"  id="show_order_products"  value="显示该订单所有商品" onclick="showOrderProducts();">
                 <input type="hidden" id="isBack" value="0" />
                 <input type="hidden" id="isRepackMissing" value="0" />
+                <input type="hidden" id="returnShelves" value="0" />
                 <input type="hidden" id="returnMethod" value="" />
                 <table id="productsHold2" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
                     <tr>
                         <th style="display:none; width:2em">ID</th>
                         <th align="left">ID/名称</th>
                         <th style="width:2rem">退货类型</th>
-                        <th style="width:2rem">数量</th>
+                        <th style="width:2rem; display: none"   id="stock_move">出库数量</th>
+                        <th style="width:2rem">缺货数量</th>
                         <th style="width:2.5rem">操作</th>
                     </tr>
                     <tbody id="productsInfo2">
                         <!-- Scanned Product List -->
                     </tbody>
                 </table>
+
+
 
 
 
@@ -686,10 +730,12 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 <br />
                 <div ><select  style="margin:0 5rem" id = "return_reason">
                         <option value="">可选择退货原因</option>
-                        <option value="6">分拣出库,物流未配送</option>
+                        <option value="6">重复下单,商家要求取消配送</option>
+                        <option value="7">日期问题,商家要求整单退回</option>
                     </select>
                 </div>
                 <input class="submit" id="submitReturnProduct" type="button" value="提交" onclick="javascript:submitReturnProduct();">
+                <input class="submit" id="submitReturnBadProduct" type="button" style="display: none" value="提交报损" onclick="javascript:submitReturnBadProduct();">
                 <input style="display: none" class="submit" id="submitDeliverConfirmProduct" type="button" value="提交司机确认退货" onclick="javascript:submitDeliverConfirmProduct();">
 
                 <div style="float: none; clear: both"></div>
@@ -697,7 +743,9 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 <h1>已提交退货</h1>
                 <div style="float: none; clear: both">
                     <input class="submit" type="button" value="查找" onclick="javascript:getAddedReturnDeliverProduct();">
+                    <input class="submit"  style="display: none " type="button" value="查找报损"  id = 'getAddedBadReturnDeliverProduct_1' onclick="javascript:getAddedBadReturnDeliverProduct();">
                     <input style="float: right" class="input_default" id="searchDate" type="text" value="<?php echo date('Y-m-d', time());?>">
+                    <input style="float: right" class="input_default" id="searchProductId" type="text" value="" placeholder="商品ID">
                 </div>
                 <table id="productsHold3" border="0" style="width:100%;" cellpadding=2 cellspacing=3>
                     <tr>
@@ -712,8 +760,27 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                     </tbody>
                 </table>
 
+
+                <table id="productsHold4" border="0" style="width:100%; display:none" cellpadding=2 cellspacing=3>
+                    <tr>
+                        <th style="width:2rem">商品ID</th>
+                        <th align="left">ID/名称</th>
+                        <th style="width:1rem">退货数量</th>
+                        <th style="width:1rem">上架数量</th>
+                        <th style="width:2rem">退货类型</th>
+                        <th style="width:2rem">小计</th>
+                    </tr>
+                    <tbody id="productsInfo4">
+                    <!-- Scanned Product List -->
+                    </tbody>
+                </table>
+
+
                 <div style="text-align: left">
-                    <input style="float: right" class="submit" id="confirmReturnProduct" type="button" value="全部确认" onclick="javascript:confirmReturnProduct();">
+
+                    <?php if(in_array($_COOKIE['user_group_id'], array("1","23","24",'21'))){?>
+                 <!--   <input style="float: right" class="submit" id="confirmReturnProduct" type="button" value="全部确认" onclick="javascript:confirmReturnProduct();"> -->
+                    <?php } ?>
                 </div>
             </div>
 
@@ -778,6 +845,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         </div>
     </div>
     <script>
+        var log = console.log.bind(console);
     //JS Date Format Extend
     Date.prototype.Format = function(fmt)
     { //author: meizz
@@ -800,7 +868,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
 
     $(document).ready(function () {
         startTime();
-
+log(123123);
         //Get RegMethod
         $.ajax({
             type : 'POST',
@@ -929,7 +997,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         $('#invMethods').hide();
         $('#message').html('');
         $('#move_list').hide();
-
+        $("#return_index_i").hide();
 
 
 
@@ -980,7 +1048,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             });
 
         }
-        else if(method == 'inventoryReturnProduct' || method == 'deliverReturnProduct' || method == 'deliverReturnMissingProduct' || method == 'deliverReruenWholeProducts'){
+        else if(method == 'inventoryReturnProduct' || method == 'deliverReturnProduct' || method == 'deliverReturnMissingProduct' || method == 'deliverReruenWholeProducts' || method == 'returnShelves'){
             console.log('Method:'+method);
             $('#barcodescanner2').show();
             $("#submit_frame_in").hide();
@@ -991,8 +1059,17 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             $("#order_id").hide();
            if(method == 'deliverReturnProduct'){
                $("#show_deliver_confirm_order").show();
+               $("#submitReturnBadProduct").show();
+               $("#getAddedBadReturnDeliverProduct_1").show();
 
            }
+
+            if(method == 'inventoryReturnProduct' ){
+              $("#show_order_products").show();
+            }
+
+
+
             if(method == 'inventoryReturnProduct'  || method == 'deliverReturnMissingProduct'){
                 $("#whole_order").hide();
                 $("#show_whole_order").hide();
@@ -1002,6 +1079,18 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             if(method == 'deliverReruenWholeProducts'){
                 $("#whole_order").show();
                 $("#show_whole_order").show();
+            }
+
+            if(method == 'returnShelves'){
+                $("#productsHold3").hide();
+                $("#productsHold2").hide();
+                $("#barcodescanner2").hide();
+                $("#return_reason").hide();
+                $("#order_id2").hide();
+                $("#submitReturnBadProduct").hide();
+                $("#submitReturnProduct").hide();
+                $("#getAddedBadReturnDeliverProduct_1").hide();
+                $("#productsHold4").show();
             }
 
             $("#order_id2").show();
@@ -1017,6 +1106,14 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 console.log('Start inventoryReturnProduct');
                 $('#message').html('订单出库时处理，可退整箱数量');
                 $('#isBack').val(0);
+            }
+
+
+            if(method == 'returnShelves'){
+                console.log('Start returnShelves');
+                $('#message').html('上架人员看到所有退货');
+                $('#isBack').val(1);
+                $("#returnShelves").val(1);
             }
 
             if(method == 'deliverReturnProduct'){
@@ -1038,6 +1135,13 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 $('#isRepackMissing').val(1);
             }
 
+            if(method == 'deliverReturnProduct' || method == 'deliverReruenWholeProducts' ){
+                <?php if(in_array($_COOKIE['user_group_id'], array("21"))){?>
+                        $("#confirmReturnProduct").hide();
+                <?php } ?>
+            }
+
+
            getAddedReturnDeliverProduct();
         }
         else if(method == 'inventoryOrderMissing'){
@@ -1054,6 +1158,11 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         else{
             $('#getplanned').hide();
         }
+
+        if(method = 'returnStockMoveProduct'){
+            $("productsHold2").hide();
+        }
+
         locateInput();
     }
 
@@ -1118,6 +1227,53 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         $('#'+id).val(1);
     }
 
+
+    function returnBox1(id,in_part,return_id){
+        var set_return = '';
+        if (return_id>0) {
+            set_return=return_id;
+        }
+        var returnBoxButton = "#returnbox" + id+in_part+set_return;
+        var returnPartButton = "#returnpart" + id+in_part+set_return;
+        var boxQtyInput = "#boxqty" + id+in_part+set_return;
+        var returnBoxQtyInput = "#returnboxqty" + id + in_part+set_return;
+        var returnType = "#returntype" + id+set_return;
+
+        $(returnType).html('退整箱');
+        $(returnBoxQtyInput).val(1);
+        $(returnBoxQtyInput).hide();
+        $(returnPartButton).show();
+        $(returnBoxButton).hide();
+
+        //重置数量
+        $('#'+id).val(1);
+    }
+
+    function returnPart1(id,in_part,return_id){
+        var set_return = '';
+        if (return_id>0) {
+            set_return=return_id;
+        }
+        var returnBoxButton = "#returnbox" + id+in_part+set_return;
+        var returnPartButton = "#returnpart" + id+in_part+set_return;
+        var boxQtyInput = "#boxqty" + id+in_part+set_return;
+        var returnBoxQtyInput = "#returnboxqty" + id+in_part+set_return;
+        var returnType = "#returntype" + id+set_return;
+
+        $(returnType).html('整箱件数');
+        $(returnBoxQtyInput).val($(boxQtyInput).val());
+        $(returnBoxQtyInput).show();
+        $(returnPartButton).hide();
+        $(returnBoxButton).show();
+
+        //重置数量
+        $('#'+id).val(1);
+    }
+
+
+
+
+
     function returnPart(id){
         var returnBoxButton = "#returnbox" + id;
         var returnPartButton = "#returnpart" + id;
@@ -1173,10 +1329,11 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 ajax_id = id;
                 $.ajax({
                     type : 'POST',
-                    url : 'invapi.php',
+                    url : 'invapi.php?method=getSkuProductInfo',
                     data : {
                         method : 'getSkuProductInfo',
-                        sku : ajax_id
+                        sku : ajax_id,
+                        warehouse_id : parseInt(global.warehouse_id)
                     },
                     success : function (response , status , xhr){
                         if(response){
@@ -1194,7 +1351,11 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                                 boxSize = 1;
                             }
 
-                            $("#info"+id).html('['+jsonData.product_id+']'+jsonData.name);
+                            var productAbstract = '';
+                            if(jsonData.abstract !== ''){
+                                productAbstract = "<span style='font-size:0.8rem; background-color: #ffcc00; padding: 3px;'>["+jsonData.abstract+"]</span>";
+                            }
+                            $("#info"+id).html('['+jsonData.product_id+']'+jsonData.name+productAbstract);
                             $("#sku"+id).html(jsonData.sku);
                             $("#boxqty"+id).val(boxSize);
                             //$("#price"+id).html(jsonData.price);
@@ -1338,10 +1499,11 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
 
     function handleProductList(){
         var rawId = $('#product').val();
+
         id = rawId.substr(0,6);//Get 18 code
 
         var method = $("#method").val();
-        
+
 
         //Avoid exist barcode
         if(id.length == 6){
@@ -1355,14 +1517,15 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             else{
                 
                 //如果是回收筐，判断是否能回收
-                if(method == 'inventoryFrameIn'){
+                if(method == 'inventoryFrameIn'  ){
                     
                         $.ajax({
                             type : 'POST',
                             url : 'invapi.php',
                             data : {
                                 method : 'checkFrameCanIn',
-                                frame_list : id
+                                frame_list : id ,
+                                warehouse_id :parseInt(global.warehouse_id),
                             },
                             success : function (response, status, xhr){
                                 if(response){
@@ -1398,10 +1561,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         else{
                     addProduct2(id);
                 }
-                
-                
-                
-                
+
             }
         }
         else{
@@ -1475,7 +1635,8 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 url : 'invapi.php?method=addCheckFrameIn',
                 data : {
                     method : 'addCheckFrameIn',
-                    frame_list : frame_list
+                    frame_list : frame_list,
+                    warehouse_id : parseInt(global.warehouse_id) ,
                 },
                 success : function (response, status, xhr){
                     if(response){
@@ -1525,6 +1686,75 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
 
     function getAddedReturnDeliverProduct(){
         var warehouse_id = $("#warehouse_id").text();
+        var isReturnShelves = $("#returnShelves").val();
+        var  user_group_id  =  parseInt('<?php echo $_COOKIE['user_group_id'];?>');
+
+        if(isReturnShelves == 0){
+            $.ajax({
+                type : 'POST',
+                url : 'invapi.php?method=getAddedReturnDeliverProduct&isback='+$('#isBack').val(),
+                data : {
+                    method : 'getAddedReturnDeliverProduct',
+                    searchDate : $("#searchDate").val(),
+                    isBack : $('#isBack').val(),
+                    isRepackMissing: $('#isRepackMissing').val(),
+                    product_id : $("#searchProductId").val(),
+                    warehouse_id : warehouse_id,
+                    isReturnShelves : isReturnShelves,
+                    user_group_id :user_group_id,
+                },
+                success : function (response, status, xhr){
+                    if(response){
+                        //var jsonData = eval(response);
+                        console.log(response);
+                        var jsonData = $.parseJSON(response);
+
+                        if(jsonData.status == 999){
+                            alert(jsonData.msg);
+                            location.href = "inventory_login.php?return=r.php&ver=db";
+                        }
+
+                        var html = '';
+                        $.each(jsonData, function(index,value){
+                            var returnQty = value.quantity;
+                            var unitPrice = '<i class="f0_8rem">［单价' + parseFloat(value.price).toFixed(2) + '元]</i>';
+
+                            if(parseInt(value.in_part) == 1){
+                                returnQty = value.quantity + '/' + value.box_quantity + '[拆]';
+                                unitPrice = '<i class="f0_8rem">［拆包单价' + parseFloat(value.price).toFixed(2) + '元]</i>';
+                            }
+                            var disableReutrnButton = '<br /><input style="width: 2rem" class="addprod style_red" id="submitReturnProduct" type="button" value="取消" onclick="if(confirm(\'取消['+value.product+']退货吗？\')){ javascript:disableReturnDeliverProduct('+value.return_deliver_product_id+');}"><br />';
+
+                            var confirmReutrnButton = ' <br/><input    style="width: 2rem"  class="addprod style_red" id="submitReturnSingleProduct"   type="button" value="确认" onclick="if(confirm(\'确认['+value.product+']退货吗？\')){javascript:confirmReturnSingleProduct('+value.return_deliver_product_id +' ,'+value.product_id+');}">';
+
+
+                            if(parseInt(value.confirmed)==1){
+                                disableReutrnButton = '<br /><span style="font-size: 0.8rem">[已确认]</span>';
+                                confirmReutrnButton =  '<br /><span style="font-size: 0.8rem">[已确认]</span>';
+                            }
+
+
+
+
+
+                            html += '<tr class="barcodeHolder" >' +
+                                '<td>'+value.order_id+confirmReutrnButton+'</td>' +
+                                '<td>'+value.product_id+disableReutrnButton+'</td>' +
+                                '<td>'+value.product+unitPrice+'</td>' +
+                                '<td>'+returnQty+'</td>' +
+                                '<td>'+ parseFloat(value.total).toFixed(2) + '</td>' +
+                                '</tr>';
+                        });
+                        if(html == ''){
+                            html = '<tr><td colspan="5">无记录</td></tr>';
+                        }
+
+                        $('#productsInfo3').html(html);
+                    }
+                }
+            });
+        }
+    if(isReturnShelves == 1){
         $.ajax({
             type : 'POST',
             url : 'invapi.php?method=getAddedReturnDeliverProduct&isback='+$('#isBack').val(),
@@ -1533,7 +1763,109 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                 searchDate : $("#searchDate").val(),
                 isBack : $('#isBack').val(),
                 isRepackMissing: $('#isRepackMissing').val(),
+                product_id : $("#searchProductId").val(),
                 warehouse_id : warehouse_id,
+                isReturnShelves : isReturnShelves,
+                user_group_id:user_group_id,
+            },
+            success : function (response, status, xhr){
+                if(response){
+                    //var jsonData = eval(response);
+                    console.log(response);
+                    var jsonData = $.parseJSON(response);
+
+                    if(jsonData.status == 999){
+                        alert(jsonData.msg);
+                        location.href = "inventory_login.php?return=r.php&ver=db";
+                    }
+
+                    var html = '';
+                    $.each(jsonData, function(index,value){
+
+                        var returnQty = value.quantity;
+                        var unitPrice = '<i class="f0_8rem">［单价' + parseFloat(value.price).toFixed(2) + '元]</i>';
+                        var return_id = '';
+                        if (parseInt(value.return_id.split(',')[0])>0){
+                            return_id = parseInt(value.return_id.split(',')[0]);
+                        }
+                        if(parseInt(value.in_part) == 1){
+                            returnQty = value.quantity + '/' + value.box_quantity + '<br />[拆]';
+                            unitPrice = '<i class="f0_8rem">［拆包单价' + parseFloat(value.price).toFixed(2) + '元]</i>';
+                        }
+
+                        if(value.in_part == 1){
+                            var confirmReutrnButton = ' <br/>散<input    style="width: 2rem"  class="addprod style_red" id="submitReturnSingleProduct"   type="button" value="确认" onclick="if(confirm(\'确认['+value.product_id+']退货吗？\')){javascript:confirmReturnShelves('+value.product_id+','+value.in_part+','+value.box_size+','+return_id+');}">';
+                            if(parseInt(value.return_confirmed) ==  1){
+
+                                confirmReutrnButton =  '<br />散<span style="font-size: 0.8rem">[已确认]</span>';
+                            }
+                        }
+
+
+                        if(value.in_part == 0){
+                            var confirmReutrnButton = ' <br/>整<input    style="width: 2rem"  class="addprod style_red" id="submitReturnSingleProduct"   type="button" value="确认" onclick="if(confirm(\'确认['+value.product_id+']退货吗？\')){javascript:confirmReturnShelves('+value.product_id+','+value.in_part+','+value.box_size+','+return_id+');}">';
+                            if(parseInt(value.return_confirmed) ==  1){
+
+                                confirmReutrnButton =  '<br />整<span style="font-size: 0.8rem">[已确认]</span>';
+                            }
+                        }
+
+                        var warehouseInfo = '';
+                        if(parseInt(value.isDoWarehouse) == 0){
+                            warehouseInfo = '<div class="style_yellow">'+ value.doWarehouse +'</div>';
+                        }
+
+
+                        html += '<tr class="barcodeHolder" >' +
+                            '<td>'+value.product_id+confirmReutrnButton+'</td>' +
+                            '<td>'+warehouseInfo+value.name+'[货位：'+value.stock_area+']'+unitPrice+'</td>' +
+                            '<td id="return_added'+ value.product_id+value.in_part+return_id+'" >'+returnQty+'</td>' +
+                            '<td style="width:5px"><input style="width: 2rem; font-size: 1rem;padding:0.3rem" id="shelves_confirm'+ value.product_id+ value.in_part+return_id+'"  value="'+ value.quantity +'"></td>' +
+                            '<td style="width:4em; text-align: center">' +
+                            '<span id="returntype'+ value.product_id+return_id+'">退整件</span>' +
+                            '<input class="qty" type="hidden" id="boxqty'+ value.product_id +value.in_part +return_id+'"  name="boxqty'+  value.product_id +'" value="'+value.box_quantity+'" />' +
+                            '<input class="qty" style="display: none; background-color: #fff; border: 1px #ccc solid; margin: 5px 0" id="returnboxqty'+  value.product_id +value.in_part+return_id+'" name="returnboxqty'+  value.product_id +'" value="1" />' +
+                            '<input class="qty" type="hidden" id="return_id'+ value.product_id +value.in_part+return_id+'" name="boxqty'+  value.product_id +'" value="'+value.return_id+'" />' +
+                            '<input class="addprod style_green returnType" style="display: none" id="returnbox'+value.product_id+value.in_part+return_id+'" type="button" value="改退整件" onclick="returnBox1('+ value.product_id+','+ value.in_part+','+return_id+');">' +
+                            '<input class="addprod style_green returnType" style="display: inline" id="returnpart'+value.product_id+value.in_part+return_id+'" type="button" value="改退散件" onclick="returnPart1('+ value.product_id+','+ value.in_part+','+return_id+');">' +
+                            '</td>' +
+                            '<td>'+ parseFloat(value.total).toFixed(2) + '</td>' +
+                            '</tr>';
+                        var boxSize = parseInt(value.box_size);
+                        if(boxSize == 0){
+                            boxSize = 1;
+                        }
+
+                        $("#boxqty"+value.product_id).val(boxSize);
+
+                    });
+                    if(html == ''){
+                        html = '<tr><td colspan="5">无记录</td></tr>';
+                    }
+
+                    $("#order_id2").hide();
+                    $("#submitReturnProduct").hide();
+                    $('#productsInfo4').html(html);
+                }
+            }
+        });
+    }
+
+    }
+        //报损当面
+    function  getAddedBadReturnDeliverProduct(){
+        var warehouse_id = $("#warehouse_id").text();
+        $.ajax({
+            type : 'POST',
+            url : 'invapi.php?method=getAddedBadReturnDeliverProduct&isback='+$('#isBack').val(),
+            data : {
+                method : 'getAddedBadReturnDeliverProduct',
+                searchDate : $("#searchDate").val(),
+                isBack : $('#isBack').val(),
+                isRepackMissing: $('#isRepackMissing').val(),
+                product_id : $("#searchProductId").val(),
+                warehouse_id : warehouse_id,
+
             },
             success : function (response, status, xhr){
                 if(response){
@@ -1555,17 +1887,26 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                             returnQty = value.quantity + '/' + value.box_quantity + '[拆]';
                             unitPrice = '<i class="f0_8rem">［拆包单价' + parseFloat(value.price).toFixed(2) + '元]</i>';
                         }
-                        var disableReutrnButton = '<br /><input class="addprod style_red" id="submitReturnProduct" type="button" value="取消" onclick="if(confirm(\'取消['+value.product+']退货吗？\')){ javascript:disableReturnDeliverProduct('+value.return_deliver_product_id+');}">';
+                        var disableReutrnButton = '<br /><input style="width: 2rem" class="addprod style_red" id="submitReturnProduct" type="button" value="取消" onclick="if(confirm(\'取消['+value.product+']的报损吗？\')){ javascript:disableReturnBadDeliverProduct('+value.return_deliver_product_id+');}"><br />';
+
+                        var confirmReutrnButton = ' <br/><input    style="width: 2rem"  class="addprod style_red" id="submitReturnSingleProduct"   type="button" value="确认" onclick="if(confirm(\'确认['+value.product+']报损吗？\')){javascript:confirmReturnBadSingleProduct('+value.return_deliver_product_id+');}">';
+
+
                         if(parseInt(value.confirmed)==1){
                             disableReutrnButton = '<br /><span style="font-size: 0.8rem">[已确认]</span>';
+                            confirmReutrnButton =  '<br /><span style="font-size: 0.8rem">[已确认]</span>';
                         }
 
+
+
+
+
                         html += '<tr class="barcodeHolder" >' +
-                            '<td>'+value.order_id+disableReutrnButton+'</td>' +
-                            '<td>'+value.product_id+'</td>' +
+                            '<td>'+value.order_id+'['+'报损'+']' +confirmReutrnButton+'</td>' +
+                            '<td>'+value.product_id+disableReutrnButton+'</td>' +
                             '<td>'+value.product+unitPrice+'</td>' +
                             '<td>'+returnQty+'</td>' +
-                            '<td>'+ parseFloat(value.total).toFixed(2) +'</td>' +
+                            '<td>'+ parseFloat(value.total).toFixed(2) + '</td>' +
                             '</tr>';
                     });
                     if(html == ''){
@@ -1599,6 +1940,29 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         });
     }
 
+ //报损当面
+    function disableReturnBadDeliverProduct(id){
+        $.ajax({
+            type : 'POST',
+            url : 'invapi.php?method=disableReturnBadDeliverProduct',
+            data : {
+                method : 'disableReturnBadDeliverProduct',
+                return_deliver_product_id : id
+            },
+            success : function (response, status, xhr){
+                if(response){
+                    console.log(response);
+
+                    var jsonData = $.parseJSON(response);
+                    alert(jsonData.message);
+                    getAddedBadReturnDeliverProduct();
+
+                }
+            }
+        });
+    }
+
+
     //快销品当面退
     function submitReturnProduct(){
         var return_reason = $("#return_reason").val();
@@ -1607,7 +1971,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         if(prodListWithQty == 0){
             alert("输入的数量不合法");return false;
         }
-        
+
         if(prodListWithQty == '' || prodListWithQty == null ){
             alert('获取条码列表错误或还没有输入商品条码。');
             return false;
@@ -1674,6 +2038,83 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
             });
         }
     }
+ // 报损当面提交
+    function submitReturnBadProduct(){
+        var return_reason = $("#return_reason").val();
+        var prodListWithQty = getReturnProductBarcodeWithQty();
+        var warehouse_id = $("#warehouse_id").text();
+        if(prodListWithQty == 0){
+            alert("输入的数量不合法");return false;
+        }
+
+        if(prodListWithQty == '' || prodListWithQty == null ){
+            alert('获取条码列表错误或还没有输入商品条码。');
+            return false;
+        }
+        var order_id = $("#input_order_id2").val();
+        if(order_id == ''){
+            alert('请扫描订单号。');
+            return false;
+        }
+
+        if(confirm('确认提交此次报损操作？')){
+
+            $('#submitReturnBadProduct').attr('class',"submit style_gray");
+            $('#submitReturnBadProduct').attr('disabled',"disabled");
+            $('#submitReturnBadProduct').attr('value',"正在提交...");
+
+            $.ajax({
+                type : 'POST',
+                url : 'invapi.php?method=addReturnBadDeliverBadProduct',
+                data : {
+                    method : 'addReturnDeliverBadProduct',
+                    order_id : order_id,
+                    products : prodListWithQty,
+                    return_reason:return_reason,
+                    isBack : parseInt($('#isBack').val()),
+                    isRepackMissing: parseInt($('#isRepackMissing').val()),
+                    warehouse_id : warehouse_id,
+                },
+                success : function (response , status , xhr){
+                    if(response){
+                        console.log(response);
+
+                        var jsonData = $.parseJSON(response);
+                        if(jsonData.status){
+                            if(jsonData.status !== 1){
+                                alert(jsonData.message);
+                                return false;
+                            }
+                            if(jsonData.status == 1){
+                                alert("提交成功");
+                                $('#productsInfo2').html("");
+                                //inventoryMethodHandler($('#returnMethod').val());
+                                getAddedReturnDeliverProduct();
+                            }
+                        }
+                        else{
+                            //$('#message').attr('class',"message style_error");
+                            $('#message').html(jsonData.message);
+                            //console.log('Inv. Process Error.');
+                        }
+
+
+                        if(jsonData.status == 999){
+                            alert(jsonData.msg);
+                            window.location = 'inventory_login.php?return=r.php&ver=db';
+                        }
+                    }
+                },
+                complete : function(){
+                    $('#submitReturnBadProduct').attr('class',"submit");
+                    $('#submitReturnBadProduct').removeAttr("disabled");
+                    $('#submitReturnBadProduct').attr('value',"提交报损");
+                }
+            });
+        }
+    }
+
+
 
 
     function confirmReturnProduct(){
@@ -1730,6 +2171,116 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         }
     }
 
+
+    function confirmReturnSingleProduct(id,product_id){
+        var warehouse_id = $("#warehouse_id").text();
+
+        if(confirm('确认这些退货记录吗，操作不可撤销？')) {
+            $.ajax({
+                type: 'POST',
+                url: 'invapi.php?method=confirmReturnSingleProduct',
+                data: {
+                    method: 'confirmReturnSingleProduct',
+                    data: {
+                        searchDate: $("#searchDate").val(),
+                        isBack: parseInt($('#isBack').val()),
+                        isRepackMissing: parseInt($('#isRepackMissing').val()),
+                        warehouse_id: warehouse_id,
+                        return_deliver_product_id: id,
+                        add_user_id: '<?php echo $_COOKIE['inventory_user_id'];?>',
+                        product_id : product_id ,
+                    },
+                },
+                success: function (response, status, xhr) {
+                    console.log(response);
+                    if (response) {
+                        console.log(response);
+
+                        var jsonData = $.parseJSON(response);
+                        alert(jsonData.message);
+                        getAddedReturnDeliverProduct();
+
+
+//                        if(jsonData.status !== 1){
+//                            return false;
+//                        }
+//
+//                        if(jsonData.status == 2){
+//                            alert("提交确认成功");
+//                            if(jsonData.message !== ''){
+//                                alert("部分订单退货金额有误未确认，请核实"+jsonData.message);
+//                            }
+//                            getAddedReturnDeliverProduct();
+//                        }
+
+
+                        if (jsonData.status == 999) {
+                            alert(jsonData.msg);
+                            window.location = 'inventory_login.php?return=r.php&ver=db';
+                        }
+                    }
+                }
+            });
+
+        }
+
+
+        }
+
+    //报损当面
+    function confirmReturnBadSingleProduct(id){
+        var warehouse_id = $("#warehouse_id").text();
+
+        if(confirm('确认这些退货记录吗，操作不可撤销？')) {
+            $.ajax({
+                type: 'POST',
+                url: 'invapi.php?method=confirmReturnBadSingleProduct',
+                data: {
+                    method: 'confirmReturnBadSingleProduct',
+                    data: {
+                        searchDate: $("#searchDate").val(),
+                        isBack: parseInt($('#isBack').val()),
+                        isRepackMissing: parseInt($('#isRepackMissing').val()),
+                        warehouse_id: warehouse_id,
+                        return_deliver_product_id: id,
+                        add_user_id: '<?php echo $_COOKIE['inventory_user_id'];?>',
+                    },
+                },
+                success: function (response, status, xhr) {
+                    console.log(response);
+                    if (response) {
+                        console.log(response);
+
+                        var jsonData = $.parseJSON(response);
+                        alert(jsonData.message);
+                        getAddedBadReturnDeliverProduct();
+
+
+//                        if(jsonData.status !== 1){
+//                            return false;
+//                        }
+//
+//                        if(jsonData.status == 2){
+//                            alert("提交确认成功");
+//                            if(jsonData.message !== ''){
+//                                alert("部分订单退货金额有误未确认，请核实"+jsonData.message);
+//                            }
+//                            getAddedReturnDeliverProduct();
+//                        }
+
+
+                        if (jsonData.status == 999) {
+                            alert(jsonData.msg);
+                            window.location = 'inventory_login.php?return=r.php&ver=db';
+                        }
+                    }
+                }
+            });
+
+        }
+
+
+    }
 
 
 
@@ -1850,7 +2401,7 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
                         html +="</td>";
                     }else{
                         html += "<td style='border:1px solid'>";
-                        html +="<span>"+ '整件' + "/ "+ "</span>"+"<span>"+ v.product_id + "/ "+ "</span>"+"<span>"+ v.name + "/ "+ "</span>"+"<span>"+ v.sku + "/ "+ "</span>"
+                        html +="<span>"+ '整件' + "/ "+ "</span>"+"<span>"+ v.product_id + "/ "+ "</span>"+"<span>"+ v.name + "/ "+ "</span>"+"<span>"+ v.sku + "/ "+ "</span>";
                         html +="</td>";
                     }
 
@@ -2236,7 +2787,134 @@ if(!in_array($_COOKIE['inventory_user'],$inventory_user_admin)){
         }
     }
 
+    function  showOrderProducts(){
+        var order_id  = $("#input_order_id2").val();
+            $("#stock_move").show();
+        if(order_id == ''){
+            alert('请输入订单号');
+            return false;
+        }
 
+        $.ajax({
+            type : 'POST',
+            url : 'invapi.php?method=showOrderProducts',
+            data : {
+                method : 'showOrderProducts',
+                data:{
+                    order_id : order_id,
+
+                }
+            },
+            success:function(response){
+                if(response){
+                    var jsonData = $.parseJSON(response);
+                    var html = '';
+                    $.each(jsonData, function(index,v) {
+                        html += '<tr class="barcodeHolder" id="bd'+ v.product_id +'">' +
+                            '<td style="display:none;" id="product_id_'+v.product_id+'">'+v.product_id+'</td>' +
+                            '<td>' +
+                            '<span style="display:none;" name="productBarcode" >' + v.product_id + '</span>' +
+                            '<span style="display:none;" inputBarcode="'+v.product_id+'" class="productBarcodeProduct" name="productBarcodeProduct" id="productBarcodeProduct'+v.product_id+'" >'+v.product_id+'</span>' +
+                            '<span id="info'+ v.product_id +'">'+'['+v.product_id+']'+v.name+'</span>' +
+
+                            '</td>' +
+
+                            '<td style="width:4em; text-align: center">' +
+                            '<span id="returntype'+v.product_id+'">退整件</span>' +
+                            '<input class="qty" type="hidden" id="boxqty'+ v.product_id +'" name="boxqty'+ v.product_id +'" value="1" />' +
+                            '<input class="qty" style="display: none; background-color: #fff; border: 1px #ccc solid; margin: 5px 0" id="returnboxqty'+ v.product_id +'" name="returnboxqty'+ v.product_id +'" value="1" />' +
+                            '<input class="addprod style_green returnType" style="display: none" id="returnbox'+v.product_id+'" type="button" value="改退整件" onclick="returnBox('+v.product_id+');">' +
+                            '<input class="addprod style_green returnType" style="display: inline" id="returnpart'+v.product_id+'" type="button" value="改退散件" onclick="returnPart('+v.product_id+');">' +
+                            '<td style="width:4em;"><input class="qty" id="stock'+ v.product_id +'" name="'+ v.product_id +'" value="'+v.quantity +'"  /></td>' +
+                            '<td style="width:4em;"><input class="qty" id="'+ v.product_id +'" name="'+ v.product_id +'" value="0"  /></td>' +
+                            '<td>' +
+                            '<input class="qtyopt" type="button" value="+" onclick="javascript:qtyadd2(\''+ v.product_id +'\')" >' +
+                            '<input class="qtyopt style_green" type="button" value="-" onclick="javascript:qtyminus2(\''+ v.product_id +'\')" >' +
+                            '</td>' +
+                            '</tr>';
+
+                        var boxSize = parseInt(v.box_size);
+                        if(boxSize == 0){
+                            boxSize = 1;
+                        }
+
+                        $("#info"+ v.product_id).html('['+v.product_id+']'+v.name);
+                        $("#sku"+v.product_id).html(v.sku);
+                        $("#boxqty"+v.product_id).val(boxSize);
+                        //$("#price"+id).html(jsonData.price);
+                        $("#productBarcodeProduct"+v.product_id).html(v.product_id);
+                        $("#product_id_"+v.product_id).html(v.product_id);
+
+
+
+                    });
+
+                    $("#productsInfo2").html(html);
+                }
+            }
+        });
+    }
+
+    function  outBasicInfo(){
+        location.href = "out_basic_info.php?auth=xsj2015inv&ver=db";
+    }
+
+
+    // 货架上货
+    function confirmReturnShelves(product_id,in_part,box_size,return_id){
+        var set_return = '';
+        if (return_id>0) {
+            set_return=return_id;
+        }
+        var shelves_quantity  = $("#shelves_confirm"+product_id+in_part+set_return).val();
+        var return_quantity = $("#return_added"+product_id+in_part+set_return).text();
+       var  add_user_name  =  '<?php echo  $_COOKIE['inventory_user_id'] ?>';
+       var warehouse_id = $("#warehouse_id").text();
+        var return_set = $("#return_id"+product_id+in_part+set_return).val();
+
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php?method=confirmReturnShelves',
+            data: {
+                method: 'confirmReturnShelves',
+                data: {
+                    shelves_quantity: shelves_quantity,
+                    return_quantity: return_quantity,
+                    product_id: product_id,
+                    return_set: return_set,
+                    add_user_name:add_user_name,
+                    warehouse_id :warehouse_id ,
+                    in_part:in_part,
+                    box_size:box_size,
+
+                }
+            },
+            success: function (response) {
+                var jsonData = $.parseJSON(response);
+                if(jsonData == 1){
+                    getAddedReturnDeliverProduct();
+                }else if(jsonData  == 3){
+                    alert( '上架数量不能大于退货的数量，请核查清楚');
+                   
+                }
+            }
+        });
+    }
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

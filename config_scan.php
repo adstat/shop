@@ -449,7 +449,8 @@ foreach($result as $key => $value){
     $other_arr[] = $value['product_id'];
 }
 
-
+$start_time = 2*3600+8*3600;
+$end_time = $start_time+1200+8*3600;
 
 $qingmei_arr = array();
 $zhongliang_arr = array();

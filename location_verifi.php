@@ -37,12 +37,14 @@ if(empty($_COOKIE['inventory_user'])){
 </header>
 <hr>
 <body>
-
+<span  id = 'user_id' hidden="hidden"><?php echo $_COOKIE['inventory_user'];?></span>
 <div id="inv_comment">
+    <div align="right"><?php echo $_COOKIE['inventory_user'];?> 所在仓库: <?php echo $_COOKIE['warehouse_title'];?> <span onclick="javascript:logout_inventory_user();">退出</span></div>
+    <div  style="display: none" id="inventory_user_id"> <?php echo $_COOKIE['inventory_user_id'];?> </div>
+    <div  style="display: none" id="warehouse_id"> <?php echo $_COOKIE['warehouse_id'];?> </div>
 <div id="div_date_start"  align="center" style="height: 70px;font-size: 15px">开始时间:<input id="date_start" name="date_start"  autocomplete="off" class="date" type="text" value=""  style="font-size: 20px; width:15.5em ;height: 40px;border:1px solid" data-date-format="YYYY-MM-DD-HH" id="input-date-end" >
 </div>
 <div id="div_date_end"  align="center" style="height: 70px;font-size: 15px">结束时间:<input id="date_end" name="date_end"  autocomplete="off"  class="date" type="text" value="" style="font-size: 20px;width:15.5em ;height: 40px;border:1px solid" data-date-format="YYYY-MM-DD" id="input-date-end">
-
 </div>
 
 <div id="div_order_status"  align="center"  style="height: 40px;font-size: 15px" >
@@ -60,7 +62,7 @@ if(empty($_COOKIE['inventory_user'])){
     订单查询:<input id="input_order_id" name="input_order_id" style="width:12.5em;height: 25px;border:1px solid">
 </div>
     <div>
-        <input type="button"  style=" width:100px;font-size:1.2em; background: red; float: left" onclick="javascript:getOrderByStatus()" value="货位核查查询">
+        <input type="button"  style=" width:100px;font-size:1.2em; background: red; float: left" onclick="javascript:getOrderByStatus()" value="货位核查">
         <input type="button" id="spare_button" name="single_button" style="font-size:1.2em;width: 120px;background: red;float: right" type="button"  onclick="searchChecks();" value="分拣错误信息查询界面">
     </div>
 <hr>
@@ -75,7 +77,7 @@ if(empty($_COOKIE['inventory_user'])){
             <tr style="background:#8fbb6c;">
                 <td>货位号</td>
                 <td>订单号</td>
-                <td>已分拣</td>
+                <td style="width: 60px;">已分拣</td>
                 <td>操作</td>
             </tr>
             </thead>
@@ -89,9 +91,12 @@ if(empty($_COOKIE['inventory_user'])){
 </div>
 
 <div id="search_details" hidden="hidden">
-    <div id="div_date_start"  align="center" style="height: 40px">开始时间:<input id="date_starts" name="date_start"  autocomplete="off" class="date" type="text" value=""  style="width:12.5em ;height: 25px;border:1px solid" data-date-format="YYYY-MM-DD-HH" id="input-date-end" >
+    <div id="div_date_start"  align="center" style="height: 70px;font-size: 15px">开始时间:<input id="date_starts" name="date_start"  autocomplete="off" class="date" type="text" value=""   style="font-size: 20px; width:15.5em ;height: 40px;border:1px solid" data-date-format="YYYY-MM-DD-HH" id="input-date-end" >
     </div>
-    <div id="div_date_end"  align="center" style="height: 40px">结束时间:<input id="date_ends" name="date_end"  autocomplete="off"  class="date" type="text" value="" style="width:12.5em ;height: 25px;border:1px solid" data-date-format="YYYY-MM-DD" id="input-date-end">
+    <div id="div_date_end"  align="center" style="height: 70px;font-size: 15px">结束时间:<input id="date_ends" name="date_end"  autocomplete="off"  class="date" type="text" value=""  style="font-size: 20px; width:15.5em ;height: 40px;border:1px solid" data-date-format="YYYY-MM-DD" id="input-date-end">
+    </div>
+    <div id="div_order_search"  align="center" style="height: 40px;font-size: 15px">
+        订单查询:<input id="input_order_ids" name="input_order_id" style="width:12.5em;height: 25px;border:1px solid">
     </div>
     <input type="button"  style="float:left;width: 100px;height: 20px;background: red"onclick="location.reload();" value="货位核查更正界面">
     <button id="spare_button" name="single_button" style="float:right;width: 100px;height: 20px;background: red" type="button"     onclick="getSearchCheck();">查询</button>
@@ -105,8 +110,11 @@ if(empty($_COOKIE['inventory_user'])){
                 <td>订单ID</td>
                 <td>商品ID</td>
                 <td>商品名称</td>
+                <td>订单货位号</td>
                 <td>分拣缺少数量</td>
                 <td>分拣人</td>
+                <td>记录原因</td>
+                <td>记录人</td>
                 <td>操作</td>
             </tr>
             </thead>
@@ -130,7 +138,7 @@ if(empty($_COOKIE['inventory_user'])){
         var month=today.getMonth()+1;
         var day=today.getDate();
 
-        $('#date_start').val(year+"-"+month+"-"+day+" "+'07:00' );
+        $('#date_start').val(year+"-"+month+"-"+day+" "+'05:00' );
     });
     $(document).ready(function(){
         var today=new Date();
@@ -170,12 +178,13 @@ if(empty($_COOKIE['inventory_user'])){
 </script>
 <script>
     function getOrderByStatus (){
+
         var date_start = $("#date_start").val();
         var date_end = $("#date_end").val();
         var order_status_id = $("#orderStatus").val();
         var order_check_status = $("#checkStatus").val();
         var order_id = $("#input_order_id").val();
-
+        var warehouse_id = $("#warehouse_id").text();
         var time_diff = new Date(date_end) - new Date(date_start);
         var day = parseInt(time_diff / (1000*24*60*60));
         if(day >=1){
@@ -193,30 +202,32 @@ if(empty($_COOKIE['inventory_user'])){
                         date_end: date_end,
                         order_status_id: order_status_id,
                         order_check_status: order_check_status,
-                        order_id: order_id
+                        order_id: order_id,
+                        warehouse_id : warehouse_id,
                     }
                 },
                 success: function (response, status, xhr) {
-
                     if (response) {
                         var html = '';
                         $.each(response, function (i, v) {
                             html += "<tr style='background:#d0e9c6;' id='check" + v.order_id + "'>";
-                            html += "<td  id = 'order_id" + v.order_id + "' >" + v.inv_comment + "</td>";
+                            html += "<td  id = 'inv_coment" + v.order_id + "' >" + v.inv_comment + "</td>";
                             html += "<td>" + v.order_id + '/' + v.name + " </td>";
-                            html += "<td>" + v.quantity + '/' + v.inventory_name + "</td>";
+                            html += "<td>" + v.frame_count+ '框'+ v.box_count+ '箱' + v.inventory_name + "</td>";
 
                             if (v.check_status == 0) {
                                 html += "<td>";
-
-                                html += '待核查<input style="background: red ;border-radius: 10px ;width: 60px" type="button" id="button_id' + v.order_id + '"  value="查看"  onclick="javascript:search(\'' + v.order_id + '\')">';
+                                html += '待核查<input style="background: red ;border-radius: 5px ;width: 100px ; height: 20px" type="button" id="button_id' + v.order_id + '"  value="查看"  onclick="javascript:search(\'' + v.order_id + '\')">';
+                                html += "<hr>";
+                                html += '<input style="background: red ;border-radius: 5px ;width: 100px" type="button" id="id' + v.order_id + '"  value="确认"  onclick="javascript:submitcheck(\'' + v.order_id + '\')">';
                                 html += "</td>";
+
                             }
 
                             if (v.check_status == 1) {
                                 html += "<td>";
                                 html += "<span>" + v.reasons + "</span>";
-                                html += '已核查<input style="background: red ;border-radius: 10px ;width: 60px" type="button" id="button_id' + v.order_id + '"  value="查看"  onclick="javascript:search(\'' + v.order_id + '\')">';
+                                html += '已核查<input style="background: red ;border-radius: 5px ;width: 100px" type="button" id="button_id' + v.order_id + '"  value="查看"  onclick="javascript:search(\'' + v.order_id + '\')">';
                                 html += "</td>";
                             }
 
@@ -230,6 +241,31 @@ if(empty($_COOKIE['inventory_user'])){
         }
 
     }
+    function  submitcheck(order_id) {
+        var inv_comment = $("#inv_coment" + order_id).text();
+        var user_id=$("#user_id").text();
+
+        $.ajax({
+            type: 'POST',
+            url: 'invapi.php',
+            dataType: 'json',
+            data: {
+                method: 'submitcheck',
+                data: {
+                    user_id: user_id,
+                    inv_comment: inv_comment,
+                    order_id: order_id,
+                }
+            },
+            success:function(response){
+                if(response ==2){
+                    $("#check"+order_id).remove();
+                }
+            }
+        });
+    }
+
+
 
     function getSumCheckOrder(){
         var date_start = $("#date_start").val();
@@ -237,6 +273,7 @@ if(empty($_COOKIE['inventory_user'])){
         var order_status_id = $("#orderStatus").val();
         var order_check_status = $("#checkStatus").val();
         var order_id = $("#input_order_id").val();
+        var warehouse_id = $("#warehouse_id").text();
         $.ajax({
             type: 'POST',
             url: 'invapi.php',
@@ -248,7 +285,8 @@ if(empty($_COOKIE['inventory_user'])){
                     date_end: date_end,
                     order_status_id: order_status_id,
                     order_check_status: order_check_status,
-                    order_id: order_id
+                    order_id: order_id,
+                    warehouse_id:warehouse_id
                 }
             },
             success : function (response , status , xhr){
@@ -264,7 +302,7 @@ if(empty($_COOKIE['inventory_user'])){
         });
     }
     function search(order_id){
-        location.href="check_verifi.php?order_id="+order_id;
+        window.open ("check_verifi.php?order_id="+order_id);
     }
 
 
@@ -275,16 +313,18 @@ if(empty($_COOKIE['inventory_user'])){
         var year=today.getFullYear();
         var month=today.getMonth()+1;
         var day=today.getDate();
-        var days=today.getDate()+1;
-        $('#date_starts').val(year+"-"+month+"-"+day );
-        $('#date_ends').val(year+"-"+month+"-"+days );
+        var hour=today.getHours();
+        $('#date_starts').val(year+"-"+month+"-"+day+" "+'07:00' );
+        $('#date_ends').val(year+"-"+month+"-"+day+" "+hour+":00"  );
+
 
     }
+
     function getSearchCheck(){
 
         var date_start = $("#date_starts").val();
         var date_end = $("#date_ends").val();
-
+        var order_id = $("#input_order_ids").val();
         $.ajax({
             type: 'POST',
             url: 'invapi.php',
@@ -294,6 +334,7 @@ if(empty($_COOKIE['inventory_user'])){
                 data: {
                     date_start: date_start,
                     date_end: date_end,
+                    order_id :order_id,
                 }
             },
             success: function (response) {
@@ -304,8 +345,11 @@ if(empty($_COOKIE['inventory_user'])){
                     html +="<td>"+ v.order_id + "</td>";
                     html +="<td>"+ v.product_id + "</td>";
                     html +="<td>"+ v.product_name + "</td>";
+                    html +="<td>"+ v.inv_comment+"</td>";
                     html +="<td>"+ v.quantity + "</td>";
-                    html +="<td>"+ v.username + "</td>";
+                    html +="<td>"+ v.inventory_name + "</td>";
+                    html +="<td>"+ v.reason_name + "</td>";
+                    html +="<td>"+ v.add_user + "</td>";
                     html +="<td>";
                     html += '<input style="background: red ;border-radius: 10px ;width: 40px" type="button" id="button_id'+ v.product_id +'"  value="取消"  onclick="javascript:cancel_searchProduct('+ v.product_id +','+ v.order_id+')">'
                     html +='</td>';

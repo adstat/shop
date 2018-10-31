@@ -3,7 +3,7 @@ if( !isset($_GET['auth']) || $_GET['auth'] !== 'xsj2015inv'){
     exit('Not authorized!');
 }
 include_once 'config_scan.php';
-$inventory_user_admin = array('randy','alex','leibanban','yangyang','wuguobiao');
+$inventory_user_admin = array('randy','alex','leibanban','yangyang','wuguobiao','wuguobiaosx');
 if(empty($_COOKIE['inventory_user'])){
     //重定向浏览器 
     header("Location: inventory_login.php?return=l.php&ver=db"); 
@@ -227,7 +227,7 @@ if(empty($_COOKIE['inventory_user'])){
         .style_green{
             background-color: #117700;
             border: 0.1em solid #006600;
-        }
+        }getWarehouseId
 
         .style_lightgreen{
             background-color: #8FBB6C;

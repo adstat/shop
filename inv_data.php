@@ -1,5 +1,5 @@
 <?php
-require_once '../../api/config.php';
+require_once '../api/config.php';
 require_once(DIR_SYSTEM.'db.php');
 /* 
  * To change this license header, choose License Headers in Project Properties.
@@ -7,10 +7,15 @@ require_once(DIR_SYSTEM.'db.php');
  * and open the template in the editor.
  */
 
+if(empty($_COOKIE['inventory_user'])){
+    //重定向浏览器
+    header("Location: inventory_login.php?return=w_dis.php");
+    //确保重定向后，后续代码不会被执行
+    exit;
+}
+
 
 $date = isset($_GET['date']) ? $_GET['date'] : false;
-$end = isset($_GET['end']) ? $_GET['end'] : false;
-
 if(!$date){
     $h_now = date("H",time());
     if($h_now >= 12){
@@ -21,6 +26,9 @@ if(!$date){
         $date = date("Y-m-d",time() - 24*3600);
     }
 }
+
+$end = isset($_GET['end']) ? $_GET['end'] : false;
+
 
 $gap=round((strtotime($end)-strtotime($date))/3600/24) ;
 if($gap > 31){
@@ -54,7 +62,7 @@ $sql = "SELECT
 	xis.added_by,sum(xis.quantity) inv_total,MIN(xis.uptime) as inv_start_time,max(xis.uptime) as inv_end_time,p.inv_size
 FROM
 	oc_x_inventory_order_sorting as xis left join oc_product as p on p.product_id = xis.product_id
-WHERE
+WHERE xis.status = 1 and 
 	xis.uptime > '" . $date . " 12:00:00'";
 
 if(!empty($end)){
@@ -71,7 +79,7 @@ $sql = "SELECT
 	xis.added_by,sum(xis.quantity) inv_total,MIN(xis.uptime) as inv_start_time,max(xis.uptime) as inv_end_time,p.inv_size
 FROM
 	oc_x_inventory_order_sorting as xis left join oc_product as p on p.product_id = xis.product_id
-WHERE
+WHERE xis.status = 1 and 
 	xis.uptime > '" . $date . " 12:00:00'";
 
 if(!empty($end)){
