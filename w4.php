@@ -1,5 +1,6 @@
 <?php
 //exit('服务器更新中，请稍候...');
+
 if( !isset($_GET['auth']) || $_GET['auth'] !== 'xsj2015inv'){
     exit('Not authorized!');
 }
@@ -945,12 +946,15 @@ input#product{
         // alert(val);
         if (val == 1) {//扫描
             $("input[name='product']").on('keyup',function(){
+                // alert('~~~~~~~~');
                 // var setType=$.trim($('#setType option:selected').val());
                 // switchSelect(setType);
-
                 var tmptxt=$(this).val();
-                if(tmptxt.length < 4){
+                var str=tmptxt.length;
+                // alert(str);
+                if(tmptxt.length > 4){
                     // handleProductList();
+                    // alert('!!!!!!!!!!!!!!');
                     putSwitch();
 
                     $(this).val("");
@@ -1114,7 +1118,6 @@ input#product{
         <i class="icon-arrow-up">回到顶部</i>
     </a>
 <?php if(in_array($_COOKIE['user_group_id'],$inventory_user_admin)){ ?>
-
     <input class="submit classSubmitSortingPendingCheck"  type="button" value="提交分拣完成" onclick="javascript:showSubmitSorting();">
 <!--    <input class="submit classShowSortingInvComment" type="button" value="显示周转筐" onclick="javascript:showSubmitFrame()">-->
 
@@ -1391,12 +1394,12 @@ function check_in_right_time(){
     // console.log(start_time);
     // console.log(end_time);
     // console.log(now_time);
-    if (start_time <= now_time && now_time <= end_time) {
-        alert("系统正在备份，为防止数据丢失，请于2：20之后再操作");
-        return true;
-    } else {
-        return false;
-    }
+    // if (start_time <= now_time && now_time <= end_time) {
+    //     alert("系统正在备份，为防止数据丢失，请于2：20之后再操作");
+    //     return true;
+    // } else {
+    //     return false;
+    // }
 }
 function hideNum(str,count){
     var strLen = str.length;
@@ -1407,23 +1410,23 @@ function hideNum(str,count){
 var sound = soundEffectInit();
 $(document).ready(function(){
     $("#frame_vg_list").val("");
-    $('#orderStation').change(function(){
-
-        var p1=$(this).children('option:selected').val();//这就是selected的值
-        $('#ordersList tr').each(function () {
-            if(p1 == 0){
-                $(this).show();
-            }
-            else{
-                if(p1 == $(this).attr("station_id")){
-                    $(this).show();
-                }
-                else{
-                    $(this).hide();
-                }
-            }
-        });
-    });
+    // $('#orderStation').change(function(){
+    //
+    //     var p1=$(this).children('option:selected').val();//这就是selected的值
+    //     $('#ordersList tr').each(function () {
+    //         if(p1 == 0){
+    //             $(this).show();
+    //         }
+    //         else{
+    //             if(p1 == $(this).attr("station_id")){
+    //                 $(this).show();
+    //             }
+    //             else{
+    //                 $(this).hide();
+    //             }
+    //         }
+    //     });
+    // });
 })
 
 function reloadPage(){
@@ -2315,7 +2318,7 @@ function getOrderSortingList(order_id,is_view,station_id,repack,frame_num){
                                     window.product_is_repack[value.sku] = value.repack;
 
                                 }
-                                if (value.sku1.length != 0) {
+                                if (value.sku1 > 0) {
 
                                     var array_sku = value.sku1.split(",");
 
@@ -2354,7 +2357,14 @@ function getOrderSortingList(order_id,is_view,station_id,repack,frame_num){
                                 html += '<br />';
                                 // html += '<span>' + value.name + '</span>';
                                 html += '<span id="info' + value.product_id + '">' + value.name + '</span>';
-                                html += '<span style="font-size: 0.8rem"><br />[条码:' + hideNum(value.sku, 4) + ']</span></span> ';
+                                if (value.sku>0) {
+                                    var sku_name = value.sku;
+                                    html += '<span style="font-size: 0.8rem"><br />[条码:' + hideNum(sku_name,4)+ ']</span>';
+                                } else {
+                                    var sku_name = 0;
+                                    html += '<span style="font-size: 0.8rem"><br />[条码:无]</span>';
+                                }
+
                                 html += '</td>';
 
                                 html += '<td ' + order_been_over_size + ' align="center" class="prodlist" style="font-size:2em;">' + value.plan_quantity + '</td>' +
@@ -2539,7 +2549,6 @@ function removeIcon(container_id) {
         getAccomplishFrame();
     }
 }
-
 /*
 * 检测权限
 * */
@@ -2559,11 +2568,13 @@ function chkJurisdiction() {
             return true;
         }
 
+
     } else if (user_group_id == 1 || user_group_id == 22) {
-        if (soringOrderStatus == 6 || soringOrderStatus == 12) {
-            alert('该分拣单已分拣完成无法再操作');
-            return true;
-        } else if (soringOrderStatus == 2 || soringOrderStatus == 4) {
+        // if (soringOrderStatus == 6 || soringOrderStatus == 12) {
+        //     alert('该分拣单已分拣完成无法再操作');
+        //     return true;
+        // } else 
+            if (soringOrderStatus == 2 || soringOrderStatus == 4) {
             alert('该分拣单还未开始分拣，管理员不可直接操作');
             return true;
         }
@@ -2571,6 +2582,7 @@ function chkJurisdiction() {
         alert('该分拣单仅限分拣人员，班组长或仓管可操作');
         return true;
     }
+
 }
 /*
 * 判断周转筐是否存在
@@ -2615,12 +2627,14 @@ function getAccomplishFrame(order_id) {
         type: 'POST',
         url: 'invapi.php?method=getAccomplishFrame',
         dateType:'json',
-        async:false,
+        async:true,
+        cache:false,
         data: {
             method:'getAccomplishFrame',
             data:{
                  order_id:order_id,
-                 product_id_arr:product_id_arr},
+                 // product_id_arr:product_id_arr
+            },
         },
         success: function(response , status , xhr){
 
@@ -2805,6 +2819,11 @@ function chkGoods(product) {
         var num= /^[0-9]{4,5}$|^[0-9]{8,15}$/;
         if(num.test(product)){
         	var tabLen=getTab();
+
+            // if (0) {
+                // putNavList(product,false);
+                // showAlertError('#getMsg','当前没有周转筐！','请扫描周转筐');
+            // }else{
             if (product.substr(0,3) == 290) {
                 product = product.substr(3,4);
             }
@@ -2874,6 +2893,7 @@ function chkFrame(product) {
         $(this).val(tmptxt.replace(/\D|^0/g,''));
     });
 }
+
 /*
 * 获取长度为len的随机字符串
 * */
@@ -3135,6 +3155,8 @@ function handleFrameList(frame_type,frame_num=''){
     $.ajax({
         type: 'POST',
         url: 'invapi.php',
+        async:true,
+        cache:false,
         data: {
             method: 'checkContainer',
             data: {
@@ -3143,32 +3165,42 @@ function handleFrameList(frame_type,frame_num=''){
             }
         },
         success: function (response) {
-            global.resTmp = response;
-            var obj = $.parseJSON(response);
-            global.resJson = obj;
-            if(obj.container_id > 0 && obj.occupy  == 1 && obj.instore  ==  1){
-                global.ajaxReturn = '-1';
+            // global.resTmp = response;
+            var obj = $.parseJSON(response).jsonData;
+            // global.resJson = obj;
+            var check_container = 0;
+            // console.log(obj);
+            if (parseInt(obj.container_id)>0) {
+
+            } else {
+                alert ('该周转筐非法');
+                return true;
+            }
+
+            if(parseInt(obj.occupy)  == 1 && parseInt(obj.instore)  ==  1){
+                check_container = -1;
                 alert ('该周转筐被占用但未出库');
                 // echo '1';
             }
-            if(obj.container_id > 0 &&  obj.occupy  == 1  && obj.instore  ==  0  ){
-                global.ajaxReturn = '-1';
+            if(parseInt(obj.occupy)  == 1  && parseInt(obj.instore)  ==  0  ){
+                check_container = -1;
                 // console.log(global.ajaxReturn);
                 alert('该周转筐被占用且已出库');
                 // return global.ajaxReturn;
             }
-            if(obj.container_id > 0 &&  obj.occupy  == 0  && obj.instore  ==  0  ){
-                global.ajaxReturn = '-1';
+            if(parseInt(obj.occupy)  == 0  && parseInt(obj.instore)  ==  0  ){
+                check_container = -1;
                 alert('该周转筐没被占用但已出库');
                 //return 0;
 
             }
-            if(obj.container_id > 0 &&  obj.occupy  == 0  && obj.instore  ==  1  ){
-                global.ajaxReturn = '1';
+            if(parseInt(obj.occupy)  == 0  && parseInt(obj.instore)  ==  1  ){
+                check_container = 1;
             //
 
             }
-            if (global.ajaxReturn == '-1') {
+            // console.log(check_container);
+            if (check_container != 1) {
                 return false;
             }
             var product=$.trim(frame_num).split('X')[0];
@@ -3449,7 +3481,7 @@ function hideSubmitFrame(){
 }
 
 function showSubmitSorting(){
-
+    
     window.location ="#sttttt";
     $('html,body').animate({scrollTop: '0px'}, 0);
     var warehouse_id = $("#warehouse_id").text();
@@ -4250,7 +4282,8 @@ function addOrderProductStation(id){
     if(product_quantity >0){
         $.ajax({
             type : 'POST',
-            async:false,
+            async:true,
+            cache:false,
             url : 'invapi.php?method=addOrderProductStationes',
             data : {
                 method : 'addOrderProductStationes',
@@ -4262,7 +4295,7 @@ function addOrderProductStation(id){
 
             },
             success : function (response, status, xhr){
-                var allData = $.parseJSON(response);
+                // var allData = $.parseJSON(response);
                 // console.log(allData);
                 //分拣数量
                 var  nowNumber=$("#calcNum_"+container_id+'_'+product_id).text();
@@ -4275,7 +4308,6 @@ function addOrderProductStation(id){
                         return true;
                     }
                 }
-
                 getAccomplishFrame();
                 // nowNumber=nowNumber?nowNumber:0;
                 // // console.log(product_quantity);
@@ -4347,46 +4379,46 @@ function delOneProductInv(data) {
 
 
 /*获取当前商品在几个框里*/
-// function getNowFrameProductNumber() {
-//     var order_id = $('#current_order_id').val();
-//     var container_id = getActive();
-//     // alert(order_id);
-//     $.ajax({
-//         type: 'POST',
-//         url: 'invapi.php?method=getFrameProductNumber',
-//         dateType:'json',
-//         cache: false,
-//         async: false,
-//         data: {
-//             method:'getFrameProductNumber',
-//             data:{
-//                 order_id:order_id,container_id:container_id},
-//         },
-//         success:function(frameData, status, xhr){
-//             // console.log(frameData);
-//             if (frameData){
-//                 var data = $.parseJSON(frameData);
-//                 disposeNowFrameProductNumber(data);
-//             }
-//         },
-//         error:function (err) {
-//             console.log(err);
-//         }
-//     })
-// }
-// /*获取当前商品在几个框里,拆解数据*/
-// function disposeNowFrameProductNumber(Framedata) {
-//     var data=chkFrameProductNum();
-//     for (var i = 0; i < data.length; i++) {
-//         // $.each(Framedata,function (k, v) {
-//         //     $("#"+v['container_id']+'_'+v['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
-//         // });
-//         $("#"+data[i]).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
-//     }
-//     // for (i = 0; i < Framedata.length; i++) {
-//     //     $("#"+data[i]['container_id']+"_"+data[i]['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
-//     // }
-// }
+function getNowFrameProductNumber() {
+    var order_id = $('#current_order_id').val();
+    var container_id = getActive();
+    // alert(order_id);
+    $.ajax({
+        type: 'POST',
+        url: 'invapi.php?method=getFrameProductNumber',
+        dateType:'json',
+        cache: false,
+        async: false,
+        data: {
+            method:'getFrameProductNumber',
+            data:{
+                order_id:order_id,container_id:container_id},
+        },
+        success:function(frameData, status, xhr){
+            // console.log(frameData);
+            if (frameData){
+                var data = $.parseJSON(frameData);
+                disposeNowFrameProductNumber(data);
+            }
+        },
+        error:function (err) {
+            console.log(err);
+        }
+    })
+}
+/*获取当前商品在几个框里,拆解数据*/
+function disposeNowFrameProductNumber(Framedata) {
+    var data=chkFrameProductNum();
+    for (var i = 0; i < data.length; i++) {
+        // $.each(Framedata,function (k, v) {
+        //     $("#"+v['container_id']+'_'+v['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
+        // });
+        $("#"+data[i]).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
+    }
+    // for (i = 0; i < Framedata.length; i++) {
+    //     $("#"+data[i]['container_id']+"_"+data[i]['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
+    // }
+}
 function delOrderProductToInv(){
     if (check_in_right_time()) {
         return true;

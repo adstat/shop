@@ -1,6 +1,5 @@
 <?php
 //exit('服务器更新中，请稍候...');
-
 if( !isset($_GET['auth']) || $_GET['auth'] !== 'xsj2015inv'){
     exit('Not authorized!');
 }
@@ -10,6 +9,12 @@ $inventory_user_admin = array('1','22');
 if(empty($_COOKIE['inventory_user'])){
     //重定向浏览器
     header("Location: inventory_login.php?return=i.php");
+    //确保重定向后，后续代码不会被执行
+    exit;
+}
+if(!in_array($_COOKIE['user_group_id'],[1,15,22])){
+    //重定向浏览器
+    header("Location: i.php?return=i.php");
     //确保重定向后，后续代码不会被执行
     exit;
 }
@@ -98,7 +103,7 @@ em {
 }
 
 label, input, button {
-    border: none;
+    /*border: none;*/
     vertical-align: middle;
 }
 
@@ -721,6 +726,8 @@ input#product{
 <script>
     window.product_barcode_arr = {};
     window.product_barcode_arr_s = {};
+    window.product_is_repack = {};
+    window.order_status_id = 0;
     <?php if(!in_array($_COOKIE['user_group_id'], $inventory_user_admin)){?>
     //$(document).keydown(function (event) {
     //$('#product').focus();
@@ -752,38 +759,41 @@ input#product{
         <a target="_blank" href="invSortingCheck.php">查看未分拣数据</a>
     <?php } ?>
 </div>
+<?php if(in_array($_COOKIE['user_group_id'], $inventory_user_admin)){?>
+<button class="invopt" id="return_index" style="width:4em;" onclick="window.location.href='i.php?auth=xsj2015inv&ver=db'">主页</button>
+<?php } ?>
 <div align="center" style="display:block; margin:0.3rem auto" id="logo"><img src="view/image/logo.png" style="width:6em"/> 订单分拣<button class="invopt style_gray" id="reload" style="display: inline" onclick="reloadPage();" disabled="disabled">载入中...</button>
-    <button class="invopt" style="display: inline;float:left" onclick="window.location.href='auto_dis.php?auth=xsj2015inv&ver=db'">领单</button>
+    <button class="invopt" style="display: inline;float:left" onclick="window.location.href='auto_dis.php?auth=xsj2015inv&ver=db&file_name=w4'">领单</button>
 </div>
 <div align="center" id="is_need_merge_order"></div>
 
 <div id="show_select_info" style="display: ;">
-
+    <div id="show_date">
 <?php if(in_array($_COOKIE['user_group_id'], $inventory_user_admin)){?>
-    订单状态:
-    <select id="orderStatus" style="width:12em;height:2em;">
+    订单状态：<select id="orderStatus" style="width:12em;height:2em;">
 
-    </select>
-    <button style="font-size:1.1rem; display: none" onclick="javascript:getOrderByStatus()">查询(停用)</button>
+    </select><br />
+
+    单号类型：<select id="search_type" style="width:12em;height:2em;"><option value="0" >全部</option><option value="1">原浦东仓整件</option><option value="2" selected>原DC仓散件</option></select><br />
+
+    分拣单号：<input type="number" style="width:12em;height:2em;" id="search_deliver_order_id" />
+<!--    <button style="font-size:1.1rem; display: none" onclick="javascript:getOrderByStatus()">查询(停用)</button>-->
     <button style="font-size:1.1rem;" onclick="javascript:getOrders($('#orderStatus').val())">查询</button>
 
 
-
-
-    <div style="display: none">
-        订单分类:
-        <select id="orderStation" style="margin-top: 0.2em;width:12em;height:2em;">
-            <option value="0">全部</option>
-            <option value="1">生鲜(包装菜、奶制品)</option>
-            <option value="2">快销品</option>
-        </select>
-    </div>
+<!--    <div style="display: none">-->
+<!--        订单分类:-->
+<!--        <select id="orderStation" style="margin-top: 0.2em;width:12em;height:2em;">-->
+<!--            <option value="0">全部</option>-->
+<!--            <option value="1">生鲜(包装菜、奶制品)</option>-->
+<!--            <option value="2">快销品</option>-->
+<!--        </select>-->
+<!--    </div>-->
 
     <br />
 <?php } ?>
-<div id="show_date">
-    配送日期：
-    <select id="deliver_date" style="margin-top: 0.2em;width:12em;height:2em;">
+
+    配送日期：<select id="deliver_date" style="margin-top: 0.2em;width:12em;height:2em;">
         <option value="0">-请选择-</option>
         <?php foreach($dateList as $m){ ?>
             <option value="<?php echo $m; ?>"><?php echo $m; ?></option>
@@ -814,12 +824,8 @@ input#product{
         <button class="invopt getOrdersFilter style_gray" id="getOrders_12" style="display: inline; margin: 0.1rem" onclick="getOrders(12);">待核单</button>
         <button class="invopt getOrdersFilter style_gray" id="getOrders_777" style="display: inline; margin: 0.1rem" onclick="getOrders(777);">加急</button>
         <?php  if ($_COOKIE['warehouse_id']  ==  12 || !empty($_COOKIE['warehouse_is_dc'])) { ?>
-            <button class="invopt getOrdersFilter style_gray" id="getOrders_666" style="display: inline; margin: 0.1rem" onclick="getOrders(666);">苏州单</button>
-            <button class="invopt getOrdersFilter style_gray" id="getOrders_888" style="display: inline; margin: 0.1rem" onclick="getOrders(888);">浦西单</button>
-        <?php } ?>
-        <?php  if ( ($_COOKIE['warehouse_id']  ==  18 || $_COOKIE['warehouse_id']  ==  16 || $_COOKIE['warehouse_id']  ==  15 || $_COOKIE['warehouse_id']  ==  17 ) && (in_array($_COOKIE['user_group_id'], $inventory_user_admin)) ) { ?>
-            <button class="invopt getOrdersFilter style_gray" id="getOrders_999" style="display: inline; margin: 0.1rem" onclick="getOrders(999);">异地浦西出库</button>
-            <button class="invopt getOrdersFilter style_gray" id="getOrders_555" style="display: inline; margin: 0.1rem" onclick="getOrders(555);">本仓拣完浦西未到货</button>
+            <button class="invopt getOrdersFilter style_gray" id="getOrders_666" style="display: inline; margin: 0.1rem" onclick="getOrders(666);">异仓单</button>
+            <button class="invopt getOrdersFilter style_gray" id="getOrders_888" style="display: inline; margin: 0.1rem" onclick="getOrders(888);">本仓单</button>
         <?php } ?>
         <button class="invopt getOrdersFilter style_gray style_green" id="getOrders_0" style="display: inline; margin: 0.1rem" onclick="getOrders(0);">全部</button>
 
@@ -941,18 +947,39 @@ input#product{
             $("input[name='product']").on('keyup',function(){
                 // var setType=$.trim($('#setType option:selected').val());
                 // switchSelect(setType);
+
                 var tmptxt=$(this).val();
                 if(tmptxt.length < 4){
                     // handleProductList();
+                    putSwitch();
+
                     $(this).val("");
                 }
             });
-            scanFunc();
+            // scanFunc();
         }
         if (val == 2) {//手动
             $("input[name='product']").off("keyup");
+            // $("input[name='product']").on('keyup',function(){
+            //     $("input[name='product']").mouseleave(function(){
+            //         var tmptxt=$(this).val();
+            //         if(tmptxt.length < 4){
+            //             showAlertError('#getMsg','商品或条码不能少于四位','请重新输入!');
+            //         }
+            //
+            //         // $(this).val("");
+            //     });
+            //     // var setType=$.trim($('#setType option:selected').val());
+            //     // switchSelect(setType);
+            //     // var tmptxt=$(this).val();
+            //     // if(tmptxt.length < 4){
+            //     //     // handleProductList();
+            //     //     $(this).val("");
+            //     // }
+            // });
 
-            manualFunc();
+
+            // manualFunc();
         }
     }
     function scanFunc(){
@@ -965,14 +992,14 @@ input#product{
         });
     }
     function manualFunc(){
-        $("input[name='product']").mouseleave(function(){
-            var tmptxt=$(this).val();
-            if(tmptxt.length < 4){
-                showAlertError('#getMsg','商品或条码不能少于四位','请重新输入!');
-            }
-
-            // $(this).val("");
-        });
+        // $("input[name='product']").mouseleave(function(){
+        //     var tmptxt=$(this).val();
+        //     if(tmptxt.length < 4){
+        //         showAlertError('#getMsg','商品或条码不能少于四位','请重新输入!');
+        //     }
+        //
+        //     // $(this).val("");
+        // });
     }
 </script>
 
@@ -1014,9 +1041,29 @@ input#product{
 
 
 <div id="getMsg"></div>
+<div class="row">
+            <div class="col-4">
+                <a type="button" id="frameList"
+                   class="btn btn-outline-info btn-sm ">
+                    <i class="icon-th-list"></i>折叠筐子
+                </a>
+            </div>
 
+            <div class="col-4">
+                <a type="button" id="foldList"
+                   class="btn btn-outline-info btn-sm ">
+                    <i class="icon-th"></i>折叠列表
+                </a>
+            </div>
 
-<hr />
+            <div class="col-4">
+                <a href="#bottom" type="button" id="frameList"
+                   class="btn btn-outline-info btn-sm ">
+                    <i class="icon-circle-arrow-down"></i>前往底部
+                </a>
+            </div>
+
+        </div>
 <!--选项卡-->
 <div class="container-fluid">
     <div class="row">
@@ -1031,16 +1078,6 @@ input#product{
     </div>
 </div>
 <!--选项卡结束-->
-<!--折叠id="productsHold"-->
-    <div class="container-fluid">
-        <div class="row">
-            <a type="button" id="foldList"
-               class="btn btn-outline-info btn-sm btn-block">
-                <i class="icon-th-list"></i>折叠列表
-            </a>
-        </div>
-    </div>
-<!--折叠结束-->
     <input type="hidden" id="current_do_product" value="0">
 <div style="display:block; margin-top: 1em;">
     <span style=" font-size: 1.2em;">订单商品信息</span>
@@ -1052,7 +1089,6 @@ input#product{
 
     </div>
 </div>
-
 <!--    <div  style="font-size: 1.2em; width:90%;" id = 'frame_button_vg_list' ></div>-->
 <table id="productsHold" border="0" style="width:100%;"  cellpadding=2 cellspacing=3>
     <tr>
@@ -1073,10 +1109,14 @@ input#product{
 
 
 <input type="hidden" name="method" id="method" value="" />
-
+    <a id="bottom" type="button" name="" id="" href="#"
+       class="btn btn-outline-success btn-lg btn-block">
+        <i class="icon-arrow-up">回到顶部</i>
+    </a>
 <?php if(in_array($_COOKIE['user_group_id'],$inventory_user_admin)){ ?>
+
     <input class="submit classSubmitSortingPendingCheck"  type="button" value="提交分拣完成" onclick="javascript:showSubmitSorting();">
-    <input class="submit classShowSortingInvComment" type="button" value="显示周转筐" onclick="javascript:showSubmitFrame()">
+<!--    <input class="submit classShowSortingInvComment" type="button" value="显示周转筐" onclick="javascript:showSubmitFrame()">-->
 
     <input class="submit classRemoveSortingData" type="button" value="删除分拣数据" onclick="javascript:delOrderProductToInv();">
     <input class="submit classSubmitSorting"  id = 'classSubmitSorting' type="button" value="直接提交已拣完" onclick="javascript:addOrderProductToInv_pre();">
@@ -1088,50 +1128,47 @@ input#product{
 <!--    --><?php //} ?>
 
 <?php } else{ ?>
-    <a type="button" name="" id="" href="#"
-            class="btn btn-outline-success btn-lg btn-block">
-        <i class="icon-arrow-up">回到顶部</i>
-    </a>
+
     <input class="submit classSubmitSortingPendingCheck" type="button" value="提交分拣完成" onclick="javascript:showSubmitSorting();">
-    <input class="submit classShowSortingInvComment" type="button" value="显示周转筐" onclick="javascript:showSubmitFrame()">
+<!--    <input class="submit classShowSortingInvComment" type="button" value="显示周转筐" onclick="javascript:showSubmitFrame()">-->
 <?php } ?>
 
 
 
-<div style="float:left;width: 100%;">
-    <div id="inv_do_vg" style="border-bottom:1px dashed black;" >
-        框数：<input type="text" id="frame_count" ><br>
-        备注:<textarea id="inv_comment_NOUSE"></textarea><br>
-        <input type="hidden" id="frame_vg_list">
-        蔬菜框号：<input style="font-size: 1.4em;" id="input_vg_frame" name="input_vg_frame">
-        <div id="vg_list_nouse" ></div>
-    </div>
-    <div id="inv_do_meat" style="border-bottom:1px dashed black;">
-        肉框数：<input type="text" id="frame_meat_count" ><br>
-        <input type="hidden" id="frame_meat_list">
-        肉框号：<input style="font-size: 1.4em;" id="input_meat_frame" name="input_meat_frame">
-        <div id="meat_list"></div>
-    </div>
-    <div id="inv_do_mi" style="border-bottom:1px dashed black;">
-        泡沫箱数：<input type="text" id="foam_count" ><br>
-        奶框数：<input type="text" id="frame_mi_count" ><br>
-        保温箱数：<input type="text" id="incubator_mi_count" ><br>
-        <input type="hidden" id="frame_mi_list">
-        奶框号：<input style="font-size: 1.4em;" id="input_mi_frame" name="input_mi_frame">
-        <div id="mi_list"></div>
-    </div>
-
-    <div id="inv_do_ice" style="border-bottom:1px dashed black;">
-        保温箱数：<input type="text" id="incubator_count" ><br>
-        冷冻框：<input type="text" id="frame_ice_count" ><br>
-
-        冷冻泡沫箱：<input type="text" id="foam_ice_count" ><br>
-        纸箱(无框号)：<input type="text" id="box_count" ><br>
-        <input type="hidden" id="frame_ice_list">
-        冷冻框号：<input style="font-size: 1.4em;" id="input_ice_frame" name="input_ice_frame">
-        <div id="ice_list"></div>
-    </div>
-</div>
+<!--<div style="float:left;width: 100%;">-->
+<!--    <div id="inv_do_vg" style="border-bottom:1px dashed black;" >-->
+<!--        框数：<input type="text" id="frame_count" ><br>-->
+<!--        备注:<textarea id="inv_comment_NOUSE"></textarea><br>-->
+<!--        <input type="hidden" id="frame_vg_list">-->
+<!--        蔬菜框号：<input style="font-size: 1.4em;" id="input_vg_frame" name="input_vg_frame">-->
+<!--        <div id="vg_list_nouse" ></div>-->
+<!--    </div>-->
+<!--    <div id="inv_do_meat" style="border-bottom:1px dashed black;">-->
+<!--        肉框数：<input type="text" id="frame_meat_count" ><br>-->
+<!--        <input type="hidden" id="frame_meat_list">-->
+<!--        肉框号：<input style="font-size: 1.4em;" id="input_meat_frame" name="input_meat_frame">-->
+<!--        <div id="meat_list"></div>-->
+<!--    </div>-->
+<!--    <div id="inv_do_mi" style="border-bottom:1px dashed black;">-->
+<!--        泡沫箱数：<input type="text" id="foam_count" ><br>-->
+<!--        奶框数：<input type="text" id="frame_mi_count" ><br>-->
+<!--        保温箱数：<input type="text" id="incubator_mi_count" ><br>-->
+<!--        <input type="hidden" id="frame_mi_list">-->
+<!--        奶框号：<input style="font-size: 1.4em;" id="input_mi_frame" name="input_mi_frame">-->
+<!--        <div id="mi_list"></div>-->
+<!--    </div>-->
+<!---->
+<!--    <div id="inv_do_ice" style="border-bottom:1px dashed black;">-->
+<!--        保温箱数：<input type="text" id="incubator_count" ><br>-->
+<!--        冷冻框：<input type="text" id="frame_ice_count" ><br>-->
+<!---->
+<!--        冷冻泡沫箱：<input type="text" id="foam_ice_count" ><br>-->
+<!--        纸箱(无框号)：<input type="text" id="box_count" ><br>-->
+<!--        <input type="hidden" id="frame_ice_list">-->
+<!--        冷冻框号：<input style="font-size: 1.4em;" id="input_ice_frame" name="input_ice_frame">-->
+<!--        <div id="ice_list"></div>-->
+<!--    </div>-->
+<!--</div>-->
 
 <script type="text/javascript">
 
@@ -1348,19 +1385,18 @@ Date.prototype.Format = function(fmt)
     return fmt;
 }
 function check_in_right_time(){
-
-    //var start_time = '<?php //echo (strtotime(date("Y-m-d"),time())+$start_time);?>//';
-    //var end_time = '<?php //echo ((strtotime(date("Y-m-d"),time())+$end_time));?>//';
-    //var now_time = '<?php //echo time();?>//';
+    var start_time = '<?php echo (strtotime(date("Y-m-d"),time())+$start_time);?>';
+    var end_time = '<?php echo ((strtotime(date("Y-m-d"),time())+$end_time));?>';
+    var now_time = '<?php echo time();?>';
     // console.log(start_time);
     // console.log(end_time);
     // console.log(now_time);
-    // if (start_time <= now_time && now_time <= end_time) {
-    //     alert("系统正在备份，为防止数据丢失，请于2：20之后再操作");
-    //     return true;
-    // } else {
-    //     return false;
-    // }
+    if (start_time <= now_time && now_time <= end_time) {
+        alert("系统正在备份，为防止数据丢失，请于2：20之后再操作");
+        return true;
+    } else {
+        return false;
+    }
 }
 function hideNum(str,count){
     var strLen = str.length;
@@ -1468,7 +1504,32 @@ $(document).ready(function () {
         defaultVolume: 0.8
     };
     $("#player").player(settings);
-    <?php if(in_array($_COOKIE['user_group_id'],$inventory_user_admin)){ ?>
+    $.ajax({
+        type : 'POST',
+        url : 'invapi.php?vali_user=1',
+        data : {
+            method : 'getOrderStatus'
+        },
+        success : function (response , status , xhr){
+            //console.log(response);
+            if(response){
+                var jsonData = eval(response);
+                if(jsonData.status == 999){
+                    alert("未登录，请登录后操作");
+                    window.location = 'inventory_login.php?return=w4.php';
+                }
+                var html = '<option value=0>-请选择订单状态-</option>';
+                $.each(jsonData, function(index, value){
+                    html += '<option value='+ value.order_status_id +' >' + value.name + '</option>';
+                });
+                $('#orderStatus').html(html);
+
+                console.log('Load Stations');
+            }
+        }
+    });
+
+<?php if(in_array($_COOKIE['user_group_id'],$inventory_user_admin)){ ?>
     getOrders(8);
     <?php } else{ ?>
     getOrders(2);
@@ -1488,26 +1549,32 @@ function handelFilter(order_status_id){
 }
 
 function getOrders(order_status_id){
-
+showOverlay();
     if(order_status_id == undefined){
         order_status_id = 0;
     }
-
+    window.order_status_id = order_status_id;
     handelFilter(order_status_id);
 
     var warehouse_id = $("#warehouse_id").text();
     var warehouse_repack = 0;
     var user_repack = 0 ;
     var inventoryUser = 0;
+    var search_type = $("#search_type").val() ? $("#search_type").val() : 0;
+    var search_deliver_order_id = $("#search_deliver_order_id").val() ? $("#search_deliver_order_id").val() : 0;
+    $("#search_deliver_order_id").val('');
     if(is_admin == 0){
         inventoryUser = '<?php echo $_COOKIE['inventory_user'];?>';
         warehouse_repack ='<?php echo $_COOKIE['warehouse_repack'];?>';
         user_repack = '<?php echo $_COOKIE['user_repack'];?>';
+        search_type = 0;
+        search_deliver_order_id = 0;
     }
 
     //设定查询配送日期
     var deliver_date = '<?php echo $date_array[2]['date']; ?>';
     var specDeliverDate = $("#deliver_date").val();
+
     if(parseInt(specDeliverDate) > 0){
         deliver_date = specDeliverDate;
     }
@@ -1525,9 +1592,12 @@ function getOrders(order_status_id){
             order_status_id : order_status_id,
             date : deliver_date,
             warehouse_repack : warehouse_repack,
-            user_repack : user_repack
+            user_repack : user_repack,
+            search_type : search_type,
+            search_deliver_order_id : search_deliver_order_id,
         },
         success : function (response , status , xhr){
+            hideOverlay();
             //console.log(response);
 
             if(response){
@@ -1552,178 +1622,7 @@ function getOrders(order_status_id){
                 var each_i_num_kuai = 501;
                 var each_i_num_veg = 0;
                 var num_flag = true;
-                if (order_status_id == 999) {
-                    console.log(jsonData);
 
-                    $.each(jsonData.data2, function (index1, value1) {
-                        var jsonDataData2 = jsonData.data;
-                        var new_deliver_order_id = '2'+value1['order_id'];
-                        var value = jsonDataData2[new_deliver_order_id];
-                        console.log(value);
-                        console.log(jsonDataData2);
-                        console.log(new_deliver_order_id);
-                        var planQty = parseInt(value.plan_quantity);
-                        var dueQty = parseInt(value.quantity);
-
-
-                        //console.log("#1订单:" + value.order_id + ", 商品数:" + value.plan_quantity + ", 未分拣:" + value.quantity)
-
-                        if (value.station_id == 2 && num_flag) {
-                            num_flag = false;
-                            each_i_num_veg = each_i_num;
-                            each_i_num_new = each_i_num;
-                        }
-
-                        if (value.station_id == 1) {
-                            return true;
-                        }
-
-                        if (window.inventory_user_order[value.order_id] || <?php echo !in_array($_COOKIE['user_group_id'], $inventory_user_admin) ? 0 : 1;?> ) {
-                            var t_status_class = '';
-                            var product_str = '';
-
-
-                            if (value.order_product_type == 1) {
-                                product_str = '菜';
-                            }
-                            if (value.order_product_type == 2) {
-                                t_status_class = "style = 'background-color:#ffff00;'";
-                                product_str = '菜+奶';
-                            }
-                            if (value.order_product_type == 3 && value.station_id == 1) {
-                                t_status_class = "style = 'background-color:#9933ff;'";
-                                product_str = '奶';
-                            }
-
-
-                            if (value.order_status_id == 1) {
-                                t_status_class = "style = 'background-color:#ffff99;'";
-
-                            }
-
-
-                            if (value.order_status_id == 2) {
-                                //t_status_class = "";
-                            }
-                            if (value.order_status_id == 3) {
-                                t_status_class = "style = 'background-color:#666666;'";
-                            }
-                            if (value.order_status_id == 5) {
-                                //t_status_class = "";
-                            }
-                            if (value.order_status_id == 6) {
-                                //t_status_class = "";
-                            }
-
-
-                            html += '<tr station_id="' + value.station_id + '">';
-
-                            html += '<td ' + t_status_class + '>';
-                            if (value.is_urgent == 1) {
-                                html += '<span style="color:red;">[加急]</span><br>';
-                            }
-                            html += '<span style="color:red;" id="warehouse_id' + value.order_id + '" value="' + value.shortname + '">' + value.shortname + '</span><br>';
-                            html += '<span style="font-weight: bold; font-size: 1.1rem;">' + value.order_id + '</span>';
-                            if (parseInt(value.inv_comment) > 0) {
-                                html += '<br /><span style="color:darkgreen;font-weight: bold; font-size: 0.8rem;">[货位' + value.inv_comment + ']</span>';
-                            }
-
-                            if (value.doInfo != '') {
-                                html += '<br /><br /><span style="color:darkgreen; font-size: 0.8rem;">合单 ' + value.doInfo + '</span>';
-                            }
-
-                            html += '<br /><br /><span style="color:red; font-size: 0.8rem;">订单' + value.so_order_id + '</span>';
-                            if (parseInt(value.station_id) == 2 && value.district != '') {
-                                html += '<br /><span style="color:red; font-size: 0.8rem;">' + value.area_name + '</span>';
-                            }
-                            if (value.is_nopricetag == 1) {
-                                html += '<br /><span style="color:red;">无价签</span>';
-                            }
-
-
-                            html += '<input type="hidden" id="shipping_name_' + value.order_id + '" value="' + value.shipping_name + '"><input type="hidden" id="shipping_phone_' + value.order_id + '" value="' + value.shipping_phone + '"><input type="hidden" id="shipping_address_' + value.order_id + '" value="' + value.shipping_address_1 + '"></td>';
-
-                            html += '<td style="display:none">';
-
-                            if (value.is_bao == 1) {
-                                html += '<span style="color:red;">爆</span><br>';
-                            }
-                            if (value.station_id == 2) {
-
-                                each_i_num = each_i_num_kuai + (each_i_num_new - each_i_num_veg);
-
-                                //html += '<span style="color:red;">快</span><br />';
-                            }
-
-                            if (value.group_id > 1 && parseInt(value.station_id) == 2) {
-                                //html += '<span style="color:red; font-size:0.9rem">'+value.group_shortname+'</span><br />';
-                            }
-
-                            html += '<input type="hidden" id="order_frame_count_' + value.order_id + '" value="' + value.frame_count + '">';
-                            html += '<input type="hidden" id="order_incubator_count_' + value.order_id + '" value="' + value.incubator_count + '">';
-                            html += '<input type="hidden" id="order_foam_count_' + value.order_id + '" value="' + value.foam_count + '">';
-                            html += '<input type="hidden" id="order_frame_mi_count_' + value.order_id + '" value="' + value.frame_mi_count + '">';
-                            html += '<input type="hidden" id="order_incubator_mi_count_' + value.order_id + '" value="' + value.incubator_mi_count + '">';
-                            html += '<input type="hidden" id="order_frame_ice_count_' + value.order_id + '" value="' + value.frame_ice_count + '">';
-                            html += '<input type="hidden" id="order_box_count_' + value.order_id + '" value="' + value.box_count + '">';
-
-                            html += '<input type="hidden" id="order_frame_meat_count_' + value.order_id + '" value="' + value.frame_meat_count + '">';
-                            html += '<input type="hidden" id="order_frame_vg_list_' + value.order_id + '" value="' + value.frame_vg_list + '">';
-                            html += '<input type="hidden" id="order_frame_vg_product_' + value.order_id + '" value="' + value.order_container + '">';
-                            html += '<input type="hidden" id="order_frame_meat_list_' + value.order_id + '" value="' + value.frame_meat_list + '">';
-                            html += '<input type="hidden" id="order_frame_mi_list_' + value.order_id + '" value="' + value.frame_mi_list + '">';
-                            html += '<input type="hidden" id="order_frame_ice_list_' + value.order_id + '" value="' + value.frame_ice_list + '">';
-
-                            html += '<input type="hidden" id="order_foam_ice_count_' + value.order_id + '" value="' + value.foam_ice_count + '">';
-
-                            html += '<input type="hidden" id="order_inv_comment_' + value.order_id + '" value="' + value.inv_comment + '">';
-
-
-                            html += '<input type="hidden" id="order_inv_spare_comment_' + value.order_id + '" value="' + value.inv_spare_comment + '">';
-
-
-                            html += '<input type="hidden" id="order_each_num_' + value.order_id + '" value="' + each_i_num + '">';
-
-                            html += '<span style="display: none" id="order_num_' + value.order_id + '">' + each_i_num + '</span><br>' + product_str + '</td>';
-
-                            html += '<td ' + t_status_class + '>' + planQty + '</td>';
-                            html += '<td ' + t_status_class + '>' + dueQty + '</td>';
-
-                            html += '<td ' + t_status_class + '>' + value.added_by + '</td>';
-
-
-                            html += '<td ' + t_status_class + '>';
-                            if (parseInt(value.order_count)>1) {
-                                html += '<span style="color:red;">需要合单</span><br />';
-                            }
-                            html += value.name;
-                            html += '<input type="hidden" class="soringOrderStatus" value="' + value.order_status_id + '"></td>';
-
-
-                            html += '<td ' + t_status_class + '><button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView(' + value.order_id + ',' + value.station_id + ');">查看</button>';
-
-                            //当订单状态为2（已确认）或5（分拣中），可用开始分拣，已有在分拣订单其他不显示
-                            //散整分拣
-
-
-//                                    html += '<button id="inventoryIn" class="invopt orderStartSortingButton" style="display: inline" onclick="javascript:orderInventory(' + value.order_id + ',' + value.station_id + ');">开始</button>';
-
-
-                            /*
-                             if(is_admin == 1){
-                             html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">提交分拣</button>';
-                             }
-                             */
-                            html += '</td>';
-                            html += '</tr>';
-                            html += '';
-                        }
-                        each_i_num++;
-                        if (each_i_num_new != 0) {
-                            each_i_num_new++;
-                        }
-                    });
-                } else {
                     $.each(jsonData.data, function (index, value) {
 
                         //console.log(value.plan_quantity);
@@ -1863,7 +1762,9 @@ function getOrders(order_status_id){
                             if (parseInt(value.order_count)>1) {
                                 html += '<span style="color:red;">需要合单</span><br />';
                             }
-                            html += value.name;
+
+                            html += value.name+'<br />';
+                            html += '<span style="color:red;">'+value.box_name+'</span><br />';
                             html += '<input type="hidden" id="soringOrderStatus'+value.order_id+'" class="soringOrderStatus" value="' + value.order_status_id + '"></td>';
 
 
@@ -1872,9 +1773,14 @@ function getOrders(order_status_id){
                             //当订单状态为2（已确认）或5（分拣中），可用开始分拣，已有在分拣订单其他不显示
                             //散整分拣
 
+                            var user_group_id = parseInt('<?php echo $_COOKIE['user_group_id'];?>');
+                            if ((value.order_status_id == 2 || value.order_status_id == 5 || value.order_status_id == 8 || value.order_status_id == 4) && value.no_inv != 1) {
+                                if (value.order_status_id == 8 && user_group_id == 15 || ((value.order_status_id == 2 || value.order_status_id == 4) && (user_group_id == 1 || user_group_id == 22))) {
 
-                            if ((value.order_status_id == 2 || value.order_status_id == 5 || value.order_status_id == 4) && value.no_inv != 1) {
-                                html += '<button id="inventoryIn" class="invopt orderStartSortingButton" style="display: inline" onclick="javascript:orderInventory(' + value.order_id + ',' + value.station_id + ');">开始</button>';
+                                } else {
+                                    html += '<button id="inventoryIn" class="invopt orderStartSortingButton" style="display: inline" onclick="javascript:orderInventory(' + value.order_id + ',' + value.station_id + ');">开始</button>';
+
+                                }
                             }
 
 
@@ -1892,7 +1798,6 @@ function getOrders(order_status_id){
                             each_i_num_new++;
                         }
                     });
-                }
                 $('#ordersList').html(html);
 
 
@@ -1915,48 +1820,25 @@ function getOrders(order_status_id){
             }
         },
         complete : function(){
-            $.ajax({
-                type : 'POST',
-                url : 'invapi.php?vali_user=1',
-                data : {
-                    method : 'getOrderStatus'
-                },
-                success : function (response , status , xhr){
-                    //console.log(response);
-                    if(response){
-                        var jsonData = eval(response);
-                        if(jsonData.status == 999){
-                            alert("未登录，请登录后操作");
-                            window.location = 'inventory_login.php?return=w4.php';
-                        }
-                        var html = '<option value=0>-请选择订单状态-</option>';
-                        $.each(jsonData, function(index, value){
-                            html += '<option value='+ value.order_status_id +' >' + value.name + '</option>';
-                        });
-                        $('#orderStatus').html(html);
 
-                        console.log('Load Stations');
-                    }
-                }
-            });
+            //$.ajax({
+            //    type : 'POST',
+            //    url : 'invapi.php?vali_user=1',
+            //    data : {
+            //        method : 'getProductWeightInfo',
+            //        date : '<?php //echo $date_array[2]['date']; ?>//'
+            //
+            //    },
+            //    success : function (response , status , xhr){
+            //        //console.log(response);
+            //
+            //        if(response){
+                        window.product_weight_info = [];
+                            // $.parseJSON(response);
 
-            $.ajax({
-                type : 'POST',
-                url : 'invapi.php?vali_user=1',
-                data : {
-                    method : 'getProductWeightInfo',
-                    date : '<?php echo $date_array[2]['date']; ?>'
-
-                },
-                success : function (response , status , xhr){
-                    //console.log(response);
-
-                    if(response){
-                        window.product_weight_info =  $.parseJSON(response);
-
-                    }
-                }
-            });
+            //         }
+            //     }
+            // });
 
 
 
@@ -2091,7 +1973,7 @@ function orderInventory(order_id,station_id,repack){
 
     titleContent += '<br />' + $("#shipping_name_"+order_id).val() + ',';
     titleContent += $("#shipping_address_"+order_id).val();
-    $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button>' + titleContent);
+    $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:reback_searh();">返回</button>' + titleContent);
 
     //设置当前分拣订单号，情况当前分拣商品编号
     $("#current_order_id").val(order_id);
@@ -2124,23 +2006,32 @@ function orderInventory(order_id,station_id,repack){
                     $("#is_need_merge_order").html("");
                 }
                 global.go_warehouse_id = parseInt(jsonData.warehouse_id);
-                if (jsonData.warehouse_id != jsonData.do_warehouse_id ) {
+                // if (jsonData.warehouse_id != jsonData.do_warehouse_id ) {
                     $("#inv_comment").keyup(function(){
                         var tmptxt=$(this).val();
-                        if(tmptxt.length >= 4 && tmptxt.length <= 8){
-                            handleStockArea(tmptxt,(jsonData.warehouse_id),(jsonData.is_repack));
+                        if(tmptxt.length >= 3 && tmptxt.length <= 8){
+                            handleStockArea(tmptxt,(jsonData.warehouse_id),(jsonData.is_repack),(jsonData.do_warehouse_id));
                         } else {
                             $(this).val("");
                         }
 
                     });
-                }
+                // }
                 getOrderSortingList(order_id,0,station_id,repack);
 
             }
         });
     }
-
+    function reback_searh(){
+        $('#invMethods').show();
+        $("#orderListTable").show();
+        $('#productList').hide();
+        $('#logo').html('<img src="view/image/logo.png" style="width:6em"/> 订单分拣<button class="invopt style_gray" id="reload" style="display: inline" onclick="reloadPage();" disabled="disabled">载入中...</button>\n' +
+            '    <button class="invopt" style="display: inline;float:left" onclick="window.location.href=\'auto_dis.php?auth=xsj2015inv&ver=db&file_name=w4\'">领单</button>');
+        $("#show_date").show();
+        $("#is_need_merge_order").hide();
+        getOrders(window.order_status_id);
+    }
     function orderInventoryView(order_id,station_id){
         $("#get_deliver_order_id").val(order_id);
         $('#invMethods').hide();
@@ -2228,7 +2119,7 @@ function orderInventory(order_id,station_id,repack){
         }
     }
 
-    $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button>'+'鲜世纪订单分拣－'+order_id+'<br>'+$("#shipping_name_"+order_id).val()+' - '+order_each_num+$("#shipping_address_"+order_id).val()+'<br>'+$("#shipping_phone_"+order_id).val());
+    $('#logo').html('<button class="invopt" style="display: inline;float:left" onclick="javascript:reback_searh();">返回</button>'+'鲜世纪订单分拣－'+order_id+'<br>'+$("#shipping_name_"+order_id).val()+' - '+order_each_num+$("#shipping_address_"+order_id).val()+'<br>'+$("#shipping_phone_"+order_id).val());
     $("#current_order_id").val(order_id);
     $('#barcodescanner').hide();
 
@@ -2266,11 +2157,13 @@ function orderInventory(order_id,station_id,repack){
                 }
                 global.go_warehouse_id = parseInt(jsonData.warehouse_id);
 
-                if (jsonData.warehouse_id != jsonData.do_warehouse_id ) {
+                if (parseInt(jsonData.warehouse_id)==21 && parseInt(jsonData.is_repack)==0) {
+
+                } else {
                     $("#inv_comment").keyup(function(){
                         var tmptxt=$(this).val();
-                        if(tmptxt.length >= 4 && tmptxt.length <= 8){
-                            handleStockArea(tmptxt,(jsonData.warehouse_id),(jsonData.is_repack));
+                        if(tmptxt.length >= 3 && tmptxt.length <= 8){
+                            handleStockArea(tmptxt,(jsonData.warehouse_id),(jsonData.is_repack),(jsonData.do_warehouse_id));
                         } else {
                             $(this).val("");
                         }
@@ -2402,6 +2295,7 @@ function getOrderSortingList(order_id,is_view,station_id,repack,frame_num){
                             window.product_barcode_arr[value.product_id] = {};
                             window.product_barcode_arr_s[value.product_id] = {};
                             window.product_inv_barcode_arr[value.product_id] = value.product_barcode_arr;
+                            window.product_is_repack[value.product_id] = value.repack;
 
                             if (true) {
                                 count_plan_quantity = parseInt(value.plan_quantity) + parseInt(count_plan_quantity);
@@ -2413,9 +2307,13 @@ function getOrderSortingList(order_id,is_view,station_id,repack,frame_num){
 
                                 if (value.barcode > 0) {
                                     product_id_arr[value.barcode] = value.product_id;
+                                    window.product_is_repack[value.barcode] = value.repack;
+
                                 }
                                 if (value.sku > 0) {
                                     product_id_arr[value.sku] = value.product_id;
+                                    window.product_is_repack[value.sku] = value.repack;
+
                                 }
                                 if (value.sku1.length != 0) {
 
@@ -2489,14 +2387,14 @@ function getOrderSortingList(order_id,is_view,station_id,repack,frame_num){
 
                     });
 
-                    console.log(product_id_arr);
-                    console.log( window.product_inv_barcode_arr);
+                    // console.log(product_id_arr);
+                    // console.log( window.product_inv_barcode_arr);
 
                     $("#count_plan_quantity").html(count_plan_quantity);
                     $("#count_quantity").html(count_quantity);
                     $('#productsInfo').html(html);
 
-                    console.log('BoxCount:'+boxCount);
+                    // console.log('BoxCount:'+boxCount);
                     if(boxCount > 0){
                         $('.fm_box_count').val(parseInt(boxCount));
                         $('#nonRepackBoxCount').text(parseInt(boxCount));
@@ -2525,12 +2423,12 @@ function getOrderSortingList(order_id,is_view,station_id,repack,frame_num){
             }
         },
         complete : function(){
-            getProductName();
+            // getProductName();
             getAccomplishFrame(order_id);
 
 
 
-            console.log("Start Soring...");
+            // console.log("Start Soring...");
             //autoChooseSortingProduct(9870,4897036691175);
 
 //                //自动开始分拣，查看状态时忽略
@@ -2560,6 +2458,7 @@ function putNavTab(product,chkTab = false) {
             '                                    <th scope="col">商品信息</th>\n' +
             '                                    <th scope="col">商品数</th>\n' +
             '                                    <th scope="col">已分拣</th>\n' +
+            '                                    <th scope="col">其它框数</th>\n' +
             '                                    <th scope="col">操作</th>\n' +
             '                                </tr>\n' +
             '                                </thead>\n' +
@@ -2585,6 +2484,7 @@ function putNavTab(product,chkTab = false) {
             '                                    <th scope="col">商品信息</th>\n' +
             '                                    <th scope="col">商品数</th>\n' +
             '                                    <th scope="col">已分拣</th>\n' +
+            '                                    <th scope="col">其它框数</th>\n' +
             '                                    <th scope="col">操作</th>\n' +
             '                                </tr>\n' +
             '                                </thead>\n' +
@@ -2639,6 +2539,7 @@ function removeIcon(container_id) {
         getAccomplishFrame();
     }
 }
+
 /*
 * 检测权限
 * */
@@ -2658,17 +2559,18 @@ function chkJurisdiction() {
             return true;
         }
 
-
     } else if (user_group_id == 1 || user_group_id == 22) {
         if (soringOrderStatus == 6 || soringOrderStatus == 12) {
             alert('该分拣单已分拣完成无法再操作');
+            return true;
+        } else if (soringOrderStatus == 2 || soringOrderStatus == 4) {
+            alert('该分拣单还未开始分拣，管理员不可直接操作');
             return true;
         }
     } else {
         alert('该分拣单仅限分拣人员，班组长或仓管可操作');
         return true;
     }
-
 }
 /*
 * 判断周转筐是否存在
@@ -2707,6 +2609,7 @@ function self(product) {
 * 加载框子与商品
 * */
 function getAccomplishFrame(order_id) {
+    var order_id = order_id >0 ? order_id :parseInt( $("#current_order_id").val());
     // console.log(order_id);
     $.ajax({
         type: 'POST',
@@ -2720,10 +2623,11 @@ function getAccomplishFrame(order_id) {
                  product_id_arr:product_id_arr},
         },
         success: function(response , status , xhr){
-            $('input[name="product"]').val("");
 
             if (response !== '') {
                 var list=$.parseJSON(response);
+                $("#myTab").html('');
+                $("#myTabContent").html('');
                 $.each(list,function(k,v){
                     putNavTab(k,true);
                     $.each(v,function(kk,vv){
@@ -2732,7 +2636,7 @@ function getAccomplishFrame(order_id) {
                 });
                 $('#myTab li:last-child a').tab('show');
                 // getProductFrequency();
-
+                $("#input_vg_frame").focus();
             }
 
         },
@@ -2804,8 +2708,7 @@ function putNavList(product,checkCabinet=false) {
                 }
             });
 
-            console.log('--------------_arr[\'name\']---------');
-            console.log(_arr['name']);
+            // console.log(_arr['name']);
             if (id){
                 var arr=[];
                 if ($.inArray(_arr,check_produvt_arr) == -1) {
@@ -2822,6 +2725,7 @@ function putNavList(product,checkCabinet=false) {
                         '                                    <th scope="row">'+parseInt(product['container_id'])+'_'+product['product_id']+'-'+product['product_name']+product['other_number']+'</th>\n' +
                         '                                    <td id="calcquantity_'+product['product_id']+'">'+product['product_num']+'</td>\n' +
                         '                                    <td id="calcNum_'+product['container_id']+'_'+product['product_id']+'">'+product['quantity']+'</td>\n' +
+                        '                                    <td id="otherNum_'+product['container_id']+'_'+product['product_id']+'"><i class="icon-2x"><span class="badge badge-pill badge-warning">'+product['other_number']+'</span></i></td>\n' +
                          '                                    <td class="calc_operate">\n' +
                          '                                        <button value="-"  onclick="javascript:delOneProductInv()" type="button" class="btn btn-outline-danger"><i class="icon-minus icon-large"></i></input>\n' +
                          '                                    </td>\n' +
@@ -2835,24 +2739,25 @@ function putNavList(product,checkCabinet=false) {
         if (checkCabinet == true) {
             console.log('--------checkCabinet=true--------');
             // console.log(product['quantity']);
-
             if ($("#calcquantity_"+parseInt(product['container_id'])+'_'+product['product_id']).val()>=0) {
                 $("#calcquantity_"+parseInt(product['container_id'])+'_'+product['product_id']).val(product['quantity']);
             } else {
                 if (parseInt(product['other_number']) == 0||parseInt(product['other_number'])== undefined || parseInt(product['other_number'])==''){
-                    $("#show_container_"+parseInt(product['container_id'])).append('                                <tr id="line_'+parseInt(product['container_id'])+'_'+parseInt(product['product_id'])+'">\n' +
-                        '                                    <th id="proName_'+parseInt(product['container_id'])+'_'+product['product_id']+'" scope="row">'+product['product_id']+'-'+product['product_name']+'</th>\n' +
-                        '                                    <td id="calcquantity_'+parseInt(product['container_id'])+'_'+product['product_id']+'">'+product['product_num']+'</td>\n' +
-                        '                                    <td id="calcNum_'+product['container_id']+'_'+product['product_id']+'">'+product['quantity']+'</td>\n' +
-                        '                                    <td class="calc_operate">\n' +
+                    $("#show_container_"+parseInt(product['container_id'])).append('                                <tr class="text-center" id="line_'+parseInt(product['container_id'])+'_'+parseInt(product['product_id'])+'">\n' +
+                        '                                    <th id="proName_'+parseInt(product['container_id'])+'_'+product['product_id']+'" scope="row"><i class="icon-large">'+product['product_id']+'-'+product['product_name']+'</i></th>\n' +
+                        '                                    <td id="calcquantity_'+parseInt(product['container_id'])+'_'+product['product_id']+'"><i class="icon-2x">'+product['product_num']+'</i></td>\n' +
+                        '                                    <td id="calcNum_'+product['container_id']+'_'+product['product_id']+'"><i class="icon-2x">'+product['quantity']+'</i></td>\n' +
+                        '                                    <td id="otherNum_'+product['container_id']+'_'+product['product_id']+'"><i class="icon-2x"><span class="badge badge-pill badge-warning">'+product['other_number']+'</span></i></td>\n' +
+                        '                                    <td class="calc_operate ">\n' +
                         '                                        <button value="'+product['container_id']+','+product['product_id']+'"  onclick="javascript:delOneProductInv(this.value)" type="button" class="btn btn-outline-danger"><i class="icon-minus icon-large"></i></input>\n' +
                         '                                    </td>\n' +
                         '                                </tr>');
                 } else {
-                    $("#show_container_"+parseInt(product['container_id'])).append('                                <tr id="line_'+parseInt(product['container_id'])+'_'+parseInt(product['product_id'])+'">\n' +
-                        '                                    <th id="proName_'+parseInt(product['container_id'])+'_'+product['product_id']+'" scope="row">'+product['product_id']+'-'+product['product_name']+'<br /><strong style="color:red;">其他周转筐数量:'+product['other_number']+'</strong></th>\n' +
-                        '                                    <td id="calcquantity_'+parseInt(product['container_id'])+'_'+product['product_id']+'">'+product['product_num']+'</td>\n' +
-                        '                                    <td id="calcNum_'+product['container_id']+'_'+product['product_id']+'">'+product['quantity']+'</td>\n' +
+                    $("#show_container_"+parseInt(product['container_id'])).append('                                <tr class="text-center" id="line_'+parseInt(product['container_id'])+'_'+parseInt(product['product_id'])+'">\n' +
+                        '                                    <th id="proName_'+parseInt(product['container_id'])+'_'+product['product_id']+'" scope="row"><i class="icon-large">'+product['product_id']+'-'+product['product_name']+'</i></th>\n' +
+                        '                                    <td id="calcquantity_'+parseInt(product['container_id'])+'_'+product['product_id']+'"><i class="icon-2x">'+product['product_num']+'</i></td>\n' +
+                        '                                    <td id="calcNum_'+product['container_id']+'_'+product['product_id']+'"><i class="icon-2x">'+product['quantity']+'</i></td>\n' +
+                        '                                    <td id="otherNum_'+product['container_id']+'_'+product['product_id']+'"><i class="icon-2x"><span class="badge badge-pill badge-warning">'+product['other_number']+'</span></i></td>\n' +
                         '                                    <td class="calc_operate">\n' +
                         '                                        <button id="delOne" value="'+product['container_id']+','+product['product_id']+'"  onclick="javascript:delOneProductInv(this.value)" type="button" class="btn btn-outline-danger"><i class="icon-minus icon-large"></i></input>\n' +
                         '                                    </td>\n' +
@@ -2873,14 +2778,11 @@ function putNavList(product,checkCabinet=false) {
 * 单入口
 * */
 function putSwitch() {
-
-    // $("input[name='product']").focus();
-    // $("input[name='product']").val('');
     if (chkJurisdiction()) {
         return true;
     }
     var product=$.trim($("input[name='product']").val());
-
+    $("input[name='product']").val("");
     chkGoods(product);
 }
 /*
@@ -2898,25 +2800,48 @@ function chkGoods(product) {
             return true;
         }
        handleFrameList('vg',product);
-       if (global.ajaxReturn == -1) {
-           return false;
-       }
-        product=$.trim(product).split('X')[0];
-        putNavTab(product,false);//生产框
+
     }else {
         var num= /^[0-9]{4,5}$|^[0-9]{8,15}$/;
         if(num.test(product)){
-            if (0) {
-                // putNavList(product,false);
-                // showAlertError('#getMsg','当前没有周转筐！','请扫描周转筐');
-            }else{
-                putNavList(product,false);//生产 产品
+        	var tabLen=getTab();
+            if (product.substr(0,3) == 290) {
+                product = product.substr(3,4);
             }
+            if (parseInt(tabLen.length) == 0 && parseInt(window.product_is_repack[product])==1) {
+                showAlertError('#getMsg','必须先扫周转筐！','再添加商品');
+                return false;
+            }
+                putNavList(product,false);//生产 产品
+            // }
         }else{
             showAlertError('#getMsg','不是周转筐也非商品！','请重新扫描');
         }
     }
 
+
+}
+/*
+* 框子里面有没有商品
+* */
+function isNullProduct(frame) {
+    var msg=0;
+    var frameNum=getTab();
+    var wa=parseInt(frameNum.length);
+    if (wa > 0) {
+        var frames=frameNum.split(',');
+        $.each(frames,function(k,v){
+            var str=parseInt($("#show_container_"+v).children().children().length);
+            if (str == parseInt(0)) {
+                msg=parseInt(1);
+            }else {
+                msg=parseInt(-2);
+            }
+        });
+        return msg;
+    }else if (frameNum == '') {
+       return msg=parseInt(-2);
+    }
 
 }
 /*
@@ -2976,7 +2901,7 @@ function showAlertSuccess(tally,header,content,auto=false) {
         "                                        </div>");
     $(tally).alert();
     if (auto==true){
-        setTimeout(function(){$(tally).hide('slow')}, 3000);
+        setTimeout(function(){$(tally).hide('slow')}, 1000);
     }
     // setTimeout(function(){$(tally).hide('slow')}, 2000);
 }
@@ -2993,7 +2918,7 @@ function showAlertError(tally,header,content,auto = false) {
         "                                        </div>");
     $(tally).alert();
     if (auto==true){
-        setTimeout(function(){$(tally).hide('slow')}, 3000);
+        setTimeout(function(){$(tally).hide('slow')}, 1000);
     }
 }
 
@@ -3029,28 +2954,30 @@ function getFrameAllProduct(frameNum =''){
 
 /*
 * 当前商品出现的次数
+* count 当前商品已分拣的商品
 * */
-function getProductFrequency() {
-    console.log('-------------当前商品出现的次数-----------');
-    // var product_name="PET伯牛维生素饮料600ml*15瓶 （不兑奖）";
-    // alert(product_name.length);
-    var Frame_num=chkFrameProductNum();//所有商品
-    var i=1;
-    for(j = 0,len=Frame_num.length; j < len; j++) {
+function getProductFrequency(product_id,count) {
         var frameNum=getTab();
-        var strList=frameNum.split(',');
-        for (ii = 0; ii < strList.length; ii++) {
-            $("#show_container_"+strList[ii]).children().each(function () {
-                console.log($(this).children(":first"));
-                $(this).children(":first").append('<span class="badge badge-pill badge-warning">'+i+'</span>')
-            });
-        }
-    }
-
-    console.log(i);
-    $("#show_container_"+strList[i]).children();
-
-    return i;
+        var frame=frameNum.split(',');
+        $.each(frame,function(k,v){
+            var str=$("#calcNum_"+v+"_"+product_id).text();
+            var nowSum=parseInt(count)-parseInt(str);
+            $("#otherNum_"+v+"_"+product_id).html('<i class="icon-2x"><span class="badge badge-pill badge-warning">'+nowSum+'</span></i>');
+        })
+}
+/*
+*一个商品的已分拣总数
+* */
+function invCount(product_id) {
+    var frameNum=getTab();
+    var frame=frameNum.split(',');
+    $.each(frame,function(k,v){
+        //每个柜子下的一个商品的总数
+        var _arr=[];
+        var str=$("#calcNum_"+v+"_"+product_id).text();
+        _arr.unshift(str);
+    })
+    return _arr;
 }
 
 
@@ -3217,7 +3144,7 @@ function handleFrameList(frame_type,frame_num=''){
         },
         success: function (response) {
             global.resTmp = response;
-            var obj = jQuery.parseJSON(response);
+            var obj = $.parseJSON(response);
             global.resJson = obj;
             if(obj.container_id > 0 && obj.occupy  == 1 && obj.instore  ==  1){
                 global.ajaxReturn = '-1';
@@ -3241,6 +3168,29 @@ function handleFrameList(frame_type,frame_num=''){
             //
 
             }
+            if (global.ajaxReturn == '-1') {
+                return false;
+            }
+            var product=$.trim(frame_num).split('X')[0];
+            var isNullPro=isNullProduct(product);
+            if (isNullPro == 1) {
+                showAlertError('#getMsg','周转筐内必须存在商品！','请添加商品');
+                var player = $("#player2")[0];
+                player.play();
+                sound.playerAlert;
+                return true;
+            }
+            if (isNullPro == -2) {
+                var player = $("#playerMessage")[0];
+                player.play();
+                sound.playerMessage;
+                putNavTab(product,false);
+            }
+
+            // {
+            //     global.ajaxReturn = '-1';
+            //     alert('该周转筐不在系统内');            }
+
         },
     });
 
@@ -3382,6 +3332,7 @@ function remove_frame(frame_type,frame_num,type,gParent,parent){
                     $("#"+container_id).remove();
                     $("#"+container_id+'-tab').remove();
                     $('#myTab li:last-child a').tab('show');
+                    getAccomplishFrame();
                     return 2;
                 } else{
                     $("#frame_"+frame_type+"_"+frame_num).remove();
@@ -3427,8 +3378,8 @@ function remove_frame(frame_type,frame_num,type,gParent,parent){
 function autoChooseSortingProduct(id){
     $("#product_name").show();
     //  $("#productsHoldDo").show();
-    console.log('Choose Sorting Product:');
-    console.log('id:'+id);
+    // console.log('Choose Sorting Product:');
+    // console.log('id:'+id);
 
     $('html,body').animate({scrollTop: '0px'}, 0);
     var sortingProductId = id;
@@ -3498,6 +3449,7 @@ function hideSubmitFrame(){
 }
 
 function showSubmitSorting(){
+
     window.location ="#sttttt";
     $('html,body').animate({scrollTop: '0px'}, 0);
     var warehouse_id = $("#warehouse_id").text();
@@ -3519,7 +3471,7 @@ function showSubmitSorting(){
 }
 
 function locateInput(){
-    console.log("开始聚焦扫描框");
+    // console.log("开始聚焦扫描框");
     $('#product').focus();
 }
 
@@ -3558,12 +3510,17 @@ function soundEffectInit(){
     }
     /*zx
     * 货位号扫描*/
-    function handleStockArea(tmptxt,warehouse_id,is_repack){
+    function handleStockArea(tmptxt,warehouse_id,is_repack,do_warehouse_id){
+        warehouse_id = parseInt(warehouse_id);
+        do_warehouse_id = parseInt(do_warehouse_id);
         if (chkJurisdiction()) {
+            $("#inv_comment").val('');
             return true;
         }
-        if (warehouse_id == 14) {
-            if (3000 < tmptxt && tmptxt <= 4000) {
+        // console.log(warehouse_id);
+        // console.log(tmptxt);
+        if (warehouse_id == 21) {
+            if (((do_warehouse_id == 21 || do_warehouse_id == 23) && (3000 < tmptxt && tmptxt <= 4000)) || ((tmptxt< 1000) && (do_warehouse_id == 21 || do_warehouse_id == 23))) {
                 $("#inv_comment").val(tmptxt);
             } else {
                 alert("该订单不能放在此货位号,属于浦东出库位");
@@ -3591,7 +3548,7 @@ function soundEffectInit(){
                 $("#inv_comment").val('');
             }
         } else if (warehouse_id == 18) {
-            if (5500 < tmptxt && tmptxt <= 6000) {
+            if (5500 <= tmptxt && tmptxt <= 6000) {
                 $("#inv_comment").val(tmptxt);
             } else {
                 alert("注意！该订单不能放在此货位号，此货位属于宁波新仓出库位");
@@ -3608,7 +3565,7 @@ function soundEffectInit(){
             if (7000 < tmptxt && tmptxt <= 8000) {
                 $("#inv_comment").val(tmptxt);
             } else {
-                alert("该订单不能放在此货位号,属于金山出库位");
+                alert("该订单不能放在此货位号,属于杭州出库位");
                 $("#inv_comment").val('');
             }
         } else if (warehouse_id == 22) {
@@ -3852,7 +3809,7 @@ function qtyadd(id){
     $("#do"+id).val(do_qty);
 //locateInput();
 
-    console.log(id+':'+qty);
+    // console.log(id+':'+qty);
 }
 
 /*
@@ -3913,7 +3870,7 @@ function qtyminus(id){
 
     }
 
-    if($(prodId).val() >= 1){
+    if(parseInt($(prodId).val()) >= 1){
         /*
         * calcNum
 //        * */
@@ -3943,7 +3900,7 @@ function qtyminus(id){
                 window.product_barcode_arr[id][scan_barcode] = scan_barcode;
             }
         }
-        console.log(window.product_barcode_arr);
+        // console.log(window.product_barcode_arr);
 
     }
 
@@ -3976,7 +3933,7 @@ function qtyminus(id){
 
     //locateInput();
 
-    console.log(id+':'+qty);
+    // console.log(id+':'+qty);
 }
 
 
@@ -4002,13 +3959,14 @@ function qtyminus5(id){
                 }
             })
             if(inv_product_barcode_flag){
+                alert("商品有误，请刷新后重试");
                 return false;
             }
         }
 
     }
 
-    if($(prodId).val()-5 >= 0){
+    if(parseInt($(prodId).val())-5 >= 0){
         var qty = parseInt($(prodId).val()) - 5;
         $(prodId).val(qty);
 
@@ -4052,7 +4010,7 @@ function qtyminus5(id){
 
     //locateInput();
 
-    console.log(id+':'+qty);
+    // console.log(id+':'+qty);
 }
 
 
@@ -4084,11 +4042,11 @@ function qtyminus10(id,quyu){
 
     }
 
-    if($(prodId).val()-quyu >= 0){
-        var qty = parseInt($(prodId).val()) - quyu;
+    if(parseInt($(prodId).val())-parseInt(quyu) >= 0){
+        var qty = parseInt($(prodId).val()) - parseInt(quyu);
         $(prodId).val(qty);
 
-        var do_qty = parseInt($("#do"+id).val()) + quyu;
+        var do_qty = parseInt($("#do"+id).val()) + parseInt(quyu);
         $("#do"+id).val(do_qty);
         $('#current_product_quantity_change_start').val(1);
         if(window.product_weight_info[id]){
@@ -4127,7 +4085,7 @@ function qtyminus10(id,quyu){
 
     //locateInput();
 
-    console.log(id+':'+qty);
+    // console.log(id+':'+qty);
 }
 
 
@@ -4164,7 +4122,7 @@ function qtyminus2(id){
 
     //locateInput();
 
-    console.log(id+':'+qty);
+    // console.log(id+':'+qty);
 }
 
 
@@ -4263,7 +4221,7 @@ function addOrderProductStation(id){
     }if (chkJurisdiction()) {
         return true;
     }
-    var container_id= getActive();
+    var container_id= getActive();console.log(container_id);
     var order_id = $('#current_order_id').val();
     var warehouse_id = $("#warehouse_id").text();
     var product_id = $("#pid"+id).html();
@@ -4277,55 +4235,71 @@ function addOrderProductStation(id){
     var  nowNumber=$("#calcNum_"+container_id+'_'+product_id).text();
     var  countNumber=$("#calcquantity_"+container_id+"_"+product_id).text();
     // nowNumber=nowNumber?nowNumber:0;
+    if (parseInt(window.product_is_repack[product_id])==0) {
+        container_id = 0;
+    } else {
+        if (parseInt(container_id) > 0) {
 
-
+        } else {
+            alert("请扫描周转筐");
+            getAccomplishFrame();return true;
+        }
+    }
     // console.log(product_quantity);
     // nowNumber = parseInt(product_quantity)+parseInt(nowNumber);
-    $.ajax({
-        type : 'POST',
-        async:false,
-        url : 'invapi.php?method=addOrderProductStation',
-        data : {
-            method : 'addOrderProductStation',
-            order_id : order_id,
-            product_id : product_id,
-            product_quantity : product_quantity,
-            warehouse_id : warehouse_id ,
-            container_id : container_id ,
+    if(product_quantity >0){
+        $.ajax({
+            type : 'POST',
+            async:false,
+            url : 'invapi.php?method=addOrderProductStationes',
+            data : {
+                method : 'addOrderProductStationes',
+                order_id : order_id,
+                product_id : product_id,
+                product_quantity : product_quantity,
+                warehouse_id : warehouse_id ,
+                container_id : container_id ,
 
-        },
-        success : function (response, status, xhr){
-            var allData = $.parseJSON(response);
-            console.log(allData['allNumber']);
-            var  nowNumber=$("#calcNum_"+container_id+'_'+product_id).text();
-            var  countNumber=$("#calcquantity_"+container_id+"_"+product_id).text();
-            if (nowNumber !== "" ||nowNumber !== 0) {
-                $("#line_"+container_id+"_"+product_id).remove();
-                if (nowNumber > countNumber){
-                    alert('分拣数量不应大于总数,请再次确认!');
-                    return true;
+            },
+            success : function (response, status, xhr){
+                var allData = $.parseJSON(response);
+                // console.log(allData);
+                //分拣数量
+                var  nowNumber=$("#calcNum_"+container_id+'_'+product_id).text();
+                //总数
+                var  countNumber=$("#calcquantity_"+container_id+"_"+product_id).text();
+                if (nowNumber !== "" ||nowNumber !== 0) {
+                    $("#line_"+container_id+"_"+product_id).remove();
+                    if (nowNumber > countNumber){
+                        alert('分拣数量不应大于总数,请再次确认!');
+                        return true;
+                    }
                 }
-            }
-            nowNumber=nowNumber?nowNumber:0;
-            // console.log(product_quantity);
-            nowNumber = parseInt(product_quantity)+parseInt(nowNumber);
-            if(allData){
 
-                var productName=_arr['name'];
-                var vv={};
-                vv.product_id = product_id;
-                vv.other_number = parseInt(allData['allNumber']) -parseInt(nowNumber);
-                // console.log(vv.other_Number);
-                vv.product_name= productName;
-                vv.quantity = nowNumber;
-
-                // vv.frequency=getProductFrequency(productName);
-                vv.container_id = container_id;
-                vv.product_num = $("#order_plan_quantity_"+product_id).text();
-                putNavList(vv,true);
+                getAccomplishFrame();
+                // nowNumber=nowNumber?nowNumber:0;
+                // // console.log(product_quantity);
+                // //提交的数量+之前的数量
+                // nowNumber = parseInt(product_quantity)+parseInt(nowNumber);
+                // if(allData){
+                //     //当前已分拣总数
+                //     allData['allNumber']=allData['allNumber']?allData['allNumber']:nowNumber;
+                //     var productName=_arr['name'];
+                //     var vv={};
+                //     vv.product_id = product_id;
+                //     vv.other_number = parseInt(allData['allNumber']) - parseInt(nowNumber);
+                //     vv.product_name= productName;
+                //     vv.quantity = nowNumber;
+                //     vv.container_id = container_id;
+                //     vv.product_num = $("#order_plan_quantity_"+product_id).text();
+                //     putNavList(vv,true);
+                    $("#frame_vg_list").focus();
+                //     getProductFrequency(product_id,allData['allNumber']);
+                // }
             }
-        }
-    });
+        });
+    }
+
 }
 /*
 * 删除一条数据
@@ -4336,6 +4310,8 @@ function delOneProductInv(data) {
     }
     var container_id=$.trim(data).split(',')[0];
     var product_id=$.trim(data).split(',')[1];
+    var order_id = $("#current_order_id").val();
+    // alert(order_id);
     if(confirm("是否确认删除已分拣数据？")){
         $.ajax({
             type: 'POST',
@@ -4345,15 +4321,18 @@ function delOneProductInv(data) {
                 method:'delOneProductInv',
                 data:{
                     container_id:container_id,
-                    product_id:product_id
+                    product_id:product_id,
+                    order_id:order_id
                 },
             },
             success:function(delData, status, xhr){
-                // console.log(delData);
                 if (delData){
+                    var data = $.parseJSON(delData);
                     $("#line_"+container_id+"_"+product_id).remove();
                     showAlertSuccess("#getMsg",'删除成功!','请重新分拣',true);
-                    getAccomplishFrame();
+		    $("#input_"+container_id+'_frame-tab').tab('show');
+                    getProductFrequency(product_id,data['allNumber']);
+                    //getAccomplishFrame();
                     // getOrderSortingList();
                 }
             },
@@ -4368,46 +4347,46 @@ function delOneProductInv(data) {
 
 
 /*获取当前商品在几个框里*/
-function getNowFrameProductNumber() {
-    var order_id = $('#current_order_id').val();
-    var container_id = getActive();
-    // alert(order_id);
-    $.ajax({
-        type: 'POST',
-        url: 'invapi.php?method=getFrameProductNumber',
-        dateType:'json',
-        cache: false,
-        async: false,
-        data: {
-            method:'getFrameProductNumber',
-            data:{
-                order_id:order_id,container_id:container_id},
-        },
-        success:function(frameData, status, xhr){
-            // console.log(frameData);
-            if (frameData){
-                var data = $.parseJSON(frameData);
-                disposeNowFrameProductNumber(data);
-            }
-        },
-        error:function (err) {
-            console.log(err);
-        }
-    })
-}
-/*获取当前商品在几个框里,拆解数据*/
-function disposeNowFrameProductNumber(Framedata) {
-    var data=chkFrameProductNum();
-    for (var i = 0; i < data.length; i++) {
-        // $.each(Framedata,function (k, v) {
-        //     $("#"+v['container_id']+'_'+v['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
-        // });
-        $("#"+data[i]).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
-    }
-    // for (i = 0; i < Framedata.length; i++) {
-    //     $("#"+data[i]['container_id']+"_"+data[i]['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
-    // }
-}
+// function getNowFrameProductNumber() {
+//     var order_id = $('#current_order_id').val();
+//     var container_id = getActive();
+//     // alert(order_id);
+//     $.ajax({
+//         type: 'POST',
+//         url: 'invapi.php?method=getFrameProductNumber',
+//         dateType:'json',
+//         cache: false,
+//         async: false,
+//         data: {
+//             method:'getFrameProductNumber',
+//             data:{
+//                 order_id:order_id,container_id:container_id},
+//         },
+//         success:function(frameData, status, xhr){
+//             // console.log(frameData);
+//             if (frameData){
+//                 var data = $.parseJSON(frameData);
+//                 disposeNowFrameProductNumber(data);
+//             }
+//         },
+//         error:function (err) {
+//             console.log(err);
+//         }
+//     })
+// }
+// /*获取当前商品在几个框里,拆解数据*/
+// function disposeNowFrameProductNumber(Framedata) {
+//     var data=chkFrameProductNum();
+//     for (var i = 0; i < data.length; i++) {
+//         // $.each(Framedata,function (k, v) {
+//         //     $("#"+v['container_id']+'_'+v['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
+//         // });
+//         $("#"+data[i]).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
+//     }
+//     // for (i = 0; i < Framedata.length; i++) {
+//     //     $("#"+data[i]['container_id']+"_"+data[i]['product_id']).append('<span class="badge badge-pill badge-warning">'+66+'</span>');
+//     // }
+// }
 function delOrderProductToInv(){
     if (check_in_right_time()) {
         return true;
@@ -4452,257 +4431,257 @@ function delOrderProductToInv(){
 }
 
 
-function batchProcessAddOrderProductToInv(orderList){
-    return false;
-    console.log(orderList);
+// function batchProcessAddOrderProductToInv(orderList){
+//     return false;
+//     console.log(orderList);
+//
+//     //return false;
+//     showOverlay();
+//     $.each(orderList, function(i,order_id){
+//         $.ajax({
+//             type : 'POST',
+//             url : 'invapi.php',
+//             cache: false,
+//             async: false,
+//
+//             data : {
+//                 method : 'addOrderProductToInv',
+//                 order_id : order_id
+//             },
+//             success : function (response, status, xhr){
+//                 if(response){
+//                     //var jsonData = eval(response);
+//                     var jsonData = $.parseJSON(response);
+//
+//                     if(jsonData.status == 0){
+//                         alert("["+order_id+"]部分商品未提交入库成功，请重试");
+//                         hideOverlay();
+//                         return false;
+//                     }
+//
+//                     if(jsonData.status == 2){
+//                         alert("无待确认提交的商品");
+//                         hideOverlay();
+//                         return false;
+//                     }
+//
+//                     if(jsonData.status == 4){
+//                         alert("每个订单不能重复提交分拣数据");
+//                         hideOverlay();
+//                         return false;
+//                     }
+//
+//                     if(jsonData.status == 5){
+//                         alert("["+order_id+"]分拣数量超过订单数量 或 有重复提交相同条码的商品，请删除分拣数据重新分拣 "+jsonData.timestamp);
+//                         hideOverlay();
+//                         return false;
+//                     }
+//
+//                     if(jsonData.status == 6){
+//                         alert("订单已经提交过，如果继续提交分拣数量就会超过订单数量，请检查");
+//                         hideOverlay();
+//                         return false;
+//                     }
+//                 }
+//             }
+//         });
+//     });
+//     hideOverlay();
+//     getOrderByStatus();
+// }
 
-    //return false;
-    showOverlay();
-    $.each(orderList, function(i,order_id){
-        $.ajax({
-            type : 'POST',
-            url : 'invapi.php',
-            cache: false,
-            async: false,
+// function addConsolidatedRelevant(){
+//     if (check_in_right_time()) {
+//         return true;
+//     }if (chkJurisdiction()) {
+//         return true;
+//     }
+//     var order_id = $('#current_order_id').val();
+//     var warehouse_id = $("#warehouse_id").text();
+//
+//     if(confirm('确认直接提交已拣完？提交之后将不能进行投篮，请确认好商品全部投篮完成再提交！')) {
+//         $('#classSubmitSortingRelevant').remove('class', "submit");
+//         $('#classSubmitSortingRelevant').hide();
+//
+//
+//         $.ajax({
+//             type: 'POST',
+//             url: 'invapi.php?method=addConsolidatedRelevant',
+//             data: {
+//                 method: 'addConsolidatedRelevant',
+//                 data:{
+//                     order_id: order_id,
+//                     warehouse_id: warehouse_id,
+//                 },
+//             },
+//             success: function (response, status, xhr) {
+//                 var jsonData = $.parseJSON(response);
+//
+//                 if (jsonData.status == 999) {
+//                     alert("未登录，请登录后操作");
+//                     window.location = 'inventory_login.php?return=w4.php';
+//                 }
+//
+//                 if (jsonData.status == 1) {
+//                     //根据分拣件数确认是否提交订单或待审核
+//                     var confirmMsg = "商品已全部分拣，是否确认分拣完成？";
+//                     if (parseInt(jsonData.plan_quantity) != parseInt(jsonData.do_quantity)) {
+//                         confirmMsg = "计划分拣数量" + jsonData.plan_quantity + "，实际分拣" + jsonData.do_quantity + "，是否确认提交完成？";
+//                     } else {
+//                         userPendingCheck = 0;
+//                     }
+//                     if (confirm(confirmMsg)) {
+//                         addConsolidatedDoInfo();
+//                     } else {
+//                         hideOverlay();
+//                         return false;
+//                     }
+//                 }
+//                 if (jsonData.status == 0) {
+//                     alert("今天已经提交过了，不能重复提交");
+//                     hideOverlay();
+//                 }
+//                 if (jsonData.status == 2) {
+//                     alert("无待确认提交的商品或该订单已经取消");
+//                     hideOverlay();
+//                 }
+//                 if (jsonData.status == 3) {
+//                     alert("此订单已提交分拣不能再次提交");
+//                     hideOverlay();
+//                 }
+//                 if (jsonData.status == 4) {
+//                     alert("当前订单没有捡完不能合单");
+//                     hideOverlay();
+//                 }
+//
+//             },
+//             complete: function () {
+//                 $('#classSubmitSortingRelevant').attr('class', "submit");
+//                 $('#classSubmitSortingRelevant').attr('value', "提交合单");
+//             }
+//
+//         });
+//     }
+//
+// }
+//
+// function updateDoStatus(){
+//     if (check_in_right_time()) {
+//         return true;
+//     }if (chkJurisdiction()) {
+//         return true;
+//     }
+//     var order_id = $('#current_order_id').val();
+//     var warehouse_id = $("#warehouse_id").text();
+//
+//     if(confirm('确认修改订单状态并确认？')) {
+//         $('#classUpdateDoStatus').remove('class', "submit");
+//         $('#classUpdateDoStatus').attr('value', "正在修改...");
+//         $.ajax({
+//             type: 'POST',
+//             url: 'invapi.php?method=updateDoStatus',
+//             data: {
+//                 method: 'updateDoStatus',
+//                 data: {
+//                     order_id: order_id,
+//                     warehouse_id: warehouse_id,
+//                 },
+//             },
+//             success:function(response){
+//                 var jsonData = $.parseJSON(response);
+//                 if(jsonData ==1){
+//                     alert('修改状态成功可以提交合单');
+//                 }else{
+//                     alert('修改状态失败需要DO单是已拣完状态');
+//                 }
+//             },
+//             complete: function () {
+//                 $('#classUpdateDoStatus').attr('class', "submit");
+//                 $('#classUpdateDoStatus').attr('value', "浦西没到货修改订单状态并记录");
+//             }
+//         });
+//     }
+// }
 
-            data : {
-                method : 'addOrderProductToInv',
-                order_id : order_id
-            },
-            success : function (response, status, xhr){
-                if(response){
-                    //var jsonData = eval(response);
-                    var jsonData = $.parseJSON(response);
-
-                    if(jsonData.status == 0){
-                        alert("["+order_id+"]部分商品未提交入库成功，请重试");
-                        hideOverlay();
-                        return false;
-                    }
-
-                    if(jsonData.status == 2){
-                        alert("无待确认提交的商品");
-                        hideOverlay();
-                        return false;
-                    }
-
-                    if(jsonData.status == 4){
-                        alert("每个订单不能重复提交分拣数据");
-                        hideOverlay();
-                        return false;
-                    }
-
-                    if(jsonData.status == 5){
-                        alert("["+order_id+"]分拣数量超过订单数量 或 有重复提交相同条码的商品，请删除分拣数据重新分拣 "+jsonData.timestamp);
-                        hideOverlay();
-                        return false;
-                    }
-
-                    if(jsonData.status == 6){
-                        alert("订单已经提交过，如果继续提交分拣数量就会超过订单数量，请检查");
-                        hideOverlay();
-                        return false;
-                    }
-                }
-            }
-        });
-    });
-    hideOverlay();
-    getOrderByStatus();
-}
-
-function addConsolidatedRelevant(){
-    if (check_in_right_time()) {
-        return true;
-    }if (chkJurisdiction()) {
-        return true;
-    }
-    var order_id = $('#current_order_id').val();
-    var warehouse_id = $("#warehouse_id").text();
-
-    if(confirm('确认直接提交已拣完？提交之后将不能进行投篮，请确认好商品全部投篮完成再提交！')) {
-        $('#classSubmitSortingRelevant').remove('class', "submit");
-        $('#classSubmitSortingRelevant').hide();
-
-
-        $.ajax({
-            type: 'POST',
-            url: 'invapi.php?method=addConsolidatedRelevant',
-            data: {
-                method: 'addConsolidatedRelevant',
-                data:{
-                    order_id: order_id,
-                    warehouse_id: warehouse_id,
-                },
-            },
-            success: function (response, status, xhr) {
-                var jsonData = $.parseJSON(response);
-
-                if (jsonData.status == 999) {
-                    alert("未登录，请登录后操作");
-                    window.location = 'inventory_login.php?return=w4.php';
-                }
-
-                if (jsonData.status == 1) {
-                    //根据分拣件数确认是否提交订单或待审核
-                    var confirmMsg = "商品已全部分拣，是否确认分拣完成？";
-                    if (parseInt(jsonData.plan_quantity) != parseInt(jsonData.do_quantity)) {
-                        confirmMsg = "计划分拣数量" + jsonData.plan_quantity + "，实际分拣" + jsonData.do_quantity + "，是否确认提交完成？";
-                    } else {
-                        userPendingCheck = 0;
-                    }
-                    if (confirm(confirmMsg)) {
-                        addConsolidatedDoInfo();
-                    } else {
-                        hideOverlay();
-                        return false;
-                    }
-                }
-                if (jsonData.status == 0) {
-                    alert("今天已经提交过了，不能重复提交");
-                    hideOverlay();
-                }
-                if (jsonData.status == 2) {
-                    alert("无待确认提交的商品或该订单已经取消");
-                    hideOverlay();
-                }
-                if (jsonData.status == 3) {
-                    alert("此订单已提交分拣不能再次提交");
-                    hideOverlay();
-                }
-                if (jsonData.status == 4) {
-                    alert("当前订单没有捡完不能合单");
-                    hideOverlay();
-                }
-
-            },
-            complete: function () {
-                $('#classSubmitSortingRelevant').attr('class', "submit");
-                $('#classSubmitSortingRelevant').attr('value', "提交合单");
-            }
-
-        });
-    }
-
-}
-
-function updateDoStatus(){
-    if (check_in_right_time()) {
-        return true;
-    }if (chkJurisdiction()) {
-        return true;
-    }
-    var order_id = $('#current_order_id').val();
-    var warehouse_id = $("#warehouse_id").text();
-
-    if(confirm('确认修改订单状态并确认？')) {
-        $('#classUpdateDoStatus').remove('class', "submit");
-        $('#classUpdateDoStatus').attr('value', "正在修改...");
-        $.ajax({
-            type: 'POST',
-            url: 'invapi.php?method=updateDoStatus',
-            data: {
-                method: 'updateDoStatus',
-                data: {
-                    order_id: order_id,
-                    warehouse_id: warehouse_id,
-                },
-            },
-            success:function(response){
-                var jsonData = $.parseJSON(response);
-                if(jsonData ==1){
-                    alert('修改状态成功可以提交合单');
-                }else{
-                    alert('修改状态失败需要DO单是已拣完状态');
-                }
-            },
-            complete: function () {
-                $('#classUpdateDoStatus').attr('class', "submit");
-                $('#classUpdateDoStatus').attr('value', "浦西没到货修改订单状态并记录");
-            }
-        });
-    }
-}
-
-function  addConsolidatedDoInfo() {
-    if (check_in_right_time()) {
-        return true;
-    }if (chkJurisdiction()) {
-        return true;
-    }
-    var order_id = parseInt($('#current_order_id').val());
-    var invComment = parseInt($('#inv_comment').val()); //保存货位号
-    var boxCount = parseInt($("#box_count").val()); //保存整箱数
-    var frame_vg_list = $("#frame_vg_list").val();
-    var frame_count = $("#frame_count").val();
-    var warehouse_id = $("#warehouse_id").text();
-    var  inventory_user = '<?php echo $_COOKIE['inventory_user'] ;?> ';
-       
-    $.ajax({
-        type : 'POST',
-        url : 'invapi.php?method=addConsolidatedDoInfo',
-        //async : false,
-        //cache : false,
-        data : {
-            method : 'addConsolidatedDoInfo',
-            data :{
-                order_id : order_id,
-                invComment : invComment,
-                boxCount : boxCount,
-                frame_count : frame_count,
-                frame_vg_list : frame_vg_list,
-                warehouse_id :warehouse_id,
-                inventory_user:inventory_user,
-            },
-        },
-        success : function (response, status, xhr){
-            if(response){
-                console.log(response);
-                //var jsonData = eval(response);
-                var jsonData = $.parseJSON(response);
-                hideOverlay();
-
-                if(jsonData.status == 999){
-                    alert("未登录，请登录后操作");
-                    window.location = 'inventory_login.php?return=w4.php';
-                }
-
-                if(jsonData.status == 1){
-                    alert("提交商品入库成功");
-                }
-                if(jsonData.status == 0){
-                    alert("部分商品未提交入库成功，请重试或联系管理员");
-                }
-                if(jsonData.status == 2){
-                    alert("无待确认提交的商品");
-                }
-                if(jsonData.status == 4){
-                    alert("每个订单不能重复提交分拣数据");
-                }
-                if(jsonData.status == 5){
-                    alert("分拣数量超过订单数量 或 有重复提交相同条码的商品，请删除分拣数据重新分拣 "+jsonData.timestamp);
-                }
-                if(jsonData.status == 6){
-                    alert("订单已经提交过，如果继续提交分拣数量就会超过订单数量，请检查");
-                }
-
-                if(jsonData.status == 8){
-                    alert("订单已经提交为‘待审核’，请联系仓库管理员审核");
-                }
-
-                if(jsonData.status == 9){
-                    alert("[Test] "+jsonData.timestamp);
-                }
-            }
-        },
-        complete : function(){
-            //提交完成后刷新页面
-            //addOrderNum();
-                location.reload();
-        }
-    });
-
-}
+//function  addConsolidatedDoInfo() {
+//    if (check_in_right_time()) {
+//        return true;
+//    }if (chkJurisdiction()) {
+//        return true;
+//    }
+//    var order_id = parseInt($('#current_order_id').val());
+//    var invComment = parseInt($('#inv_comment').val()); //保存货位号
+//    var boxCount = parseInt($("#box_count").val()); //保存整箱数
+//    var frame_vg_list = $("#frame_vg_list").val();
+//    var frame_count = $("#frame_count").val();
+//    var warehouse_id = $("#warehouse_id").text();
+//    var  inventory_user = '<?php //echo $_COOKIE['inventory_user'] ;?>// ';
+//
+//    $.ajax({
+//        type : 'POST',
+//        url : 'invapi.php?method=addConsolidatedDoInfo',
+//        //async : false,
+//        //cache : false,
+//        data : {
+//            method : 'addConsolidatedDoInfo',
+//            data :{
+//                order_id : order_id,
+//                invComment : invComment,
+//                boxCount : boxCount,
+//                frame_count : frame_count,
+//                frame_vg_list : frame_vg_list,
+//                warehouse_id :warehouse_id,
+//                inventory_user:inventory_user,
+//            },
+//        },
+//        success : function (response, status, xhr){
+//            if(response){
+//                console.log(response);
+//                //var jsonData = eval(response);
+//                var jsonData = $.parseJSON(response);
+//                hideOverlay();
+//
+//                if(jsonData.status == 999){
+//                    alert("未登录，请登录后操作");
+//                    window.location = 'inventory_login.php?return=w4.php';
+//                }
+//
+//                if(jsonData.status == 1){
+//                    alert("提交商品入库成功");
+//                }
+//                if(jsonData.status == 0){
+//                    alert("部分商品未提交入库成功，请重试或联系管理员");
+//                }
+//                if(jsonData.status == 2){
+//                    alert("无待确认提交的商品");
+//                }
+//                if(jsonData.status == 4){
+//                    alert("每个订单不能重复提交分拣数据");
+//                }
+//                if(jsonData.status == 5){
+//                    alert("分拣数量超过订单数量 或 有重复提交相同条码的商品，请删除分拣数据重新分拣 "+jsonData.timestamp);
+//                }
+//                if(jsonData.status == 6){
+//                    alert("订单已经提交过，如果继续提交分拣数量就会超过订单数量，请检查");
+//                }
+//
+//                if(jsonData.status == 8){
+//                    alert("订单已经提交为‘待审核’，请联系仓库管理员审核");
+//                }
+//
+//                if(jsonData.status == 9){
+//                    alert("[Test] "+jsonData.timestamp);
+//                }
+//            }
+//        },
+//        complete : function(){
+//            //提交完成后刷新页面
+//            //addOrderNum();
+//                location.reload();
+//        }
+//    });
+//
+//}
 
 
 function forceAddDoOrder(){
@@ -4798,6 +4777,8 @@ function addOrderProductToInv_pre(userPendingCheck){
             }
 
         });
+    } else {
+        hideOverlay();
     }
 }
 
@@ -4806,6 +4787,15 @@ function addOrderProductToInv(userPendingCheck){
     if (check_in_right_time()) {
         return true;
     }if (chkJurisdiction()) {
+        return true;
+    }
+    var isNullPro=isNullProduct();
+    if (isNullPro == 1) {
+        alert('周转筐内必须存在商品！请添加商品或者删除该框');
+        var player = $("#player2")[0];
+        player.play();
+        sound.playerAlert;
+
         return true;
     }
     var order_id = parseInt($('#current_order_id').val());
@@ -4889,291 +4879,291 @@ function addOrderProductToInv(userPendingCheck){
 
 
 
-function addOrderNum(){
-    if (check_in_right_time()) {
-        return true;
-    }if (chkJurisdiction()) {
-        return true;
-    }
-    showOverlay();
+// function addOrderNum(){
+//     if (check_in_right_time()) {
+//         return true;
+//     }if (chkJurisdiction()) {
+//         return true;
+//     }
+//     showOverlay();
+//
+//     var order_id = $('#current_order_id').val();
+//     var frame_count= '';
+//     var incubator_count = '';
+//     var foam_count = '';
+//     var inv_comment = '';
+//     var inv_spare_comment = '';
+//     var frame_mi_count = '';
+//     var incubator_mi_count = '';
+//     var frame_ice_count = '';
+//     var box_count = '';
+//     var foam_ice_count = '';
+//     var frame_meat_count = '';
+//
+//     var frame_vg_list = '';
+//     var frame_meat_list = '';
+//     var frame_mi_list = '';
+//     var frame_ice_list = '';
+//
+//
+//     if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][1]){
+//         var add_type = 1;
+//     }
+//     if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][2]){
+//         var add_type = 2;
+//     }
+//     if(window.inventory_user_order[order_id]&&(window.inventory_user_order[order_id][3]||window.inventory_user_order[order_id][5])){
+//         var add_type = 4;
+//     }
+//     if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][4]){
+//         var add_type = 5;
+//     }
+//
+//     var add_type = 3;
+//
+//
+//     if($("#frame_count")){
+//         frame_count = $("#frame_count").val();
+//     }
+//     if($("#incubator_count")){
+//         incubator_count = $("#incubator_count").val();
+//     }
+//     if($("#foam_count")){
+//         foam_count = $("#foam_count").val();
+//     }
+//     if($("#inv_comment")){
+//         inv_comment = $("#inv_comment").val();
+//     }
+//     if($("#inv_spare_comment")){
+//         inv_spare_comment = $("#inv_spare_comment").val();
+//     }
+//     if($("#frame_mi_count")){
+//         frame_mi_count = $("#frame_mi_count").val();
+//     }
+//     if($("#incubator_mi_count")){
+//         incubator_mi_count = $("#incubator_mi_count").val();
+//     }
+//     if($("#frame_ice_count")){
+//         frame_ice_count = $("#frame_ice_count").val();
+//     }
+//     if($("#box_count")){
+//         box_count = $("#box_count").val();
+//     }
+//     if($("#frame_meat_count")){
+//         frame_meat_count = $("#frame_meat_count").val();
+//     }
+//     if($("#foam_ice_count")){
+//         foam_ice_count = $("#foam_ice_count").val();
+//     }
+//     if($("#frame_vg_list")){
+//         frame_vg_list = $("#frame_vg_list").val();
+//     }
+//     if($("#frame_meat_list")){
+//         frame_meat_list = $("#frame_meat_list").val();
+//     }
+//     if($("#frame_mi_list")){
+//         frame_mi_list = $("#frame_mi_list").val();
+//     }
+//     if($("#frame_ice_list")){
+//         frame_ice_list = $("#frame_ice_list").val();
+//     }
+//     if($("#frame_vg_product")){
+//         frame_vg_product = $("#frame_vg_product").val();
+//     }
+//     $.ajax({
+//         type : 'POST',
+//         url : 'invapi.php',
+//         data : {
+//             method : 'addOrderNum',
+//             order_id : order_id,
+//             frame_count : frame_count,
+//             inv_comment : inv_comment,
+//             inv_spare_comment:inv_spare_comment,
+//             incubator_count : incubator_count,
+//             foam_count : foam_count,
+//             frame_mi_count : frame_mi_count,
+//             incubator_mi_count : incubator_mi_count,
+//             frame_ice_count : frame_ice_count,
+//             box_count : box_count,
+//             frame_meat_count : frame_meat_count,
+//             foam_ice_count : foam_ice_count,
+//             add_type : add_type,
+//             frame_vg_list : frame_vg_list,
+//             frame_meat_list : frame_meat_list,
+//             frame_mi_list : frame_mi_list,
+//             frame_ice_list : frame_ice_list,
+//             frame_vg_product:frame_vg_product,
+//         },
+//         success : function (response, status, xhr){
+//             console.log(response);
+//             if(response){
+//                 //var jsonData = eval(response);
+//                 var jsonData = $.parseJSON(response);
+//                 hideOverlay();
+//
+//
+//                 if(jsonData.status == 999){
+//                     alert("未登录，请登录后操作");
+//                     window.location = 'inventory_login.php?return=w4.php';
+//                 }
+//
+//                 if(jsonData.status == 99){
+//                     alert(jsonData.msg);
+//                 }
+//
+//                 if(jsonData.status == 1){
+//                     alert("提交框数成功");
+//                     $("#frame_vg_product").val('');
+//                 }
+//                 if(jsonData.status == 0){
+//                     alert("提交失败");
+//                 }
+//                 if(jsonData.status == 11){
+//                     alert("提交的框数和框号数量不符，请检查");
+//                 }
+//                 if(jsonData.status == 12){
+//                     alert(jsonData.timestamp);
+//                 }
+//                 if(jsonData.status == 13){
+//                     alert(jsonData.timestamp);
+//                 }
+//                 if(jsonData.status == 14){
+//                     alert(jsonData.timestamp);
+//                 }
+//                 if(jsonData.status == 15){
+//                     alert(jsonData.timestamp);
+//                 }
+//                 if(jsonData.status == 16){
+//                     alert(jsonData.timestamp);
+//                 }
+//                 if(jsonData.status == 17){
+//                     alert(jsonData.timestamp);
+//                 }
+//             }
+//         }
+//     });
+//     hideOverlay();
+//     $('#fastmove_order_frame').hide();
+// }
 
-    var order_id = $('#current_order_id').val();
-    var frame_count= '';
-    var incubator_count = '';
-    var foam_count = '';
-    var inv_comment = '';
-    var inv_spare_comment = '';
-    var frame_mi_count = '';
-    var incubator_mi_count = '';
-    var frame_ice_count = '';
-    var box_count = '';
-    var foam_ice_count = '';
-    var frame_meat_count = '';
-
-    var frame_vg_list = '';
-    var frame_meat_list = '';
-    var frame_mi_list = '';
-    var frame_ice_list = '';
-
-
-    if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][1]){
-        var add_type = 1;
-    }
-    if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][2]){
-        var add_type = 2;
-    }
-    if(window.inventory_user_order[order_id]&&(window.inventory_user_order[order_id][3]||window.inventory_user_order[order_id][5])){
-        var add_type = 4;
-    }
-    if(window.inventory_user_order[order_id]&&window.inventory_user_order[order_id][4]){
-        var add_type = 5;
-    }
-
-    var add_type = 3;
-
-
-    if($("#frame_count")){
-        frame_count = $("#frame_count").val();
-    }
-    if($("#incubator_count")){
-        incubator_count = $("#incubator_count").val();
-    }
-    if($("#foam_count")){
-        foam_count = $("#foam_count").val();
-    }
-    if($("#inv_comment")){
-        inv_comment = $("#inv_comment").val();
-    }
-    if($("#inv_spare_comment")){
-        inv_spare_comment = $("#inv_spare_comment").val();
-    }
-    if($("#frame_mi_count")){
-        frame_mi_count = $("#frame_mi_count").val();
-    }
-    if($("#incubator_mi_count")){
-        incubator_mi_count = $("#incubator_mi_count").val();
-    }
-    if($("#frame_ice_count")){
-        frame_ice_count = $("#frame_ice_count").val();
-    }
-    if($("#box_count")){
-        box_count = $("#box_count").val();
-    }
-    if($("#frame_meat_count")){
-        frame_meat_count = $("#frame_meat_count").val();
-    }
-    if($("#foam_ice_count")){
-        foam_ice_count = $("#foam_ice_count").val();
-    }
-    if($("#frame_vg_list")){
-        frame_vg_list = $("#frame_vg_list").val();
-    }
-    if($("#frame_meat_list")){
-        frame_meat_list = $("#frame_meat_list").val();
-    }
-    if($("#frame_mi_list")){
-        frame_mi_list = $("#frame_mi_list").val();
-    }
-    if($("#frame_ice_list")){
-        frame_ice_list = $("#frame_ice_list").val();
-    }
-    if($("#frame_vg_product")){
-        frame_vg_product = $("#frame_vg_product").val();
-    }
-    $.ajax({
-        type : 'POST',
-        url : 'invapi.php',
-        data : {
-            method : 'addOrderNum',
-            order_id : order_id,
-            frame_count : frame_count,
-            inv_comment : inv_comment,
-            inv_spare_comment:inv_spare_comment,
-            incubator_count : incubator_count,
-            foam_count : foam_count,
-            frame_mi_count : frame_mi_count,
-            incubator_mi_count : incubator_mi_count,
-            frame_ice_count : frame_ice_count,
-            box_count : box_count,
-            frame_meat_count : frame_meat_count,
-            foam_ice_count : foam_ice_count,
-            add_type : add_type,
-            frame_vg_list : frame_vg_list,
-            frame_meat_list : frame_meat_list,
-            frame_mi_list : frame_mi_list,
-            frame_ice_list : frame_ice_list,
-            frame_vg_product:frame_vg_product,
-        },
-        success : function (response, status, xhr){
-            console.log(response);
-            if(response){
-                //var jsonData = eval(response);
-                var jsonData = $.parseJSON(response);
-                hideOverlay();
-
-
-                if(jsonData.status == 999){
-                    alert("未登录，请登录后操作");
-                    window.location = 'inventory_login.php?return=w4.php';
-                }
-
-                if(jsonData.status == 99){
-                    alert(jsonData.msg);
-                }
-
-                if(jsonData.status == 1){
-                    alert("提交框数成功");
-                    $("#frame_vg_product").val('');
-                }
-                if(jsonData.status == 0){
-                    alert("提交失败");
-                }
-                if(jsonData.status == 11){
-                    alert("提交的框数和框号数量不符，请检查");
-                }
-                if(jsonData.status == 12){
-                    alert(jsonData.timestamp);
-                }
-                if(jsonData.status == 13){
-                    alert(jsonData.timestamp);
-                }
-                if(jsonData.status == 14){
-                    alert(jsonData.timestamp);
-                }
-                if(jsonData.status == 15){
-                    alert(jsonData.timestamp);
-                }
-                if(jsonData.status == 16){
-                    alert(jsonData.timestamp);
-                }
-                if(jsonData.status == 17){
-                    alert(jsonData.timestamp);
-                }
-            }
-        }
-    });
-    hideOverlay();
-    $('#fastmove_order_frame').hide();
-}
-
-function inventoryProcess(){
-    var method = $('#method').val();
-    var prodListWithQty = getProductBarcodeWithQty();
-    var station = $('#station').val();
-
-    console.log('Process inventory method:'+method);
-    console.log('Process inventory data:'+prodListWithQty);
-
-    if(method == ''){
-        alert('请确认操作类型。');
-        return false;
-    }
-
-    if(!checkStation()){
-        return false;
-    }
-
-    if(prodListWithQty == '' || prodListWithQty == null ){
-        alert('获取条码列表错误或还没有输入商品条码。');
-        return false;
-    }
-
-    if(confirm('确认提交此次［'+$('#'+method).text()+'］操作？')){
-        $('#submit').attr('class',"submit style_gray");
-        $('#submit').attr('value',"正在提交...");
-
-        $.ajax({
-            type : 'POST',
-            url : 'invapi.php',
-            data : {
-                method : method,
-                station : station,
-                products : prodListWithQty,
-                purchase_plan_id : $('#purchasePlanId').val()
-            },
-            success : function (response , status , xhr){
-                if(response){
-                    //console.log(response);
-
-
-                    var jsonData = $.parseJSON(response);
-                    if(jsonData.status){
-                        $('#message').attr('class',"message style_ok");
-                        $('#productsInfo').html('');
-                        $('#productList').hide();
-                        $('#invMethods').show();
-
-                        console.log('Inv. Process OK');
-                    }
-                    else{
-                        $('#message').attr('class',"message style_error");
-                        console.log('Inv. Process Error.');
-                    }
-
-                    $('#message').show();
-                    $('#message').html(jsonData.msg);
-                }
-            },
-            complete : function(){
-                $('#submit').attr('class',"submit");
-                $('#submit').attr('value',"提交");
-            }
-        });
-    }
-}
-
-function getInvMoveList(gap){
-    //$('#move_list').html(222);
-    console.log('Get Station Move List In ['+gap+'] Day(s).');
-
-    if($('#station').val() == 0){
-        alert('请选择站点，或者点击“退出”，重新载入。');
-        return false;
-    }
-
-    var station = $('#station').val();
-
-    $('#move_list').show();
-
-    $.ajax({
-        type : 'POST',
-        url : 'invapi.php',
-        data : {
-            method : 'getStationMove',
-            station : station,
-            date_gap : gap
-        },
-        success : function (response , status , xhr){
-            var html = '<td colspan="4">正在载入...</td>';
-            $('#invMovesInfo').html(html);
-
-            if(response){
-                console.log(response);
-                var jsonData = $.parseJSON(response);
-
-                html = '';
-                $.each(jsonData, function(index,value){
-                    if(value.inventory_type_id !== '5'){
-                        html += '<tr>' +
-                            '<td align="center"><span id="invMoveType_'+ value.inventory_move_id +'">' + value.move_name + '</span></td>' +
-                            '<td><span style="display:none" id="invMoveConcact_'+ value.inventory_move_id +'">' + value.contact_name +","+ value.contact_phone + '</span><span id="invMoveTitle_'+ value.inventory_move_id +'">' + value.station_title + '</span><br /><span id="invMoveTime_'+ value.inventory_move_id +'">' + value.date_added + '</div></td>' +
-                            '<td align="center">' + value.total_qty + '</td>' +
-                            '<td><input class="submit_s style_yellow" type="button" value="查看" onclick="javascript:printInvMove('+value.inventory_move_id+');"></td>' +
-                            '</tr>';
-                    }
-                });
-
-                $('#invMovesInfo').html(html);
-            }
-        },
-        complete : function(){
-
-        }
-    });
-
-    //locateInput();
-}
-
+// function inventoryProcess(){
+//     var method = $('#method').val();
+//     var prodListWithQty = getProductBarcodeWithQty();
+//     var station = $('#station').val();
+//
+//     console.log('Process inventory method:'+method);
+//     console.log('Process inventory data:'+prodListWithQty);
+//
+//     if(method == ''){
+//         alert('请确认操作类型。');
+//         return false;
+//     }
+//
+//     if(!checkStation()){
+//         return false;
+//     }
+//
+//     if(prodListWithQty == '' || prodListWithQty == null ){
+//         alert('获取条码列表错误或还没有输入商品条码。');
+//         return false;
+//     }
+//
+//     if(confirm('确认提交此次［'+$('#'+method).text()+'］操作？')){
+//         $('#submit').attr('class',"submit style_gray");
+//         $('#submit').attr('value',"正在提交...");
+//
+//         $.ajax({
+//             type : 'POST',
+//             url : 'invapi.php',
+//             data : {
+//                 method : method,
+//                 station : station,
+//                 products : prodListWithQty,
+//                 purchase_plan_id : $('#purchasePlanId').val()
+//             },
+//             success : function (response , status , xhr){
+//                 if(response){
+//                     //console.log(response);
+//
+//
+//                     var jsonData = $.parseJSON(response);
+//                     if(jsonData.status){
+//                         $('#message').attr('class',"message style_ok");
+//                         $('#productsInfo').html('');
+//                         $('#productList').hide();
+//                         $('#invMethods').show();
+//
+//                         console.log('Inv. Process OK');
+//                     }
+//                     else{
+//                         $('#message').attr('class',"message style_error");
+//                         console.log('Inv. Process Error.');
+//                     }
+//
+//                     $('#message').show();
+//                     $('#message').html(jsonData.msg);
+//                 }
+//             },
+//             complete : function(){
+//                 $('#submit').attr('class',"submit");
+//                 $('#submit').attr('value',"提交");
+//             }
+//         });
+//     }
+// }
+//
+// function getInvMoveList(gap){
+//     //$('#move_list').html(222);
+//     console.log('Get Station Move List In ['+gap+'] Day(s).');
+//
+//     if($('#station').val() == 0){
+//         alert('请选择站点，或者点击“退出”，重新载入。');
+//         return false;
+//     }
+//
+//     var station = $('#station').val();
+//
+//     $('#move_list').show();
+//
+//     $.ajax({
+//         type : 'POST',
+//         url : 'invapi.php',
+//         data : {
+//             method : 'getStationMove',
+//             station : station,
+//             date_gap : gap
+//         },
+//         success : function (response , status , xhr){
+//             var html = '<td colspan="4">正在载入...</td>';
+//             $('#invMovesInfo').html(html);
+//
+//             if(response){
+//                 console.log(response);
+//                 var jsonData = $.parseJSON(response);
+//
+//                 html = '';
+//                 $.each(jsonData, function(index,value){
+//                     if(value.inventory_type_id !== '5'){
+//                         html += '<tr>' +
+//                             '<td align="center"><span id="invMoveType_'+ value.inventory_move_id +'">' + value.move_name + '</span></td>' +
+//                             '<td><span style="display:none" id="invMoveConcact_'+ value.inventory_move_id +'">' + value.contact_name +","+ value.contact_phone + '</span><span id="invMoveTitle_'+ value.inventory_move_id +'">' + value.station_title + '</span><br /><span id="invMoveTime_'+ value.inventory_move_id +'">' + value.date_added + '</div></td>' +
+//                             '<td align="center">' + value.total_qty + '</td>' +
+//                             '<td><input class="submit_s style_yellow" type="button" value="查看" onclick="javascript:printInvMove('+value.inventory_move_id+');"></td>' +
+//                             '</tr>';
+//                     }
+//                 });
+//
+//                 $('#invMovesInfo').html(html);
+//             }
+//         },
+//         complete : function(){
+//
+//         }
+//     });
+//
+//     //locateInput();
+// }
+//
 
 function printInvMove(invMoveId){
     if (check_in_right_time()) {
@@ -5275,197 +5265,205 @@ function logout_inventory_user(){
         });
     }
 }
-
-function getOrderByStatus(){
-    var order_status_id = $("#orderStatus").val();
-    var warehouse_id = $("#warehouse_id").text();
-    $.ajax({
-        type : 'POST',
-        url : 'invapi.php',
-        data : {
-            method : 'getOrders',
-            station_id: 2,
-            inventory_user: inventory_user,
-            date : '<?php echo $date_array[2]['date']; ?>',
-            order_status_id : order_status_id,
-            warehouse_id:warehouse_id,
-
-        },
-        success : function (response , status , xhr){
-            //console.log(response);
-
-            if(response){
-
-                var jsonData = $.parseJSON(response);
-
-
-
-                if(jsonData.status == 999){
-                    alert(jsonData.msg);
-                    location.href = "inventory_login.php?return=w4.php";
-                }
-
-                var html = '';
-
-                var each_i_num = 1;
-                var each_i_num_new = 0;
-                var each_i_num_kuai = 501;
-                var each_i_num_veg = 0;
-                var num_flag = true;
-                var batchProcessOrderList = [];
-                $.each(jsonData.data, function(index, value){
-                    var t_status_class = '';
-                    var product_str = '';
-
-                    if(value.station_id == 1){
-                        return true;
-                    }
-
-
-                    if(value.station_id == 2&&num_flag){
-                        num_flag = false;
-                        each_i_num_veg = each_i_num;
-                        each_i_num_new = each_i_num;
-                    }
-
-                    if(value.order_product_type == 1){
-                        product_str = '菜';
-                    }
-                    if(value.order_product_type == 2){
-                        t_status_class = "style = 'background-color:#ffff00;'";
-                        product_str = '菜+奶';
-                    }
-                    if(value.order_product_type == 3){
-                        t_status_class = "style = 'background-color:#9933ff;'";
-                        product_str = '奶';
-                    }
-
-
-
-
-
-                    if(value.order_status_id == 1){
-                        t_status_class = "style = 'background-color:#ffff99;'";
-
-                    }
-                    if(value.order_status_id == 2){
-                        //t_status_class = "";
-                    }
-                    if(value.order_status_id == 3){
-                        t_status_class = "style = 'background-color:#666666;'";
-                    }
-                    if(value.order_status_id == 5){
-                        //t_status_class = "";
-                    }
-                    if(value.order_status_id == 6){
-                        //t_status_class = "";
-                    }
-
-
-                    html += '<tr station_id="'+value.station_id+'">';
-                    html += '<td '+t_status_class+'>';
-                    if(value.is_bao == 1){
-                        html += '<span style="color:red;">爆</span><br>';
-                    }
-                    if(value.station_id == 2){
-                        each_i_num = each_i_num_kuai+(each_i_num_new - each_i_num_veg);
-                        //html += '<span style="color:red;">快</span><br>';
-                    }
-                    html += '<input type="hidden" id="order_frame_count_'+value.order_id+'" value="'+value.frame_count+'">';
-                    html += '<input type="hidden" id="order_incubator_count_'+value.order_id+'" value="'+value.incubator_count+'">';
-                    html += '<input type="hidden" id="order_foam_count_'+value.order_id+'" value="'+value.foam_count+'">';
-                    html += '<input type="hidden" id="order_frame_mi_count_'+value.order_id+'" value="'+value.frame_mi_count+'">';
-                    html += '<input type="hidden" id="order_incubator_mi_count_'+value.order_id+'" value="'+value.incubator_mi_count+'">';
-                    html += '<input type="hidden" id="order_frame_ice_count_'+value.order_id+'" value="'+value.frame_ice_count+'">';
-                    html += '<input type="hidden" id="order_box_count_'+value.order_id+'" value="'+value.box_count+'">';
-                    html += '<input type="hidden" id="order_frame_meat_count_'+value.order_id+'" value="'+value.frame_meat_count+'">';
-                    html += '<input type="hidden" id="order_frame_vg_list_'+value.order_id+'" value="'+value.frame_vg_list+'">';
-
-                    html += '<input type="hidden" id="order_frame_meat_list_'+value.order_id+'" value="'+value.frame_meat_list+'">';
-                    html += '<input type="hidden" id="order_frame_mi_list_'+value.order_id+'" value="'+value.frame_mi_list+'">';
-                    html += '<input type="hidden" id="order_frame_ice_list_'+value.order_id+'" value="'+value.frame_ice_list+'">';
-
-                    html += '<input type="hidden" id="order_foam_ice_count_'+value.order_id+'" value="'+value.foam_ice_count+'">';
-                    html += '<input type="hidden" id="order_inv_comment_'+value.order_id+'" value="'+value.inv_comment+'">';
-                    html += '<input type="hidden" id="order_inv_spare_comment_' + value.order_id + '" value="' + value.inv_spare_comment + '">';
-
-
-                    html += '<input type="hidden" id="order_each_num_'+value.order_id+'" value="'+each_i_num+'">';
-
-                    html += '<span id="order_num_'+value.order_id+'">'+each_i_num+'</span><br>'+product_str+'</td>';
-                    html += '<td '+t_status_class+'>'+value.order_id;
-
-                    if(value.customer_group_id == 2){
-                        html += '<br><span style="color:red;">无价签</span>';
-                    }
-                    if(parseInt(value.inv_comment) > 0){
-                        html += '<br><span style="color:darkgreen; font-weight: bold;">[货位' + value.inv_comment + ']</span>';
-                    }
-
-                    if(value.is_urgent == 1 ){
-                        html +='<input type="hidden" id="shipping_name_'+value.order_id+'" value="'+value.shipping_name+'"><input type="hidden" id="shipping_phone_'+value.order_id+'" value="'+value.shipping_phone+'"><input type="hidden" id="shipping_address_'+value.order_id+'" value="'+value.shipping_address_1+'"></td>';
-                    }else{
-                        html +='<input type="hidden" id="shipping_name_'+value.order_id+'" value="'+value.shipping_name+'"><input type="hidden" id="shipping_phone_'+value.order_id+'" value="'+value.shipping_phone+'"><input type="hidden" id="shipping_address_'+value.order_id+'" value="'+value.shipping_address_1+'"></td>';
-                    }
-
-
-                    html += '<td '+t_status_class+'>'+value.plan_quantity+'</td>';
-                    html += '<td '+t_status_class+'>'+value.quantity+'</td>';
-                    html += '<td '+t_status_class+'>'+value.added_by+'</td>';
-                    html += '<td '+t_status_class+'>';
-                    if (parseInt(value.order_count)>1) {
-                        html += '<span style="color:red;">需要合单</span><br />';
-                    }
-                    html += value.name;
-                    html += '</td>';
-                    html += '<td '+t_status_class+'><button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+','+value.station_id+');">查看</button>';
-                    if((value.order_status_id == 2 || value.order_status_id == 5) && value.no_inv != 1){
-                        html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+','+value.station_id+');">开始</button>';
-                    }
-
-                    /*
-                     if(is_admin == 1){
-                     html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">提交分拣</button>';
-                     }
-                     */
-                    html += '</td>';
-                    html += '</tr>';
-                    html += '';
-
-                    if(parseInt(value.quantity) == 0 && parseInt(value.station_id) == 2 && parseInt(value.order_status_id) == 5 && batchProcessOrderList.length<10){
-                        batchProcessOrderList.push(value.order_id);
-                    }
-
-
-                    if(each_i_num_new != 0){
-                        each_i_num_new++;
-                    }
-                });
-
-                var batchProcessHtml = '';
-                if(batchProcessOrderList.length){
-                    var batchProcessOrderListString = '';
-                    $.each(batchProcessOrderList,function(i,v){
-                        batchProcessOrderListString += v;
-                        if(i < batchProcessOrderList.length - 1){
-                            batchProcessOrderListString += ', ';
-                        }
-                    });
-                    batchProcessHtml += '<tr style="display: none">' +
-                        '<td colspan="6" span=""><span style="color:#CC0000">[测试!]</span>批量提交未分拣量为0订单(仅快消，每10单一批)：'+batchProcessOrderListString+'</td>' +
-                        '<td><button class="invopt" onclick="javascript:batchProcessAddOrderProductToInv(['+batchProcessOrderList+'])">批量提交</button></td>' +
-                        '</tr>';
-                }
-                html = batchProcessHtml + html;
-                $('#ordersList').html(html);
-
-                console.log('Load Stations');
-            }
-        }
-
-    });
-
-}
+//
+//function getOrderByStatus(){
+//    var order_status_id = $("#orderStatus").val();
+//    var warehouse_id = $("#warehouse_id").text();
+//    $.ajax({
+//        type : 'POST',
+//        url : 'invapi.php',
+//        data : {
+//            method : 'getOrders',
+//            station_id: 2,
+//            inventory_user: inventory_user,
+//            date : '<?php //echo $date_array[2]['date']; ?>//',
+//            order_status_id : order_status_id,
+//            warehouse_id:warehouse_id,
+//
+//        },
+//        success : function (response , status , xhr){
+//            //console.log(response);
+//
+//            if(response){
+//
+//                var jsonData = $.parseJSON(response);
+//
+//
+//
+//                if(jsonData.status == 999){
+//                    alert(jsonData.msg);
+//                    location.href = "inventory_login.php?return=w4.php";
+//                }
+//
+//                var html = '';
+//
+//                var each_i_num = 1;
+//                var each_i_num_new = 0;
+//                var each_i_num_kuai = 501;
+//                var each_i_num_veg = 0;
+//                var num_flag = true;
+//                var batchProcessOrderList = [];
+//                $.each(jsonData.data, function(index, value){
+//                    var t_status_class = '';
+//                    var product_str = '';
+//
+//                    if(value.station_id == 1){
+//                        return true;
+//                    }
+//
+//
+//                    if(value.station_id == 2&&num_flag){
+//                        num_flag = false;
+//                        each_i_num_veg = each_i_num;
+//                        each_i_num_new = each_i_num;
+//                    }
+//
+//                    if(value.order_product_type == 1){
+//                        product_str = '菜';
+//                    }
+//                    if(value.order_product_type == 2){
+//                        t_status_class = "style = 'background-color:#ffff00;'";
+//                        product_str = '菜+奶';
+//                    }
+//                    if(value.order_product_type == 3){
+//                        t_status_class = "style = 'background-color:#9933ff;'";
+//                        product_str = '奶';
+//                    }
+//
+//
+//
+//
+//
+//                    if(value.order_status_id == 1){
+//                        t_status_class = "style = 'background-color:#ffff99;'";
+//
+//                    }
+//                    if(value.order_status_id == 2){
+//                        //t_status_class = "";
+//                    }
+//                    if(value.order_status_id == 3){
+//                        t_status_class = "style = 'background-color:#666666;'";
+//                    }
+//                    if(value.order_status_id == 5){
+//                        //t_status_class = "";
+//                    }
+//                    if(value.order_status_id == 6){
+//                        //t_status_class = "";
+//                    }
+//
+//
+//                    html += '<tr station_id="'+value.station_id+'">';
+//                    html += '<td '+t_status_class+'>';
+//                    if(value.is_bao == 1){
+//                        html += '<span style="color:red;">爆</span><br>';
+//                    }
+//                    if(value.station_id == 2){
+//                        each_i_num = each_i_num_kuai+(each_i_num_new - each_i_num_veg);
+//                        //html += '<span style="color:red;">快</span><br>';
+//                    }
+//                    html += '<input type="hidden" id="order_frame_count_'+value.order_id+'" value="'+value.frame_count+'">';
+//                    html += '<input type="hidden" id="order_incubator_count_'+value.order_id+'" value="'+value.incubator_count+'">';
+//                    html += '<input type="hidden" id="order_foam_count_'+value.order_id+'" value="'+value.foam_count+'">';
+//                    html += '<input type="hidden" id="order_frame_mi_count_'+value.order_id+'" value="'+value.frame_mi_count+'">';
+//                    html += '<input type="hidden" id="order_incubator_mi_count_'+value.order_id+'" value="'+value.incubator_mi_count+'">';
+//                    html += '<input type="hidden" id="order_frame_ice_count_'+value.order_id+'" value="'+value.frame_ice_count+'">';
+//                    html += '<input type="hidden" id="order_box_count_'+value.order_id+'" value="'+value.box_count+'">';
+//                    html += '<input type="hidden" id="order_frame_meat_count_'+value.order_id+'" value="'+value.frame_meat_count+'">';
+//                    html += '<input type="hidden" id="order_frame_vg_list_'+value.order_id+'" value="'+value.frame_vg_list+'">';
+//
+//                    html += '<input type="hidden" id="order_frame_meat_list_'+value.order_id+'" value="'+value.frame_meat_list+'">';
+//                    html += '<input type="hidden" id="order_frame_mi_list_'+value.order_id+'" value="'+value.frame_mi_list+'">';
+//                    html += '<input type="hidden" id="order_frame_ice_list_'+value.order_id+'" value="'+value.frame_ice_list+'">';
+//
+//                    html += '<input type="hidden" id="order_foam_ice_count_'+value.order_id+'" value="'+value.foam_ice_count+'">';
+//                    html += '<input type="hidden" id="order_inv_comment_'+value.order_id+'" value="'+value.inv_comment+'">';
+//                    html += '<input type="hidden" id="order_inv_spare_comment_' + value.order_id + '" value="' + value.inv_spare_comment + '">';
+//
+//
+//                    html += '<input type="hidden" id="order_each_num_'+value.order_id+'" value="'+each_i_num+'">';
+//
+//                    html += '<span id="order_num_'+value.order_id+'">'+each_i_num+'</span><br>'+product_str+'</td>';
+//                    html += '<td '+t_status_class+'>'+value.order_id;
+//
+//                    if(value.customer_group_id == 2){
+//                        html += '<br><span style="color:red;">无价签</span>';
+//                    }
+//                    if(parseInt(value.inv_comment) > 0){
+//                        html += '<br><span style="color:darkgreen; font-weight: bold;">[货位' + value.inv_comment + ']</span>';
+//                    }
+//
+//                    if(value.is_urgent == 1 ){
+//                        html +='<input type="hidden" id="shipping_name_'+value.order_id+'" value="'+value.shipping_name+'"><input type="hidden" id="shipping_phone_'+value.order_id+'" value="'+value.shipping_phone+'"><input type="hidden" id="shipping_address_'+value.order_id+'" value="'+value.shipping_address_1+'"></td>';
+//                    }else{
+//                        html +='<input type="hidden" id="shipping_name_'+value.order_id+'" value="'+value.shipping_name+'"><input type="hidden" id="shipping_phone_'+value.order_id+'" value="'+value.shipping_phone+'"><input type="hidden" id="shipping_address_'+value.order_id+'" value="'+value.shipping_address_1+'"></td>';
+//                    }
+//
+//
+//                    html += '<td '+t_status_class+'>'+value.plan_quantity+'</td>';
+//                    html += '<td '+t_status_class+'>'+value.quantity+'</td>';
+//                    html += '<td '+t_status_class+'>'+value.added_by+'</td>';
+//                    html += '<td '+t_status_class+'>';
+//                    if (parseInt(value.order_count)>1) {
+//                        html += '<span style="color:red;">需要合单</span><br />';
+//                    }
+//
+//                    html += value.name;
+//                    html += '<span style="color:red;">'+value.box_name+'</span><br />';
+//                    html += '</td>';
+//                    html += '<td '+t_status_class+'><button id="inventoryInView" class="invopt" style="display: inline" onclick="javascript:orderInventoryView('+value.order_id+','+value.station_id+');">查看</button>';
+//                    var user_group_id = parseInt('<?php //echo $_COOKIE['user_group_id'];?>//');
+//
+//                    if((value.order_status_id == 2 || value.order_status_id == 4 || value.order_status_id == 5 || value.order_status_id == 8) && value.no_inv != 1){
+//                        if (value.order_status_id == 8 && user_group_id == 15 || ((value.order_status_id == 2 || value.order_status_id == 4) && (user_group_id == 1 || user_group_id == 22))) {
+//
+//                        } else {
+//                            html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+','+value.station_id+');">开始</button>';
+//                        }
+//                    }
+//
+//                    /*
+//                     if(is_admin == 1){
+//                     html += '<button id="inventoryIn" class="invopt" style="display: inline" onclick="javascript:orderInventory('+value.order_id+');">提交分拣</button>';
+//                     }
+//                     */
+//                    html += '</td>';
+//                    html += '</tr>';
+//                    html += '';
+//
+//                    if(parseInt(value.quantity) == 0 && parseInt(value.station_id) == 2 && parseInt(value.order_status_id) == 5 && batchProcessOrderList.length<10){
+//                        batchProcessOrderList.push(value.order_id);
+//                    }
+//
+//
+//                    if(each_i_num_new != 0){
+//                        each_i_num_new++;
+//                    }
+//                });
+//
+//                var batchProcessHtml = '';
+//                if(batchProcessOrderList.length){
+//                    var batchProcessOrderListString = '';
+//                    $.each(batchProcessOrderList,function(i,v){
+//                        batchProcessOrderListString += v;
+//                        if(i < batchProcessOrderList.length - 1){
+//                            batchProcessOrderListString += ', ';
+//                        }
+//                    });
+//                    batchProcessHtml += '<tr style="display: none">' +
+//                        '<td colspan="6" span=""><span style="color:#CC0000">[测试!]</span>批量提交未分拣量为0订单(仅快消，每10单一批)：'+batchProcessOrderListString+'</td>' +
+//                        '<td><button class="invopt" onclick="javascript:batchProcessAddOrderProductToInv(['+batchProcessOrderList+'])">批量提交</button></td>' +
+//                        '</tr>';
+//                }
+//                html = batchProcessHtml + html;
+//                $('#ordersList').html(html);
+//
+//                console.log('Load Stations');
+//            }
+//        }
+//
+//    });
+//
+//}
 
 
 function shortReminder(id){
@@ -5557,6 +5555,53 @@ function check_in_array(stringToSearch, arrayToSearch) {
 })*/
 $("#foldList").on('click',function () {
     $("#productsHold").toggle('slow');
-})
+});
+$("#frameList").on('click',function () {
+    $("#show_nav_tab").toggle('slow');
+});
+
+
+function logout_inventory_user(){
+    if(confirm("确认退出？")){
+        $.ajax({
+            type : 'POST',
+            url : 'invapi.php',
+            data : {
+                method : 'inventory_logout'
+            },
+            success : function (response , status , xhr){
+                //console.log(response);
+                window.location = 'inventory_login.php?return=w2.php';
+            }
+        });
+    }
+}
+
 </script>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

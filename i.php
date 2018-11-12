@@ -551,6 +551,7 @@ $product_add_limit=[2,872,1368,1384,1455,1624,4,1455,1781,2199,2231,2232,2233,22
                 <button class="invopt"  onclick="javascript:location='warningInfomation.php?auth=xsj2015inv&ver=db'">异常查询</button>
                 <button class="invopt"  onclick="javascript:location='operate_manager_report.php?auth=xsj2015inv&ver=db'">仓库班组日报</button>
                 <button class="invopt"  onclick="javascript:location='retentionOrder.php?auth=xsj2015inv&ver=db'">异常报表查询</button>
+                <button class="invopt"  onclick="javascript:location='customerOrderInfo.php?auth=xsj2015inv&ver=db'">用户退货订单商品</button>
                 <div><button  id="InterWarehouseAllocation" class="invopt"  style="display: none"  onclick="allocation_warehouse();">仓内调拨单操作</button></div>
                 <?php if($_COOKIE['warehouse_id'] == 12 || !empty($_COOKIE['warehouse_is_dc'])){  ?>
                 <div><button  id="allot_do" class="invopt"   style="display: block"   onclick="javascript:location='allot_do.php?auth=xsj2015inv&ver=db'" >整件波次单调拨申请</button></div>

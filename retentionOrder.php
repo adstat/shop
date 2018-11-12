@@ -106,6 +106,8 @@ foreach($dataWarehouseRaw as $m){
 
             border-radius: 0.2em;
             font-size: 0.9rem;
+            text-align: center;
+            border:1px solid #008855;
         }
 
         th{
@@ -121,8 +123,31 @@ foreach($dataWarehouseRaw as $m){
         #listData table {width: 100%}
         #listData table caption{text-align: left; padding:0.3rem;}
         #listData table {width: 100%}
-        .list{display: flex;flex-direction: column;}
-        .list li{flex: 1;border: 1px solid #00b3ee; text-align:-webkit-center;cursor:pointer;background: #dddddd;margin: 10px 110px 15px 410px; width: 10em;height: 20px;}
+        .list{
+            display :flex;
+            display:-webkit-flex;
+            align-items:center;
+            -webkit-align-items:center;
+            justify-content:center ;
+            flex-direction: column;
+        }
+        .list li{
+            display: -webkit-flex;
+            display: flex;
+            background-color: lightgrey;
+            width: 75px;
+            height: 75px;
+            margin: auto;
+            float:left;list-style:none;
+            display:inline;
+            width:178px;
+            height:30px;
+            line-height:30px;
+            border:1px solid #ccc;
+            margin:5px;
+            text-align:center;
+            cursor: pointer;
+        }
         input{
             border: 1px solid #ccc;
             padding: 2px;
@@ -134,6 +159,17 @@ foreach($dataWarehouseRaw as $m){
             margin: 10px auto;
         }
         button{
+            cursor:pointer;
+            border: 1px solid #ccc;
+            padding: 2px;
+            font-size: 1.2em;
+            color: #444;
+            width: 200px;
+            border-radius: 5px;
+            border-color: #34ce57;
+            margin: 10px auto;
+        }
+        a{
             cursor:pointer;
             border: 1px solid #ccc;
             padding: 2px;
@@ -156,12 +192,14 @@ foreach($dataWarehouseRaw as $m){
             margin: 10px auto;
             text-align: center;
         }
+        .hide{display: none;}
 
 
         .f08rem{font-size: 0.8rem;}
         .f09rem{font-size: 0.9rem;}
 
         .hide{display: none;}
+
 
 
         .lessGreen {background-color: #afdb76;}
@@ -206,8 +244,13 @@ foreach($dataWarehouseRaw as $m){
 <!--    </div>-->
 <!--</div>-->
 <!--<button class="linkButton" style="display: inline;float:left" onclick="javascript:location.reload();">返回</button><br /><hr />-->
+<div id="showLocal">
+    <a href="javascript:history.go(-1)">后退到首页</a>
+</div>
 <div>
+
     <ul class="list">
+
         <li id="sorting_product">分拣</li>
         <li onclick="search_information(1)">出库</li>
         <li onclick="search_information(2)">入库</li>
@@ -215,12 +258,11 @@ foreach($dataWarehouseRaw as $m){
         <li>配送</li>
         <li>回库退货</li>
         <li>退货上架</li>
-        <li>回款</li>
-        <li>合单入库</li>
+<!--        <li>回款</li>-->
     </ul>
 </div>
 <div id="setOptions" hidden >
-    <button type="button" class="links">后退</button>
+    <button type="button" class="links">后退</button><button type="button" class="position"></button>
     <p id="do_warehouse"  style="text-align: center"><strong>分拣仓库:</strong><select class="select" name="do_warehouse"><?php foreach($dataWarehouse as $value){echo '<option value="'.$value['warehouse_id'].'">'.$value['warehouse'].'</option>';} ?></select></p>
     <p id="warehouse"  style="text-align: center"><strong>目地仓库:</strong><select class="select" name="warehouse"><?php foreach($dataWarehouse as $value){echo '<option value="'.$value['warehouse_id'].'">'.$value['warehouse'].'</option>';} ?></select></p>
     <p id="sortDate"  style="text-align: center"><strong>分拣日期:</strong><input type="text" name="date" value="<?=date("Y-m-d",strtotime("-1 day")) ?>"></p>
@@ -258,6 +300,7 @@ foreach($dataWarehouseRaw as $m){
         </div>
         <thead>
         <tr>
+            <th>分拣日期</th>
             <th>分拣单号</th>
             <th>订单号</th>
             <th>目地仓库</th>
@@ -265,6 +308,10 @@ foreach($dataWarehouseRaw as $m){
             <th>数量</th>
             <th>加急</th>
             <th>深度</th>
+            <th>配送日期</th>
+            <th>配送状态</th>
+            <th>订单状态</th>
+            <th>分拣框号</th>
         </tr>
         </thead>
         <tbody>
@@ -279,10 +326,11 @@ foreach($dataWarehouseRaw as $m){
 <table style="margin-top: 1.5rem; height: 100px; overflow: hidden;" id="showSortData_2" hidden>
     <thead>
         <tr>
-            <th>订单数量</th>
-            <th>抽查数量</th>
-            <th>抽查人</th>
+            <th>订单号</th>
             <th>抽查日期</th>
+            <th>抽查人员</th>
+            <th>分拣数量</th>
+            <th>抽查数量</th>
             <th>操作</th>
         </tr>
     </thead>
@@ -321,22 +369,7 @@ foreach($dataWarehouseRaw as $m){
 
             </tbody>
         </table>
-<table id="showNullSingle" hidden>
-    <thead>
-    <tr>
-        <th>分拣整件</th>
-        <th>分拣散件</th>
-        <th>投篮整件</th>
-        <th>投篮散件</th>
-        <th>仓库</th>
-        <th>加急</th>
-        <th>深度</th>
-    </tr>
-    </thead>
-    <tbody>
 
-    </tbody>
-</table>
 <table id="logisticAllot" hidden>
     <thead>
     <tr>
@@ -374,21 +407,18 @@ foreach($dataWarehouseRaw as $m){
     </tbody>
 </table>
 <table id="returnPutaway" hidden>
-
+<!--        <span>退货总数:</span><button class="button" id="returnPutawayNum" ></button>-->
+<!--        <span>框子总数:</span><button class="button" id="returnPutawayBoxNum" ></button>-->
     <thead>
     <tr>
-        <th>退货日期</th>
-        <th>商品ID</th>
-        <th>框数</th>
-        <th>出库仓库</th>
-        <th>货位号</th>
-        <th>退货数量</th>
-        <th>整散</th>
-        <th>商品名称</th>
-        <th>分拣仓库</th>
+        <th>日期</th>
+        <th>退货数</th>
+        <th>上架数</th>
+        <th>操作</th>
+<!--        <th>查看</th>-->
     </tr>
     </thead>
-    <tbody>
+    <tbody id="show_returnPutaway">
 
     </tbody>
 </table>
@@ -411,15 +441,10 @@ foreach($dataWarehouseRaw as $m){
 <table id="returnCity" hidden>
     <thead>
     <tr>
-        <th>退货日期</th>
-        <th>商品ID</th>
-        <th>框数</th>
-        <th>出库仓库</th>
-        <th>货位号</th>
-        <th>退货数量</th>
-        <th>整散</th>
-        <th>商品名称</th>
-        <th>分拣仓库</th>
+        <th>订单号</th>
+        <th>退货数</th>
+        <th>上架数</th>
+        <th>操作</th>
     </tr>
     </thead>
     <tbody>
@@ -427,18 +452,23 @@ foreach($dataWarehouseRaw as $m){
     </tbody>
 </table>
 <table id="returnCityAllot" hidden>
+    <p id="show_returnCityAllot"></p>
     <thead>
     <tr>
+        <th>退货日期</th>
+        <th>退货单号</th>
+        <th>调拨单号</th>
         <th>订单号</th>
-        <th>产品ID</th>
-        <th>退货数量</th>
-        <th>退货仓库</th>
+        <th>商品ID</th>
+        <th>分拣数</th>
+        <th>调拨出库数</th>
+        <th>退货数</th>
+        <th>分拣框</th>
+        <th>其它调拨单</th>
         <th>调拨仓库</th>
-        <th>调拨出库数量</th>
-        <th>调拨入库数量</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody id="returnCityBody">
 
     </tbody>
 </table>
@@ -504,7 +534,7 @@ foreach($dataWarehouseRaw as $m){
 <div id="search_informations" hidden>
     <table style="margin-top: 5rem; height: 100px; overflow: hidden;">
         <div id="search_info">
-            <button type="button" class="links">后退</button>
+            <button type="button" class="links">后退</button><button type="button" class="position"></button>
             <p><strong>分拣仓库</strong><select class="select" id="do_warehouse_id"> <?php foreach($dataWarehouse as $value){  if($_COOKIE['warehouse_id']==$value['warehouse_id']){ $aaaa = 'selected'; } else { $aaaa = ''; }  echo '<option value="'.$value['warehouse_id'].'" '.$aaaa.'>'.$value['warehouse'].'</option>';} ?></select></p>
             <p><strong>出库仓库</strong><select class="select" id="warehouse_id"><?php foreach($dataWarehouse as $value){ if($_COOKIE['warehouse_id']==$value['warehouse_id']){ $aaaa = 'selected'; } else { $aaaa = ''; }   echo '<option value="'.$value['warehouse_id'].'" '.$aaaa.'>'.$value['warehouse'].'</option>';} ?></select></p>
             <p><strong>时间</strong><select id="before_time" name='gap'>
@@ -517,19 +547,33 @@ foreach($dataWarehouseRaw as $m){
                     <option value="7" >7天</option>
                 </select></p>
             <hr>
-            <button type="button" onclick="Javascript:search_information()">搜索</button>
+            <button type="button" onclick="Javascript:search_information()">搜索</button>|<button hidden id="show_nullSingle" type="button" onclick="nullSingle(this.value);" value="6">已入库未合单货未合齐</button>
         </div>
         <strong id="search_type_name">出库</strong>
+        <table id="showNullSingle" hidden>
+            <caption>已入库未合单和货未合齐</caption>
+            <thead>
+            <tr>
+                <th>分拣整件</th>
+                <th>分拣散件</th>
+                <th>投篮整件</th>
+                <th>投篮散件</th>
+                <th>仓库</th>
+                <th>加急</th>
+                <th>深度</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
         <table>
             <caption>周转筐</caption>
             <thead>
             <tr>
-                <th>分拣单号</th>
                 <th>订单号</th>
                 <th>配送日期</th>
                 <th>出库仓库</th>
                 <th>分拣仓库</th>
-
                 <th id="repack_text1"></th>
                 <th id="repack_text2"></th>
                 <th>操作</th>
@@ -559,6 +603,8 @@ foreach($dataWarehouseRaw as $m){
 
             </tbody>
         </table>
+        <hr />
+
     </table>
 </div>
 <!--<div class="footer" style="text-align: center"><h1>备注:</h1><strong><br>加急指的是货物加急送到客户 <br>深度指的是公司的重要客户</strong></div>-->
@@ -566,51 +612,11 @@ foreach($dataWarehouseRaw as $m){
 
 <script>
     $('.list li').on('click',function () {
+        var idea='<strong>当前位置:</strong>';
         var item=$(this).text();
-        if (item=='合单入库'){
-            $("table").hide();
-            $('.list li').hide();
-            $("#setOptions").show();
-            var html='';
-            html+='<p style="text-align: center">&nbsp;&nbsp;&nbsp;&nbsp;<button  id="nullSingle" type="button" value="1">已入库未合单和货未合齐</button>&nbsp;&nbsp;&nbsp;&nbsp;</p>';
-            $("#setOptions").append(html);
-            $('#nullSingle').click(function () {
-                $("#showNullSingle").show();
-                var flag=6;
-                var time=$('input[name="date"]').val();
-                var warehouse=$('select[name="warehouse"]').val();
-                var do_warehouse=$('select[name="do_warehouse"]').val();
-                // return false;
-                $.ajax({
-                    type: 'POST',
-                    url: 'getAbnormalData.php',
-                    dataType: 'json',
-                    data: {
-                        'flag': flag,
-                        'sortStartDate':time,
-                        'do_warehouse_id':do_warehouse,
-                        'warehouse_id':warehouse
-                    },
-                    success: function (data) {
-                        console.log(data);
-                        var li='';
-                        $.each(data,function (k,v) {
-                            li+='<tr>';
-                            li+='<td>'+v.sortZ+'</td>';
-                            li+='<td>'+v.sortS+'</td>';
-                            li+='<td>'+v.shootZ+'</td>';
-                            li+='<td>'+v.shootS+'</td>';
-                            li+='<td>'+v.is_urgent+'</td>';
-                            li+='<td>'+v.is_stage_target+'</td>';
-                            li+='</tr>';
-                        });
+        $("#showLocal").hide();
 
-                        $("#showNullSingle tbody").html(li);
-
-                    }
-                });//查询结束
-            })
-        }
+        $('.position').html(idea+item);
         if (item == '配送') {
             $("table").hide();
             $('.list li').hide();
@@ -658,14 +664,19 @@ foreach($dataWarehouseRaw as $m){
         $('.list li').hide();
     });
     function returnCity(flag) {
+        var flag=11;
         $("table").hide();
         $("#returnCity").show();
         var warehouse=$('select[name="warehouse"]').val();
         var outDate=$('input[name="outDate"]').val();
+
+
         $.ajax({
             type: 'POST',
             url: 'getAbnormalData.php',
             dataType: 'json',
+            async:false,
+            cache:false,
             data: {
                 'flag': flag,
                 'warehouse_id': warehouse,
@@ -674,26 +685,48 @@ foreach($dataWarehouseRaw as $m){
             success: function (data) {
                 console.log(data);
                 var li='';
+                var tr='';
                 $.each(data,function (k,v) {
+
                     li+='<tr>';
                     li+='<td>'+v.date_added+'</td>';
-                    li+='<td>'+v.product_id+'</td>';
-                    li+='<td>'+v.box_quantity+'</td>';
-                    li+='<td>'+v.outWarehouse+'</td>';
-                    li+='<td>'+v.stock_area+'</td>';
-                    li+='<td>'+v.self_quantity+'</td>';
-                    li+='<td>'+v.repack+'</td>';
-                    li+='<td>'+v.name+'</td>';
-                    li+='<td>'+v.doWarehouse+'</td>';
+                    li+='<td>'+v.return_num+'</td>';
+                    li+='<td>'+v.shelf_num+'</td>';
+                    // li+='<td>'+v.warehouse_id+'</td>';
+                    li+='<td id="returnCity_'+v.date_added+v.warehouse_id+'"><button onclick="showreturnCity(\'returnCity_'+v.date_added+v.warehouse_id+'\');">查看</button></td>';
                     li+='</tr>';
+                    if (v.product) {
+                        $.each(v.product,function (k1, v1) {
+                            if (parseInt(v.date_added) == parseInt(v1['date_added']) && parseInt(v.warehouse_id) == parseInt(v1['warehouse_id'])) {
+                                li+='<tr class=\"returnCity_' + v.date_added+v.warehouse_id+'\" hidden >';
+                                li+='<td colspan="8" class="f08rem"  style="padding-bottom: 1rem">';
+                                li+='订单:<b>'+v1.order_id+'</b>ID:'+v1.product_id+'商品:'+v1.name+'货位号:['+v1.stock_area+']框数:'+v1.box_size+'退货数:'+v1.return_quantity+'上架数:'+v1.self_quantity+'退货仓库:'+v1.doWarehouse;
+                                li+='</td>';
+                                li+='</tr>';
+                            }
+                        });
+                    }
                 });
-
                 $("#returnCity tbody").html(li);
 
 
             }
         });//查询结束
 
+
+    }
+    function viewInfo(str) {
+        // $("#"+str).toggle();
+        $("."+str).each(function () {
+            $(this).toggle();
+        });
+    }
+    function showreturnCity(str) {
+        $("."+str).each(function () {
+            $(this).toggle();
+        });
+
+        // $("#"+str).toggle();
 
     }
     function returnCityAllot(flag) {
@@ -715,16 +748,23 @@ foreach($dataWarehouseRaw as $m){
                 var li='';
                 $.each(data,function (k,v) {
                     li+='<tr>';
+                    li+='<td>'+v.rdbData+'</td>';
+                    li+='<td>'+v.return_id+'</td>';
+                    li+='<td>'+v.relevant_id+'</td>';
                     li+='<td>'+v.order_id+'</td>';
                     li+='<td>'+v.product_id+'</td>';
-                    li+='<td>'+v.quantity+'</td>';
-                    li+='<td>'+v.returnHouse+'</td>';
-                    li+='<td>'+v.relevantHouse+'</td>';
-                    li+='<td>'+v.relevantOutNum+'</td>';
-                    li+='<td>'+v.relevantEntryNum+'</td>';
+                    li+='<td>'+v.deliverNum+'</td>';
+                    li+='<td>'+v.wrtNum+'</td>';
+                    li+='<td>'+v.returnNum+'</td>';
+                    li+='<td>'+v.useContainer+'</td>';
+                    li+='<td>'+v.otherRelevantId+'</td>';
+                    li+='<td>'+v.from_warehouse+'</td>';
                     li+='</tr>';
                 });
-
+                // var tr='';
+                // tr+='分拣总数:<strong>'+data['item']['sortCount']+'</strong><br>';
+                // tr+='分拣总数:<strong>'+data['item']['returnCount']+'</strong><br>';
+                // $("#show_returnCityAllot").html(tr);
                 $("#returnCityAllot tbody").html(li);
 
 
@@ -762,6 +802,8 @@ foreach($dataWarehouseRaw as $m){
                 $("#returnContainer tbody").html(li);
                 var p='';
                 p+='<strong>占比</strong>'+data['avg']+'<span>%</span>';
+                p+='<strong>出筐总数:</strong><span>'+data['plan_count']+'</span>';
+                p+='<strong>回筐总数:</strong><span>'+data['count']+'</span>';
                 $("#containerCount").html(p);
                 $("#containerCount").show();
             }
@@ -809,12 +851,15 @@ foreach($dataWarehouseRaw as $m){
     function returnPutAways(flag) {
         $("table").hide();
         $("#returnPutaway").show();
+        var flag=9;
         var warehouse=$('select[name="warehouse"]').val();
         var outDate=$('input[name="outDate"]').val();
         $.ajax({
             type: 'POST',
             url: 'getAbnormalData.php',
             dataType: 'json',
+            async:false,
+            cache:false,
             data: {
                 'flag': flag,
                 'warehouse_id': warehouse,
@@ -824,30 +869,49 @@ foreach($dataWarehouseRaw as $m){
                 console.log(data);
                 var li='';
                 $.each(data,function (k,v) {
+
                     li+='<tr>';
                     li+='<td>'+v.date_added+'</td>';
-                    li+='<td>'+v.product_id+'</td>';
-                    li+='<td>'+v.box_quantity+'</td>';
-                    li+='<td>'+v.outWarehouse+'</td>';
-                    li+='<td>'+v.stock_area+'</td>';
-                    li+='<td>'+v.self_quantity+'</td>';
-                    li+='<td>'+v.repack+'</td>';
-                    li+='<td>'+v.name+'</td>';
-                    li+='<td>'+v.doWarehouse+'</td>';
+                    li+='<td>'+v.return_num+'</td>';
+                    li+='<td>'+v.shelf_num+'</td>';
+                    // li+='<td>'+v.warehouse_id+'</td>';
+                    li+='<td id="returnPutaway_'+v.date_added+v.warehouse_id+'"><button onclick="showreturnPutaway(\'returnPutaway_'+v.date_added+v.warehouse_id+'\');">查看</button></td>';
                     li+='</tr>';
+                    if (v.product) {
+                        $.each(v.product,function (k1, v1) {
+                            if (parseInt(v.date_added) == parseInt(v1['date_added']) && parseInt(v.warehouse_id) == parseInt(v1['warehouse_id'])) {
+                                li+='<tr class=\"returnPutaway_' + v.date_added+v.warehouse_id+'\" hidden >';
+                                li+='<td colspan="8" class="f08rem"  style="padding-bottom: 1rem">';
+                                li+='订单:<b>'+v1.order_id+'</b>ID:'+v1.product_id+'商品:'+v1.name+'货位号:['+v1.stock_area+']框数:'+v1.box_size+'退货数:'+v1.return_quantity+'上架数:'+v1.self_quantity+'退货仓库:'+v1.doWarehouse;
+                                li+='</td>';
+                                li+='</tr>';
+                            }
+                        });
+                    }
                 });
-
                 $("#returnPutaway tbody").html(li);
 
 
             }
         });//查询结束
+
+    }
+    function showreturnPutaway(str) {
+        $("."+str).each(function () {
+            $(this).toggle();
+        });
+    }
+    function viewInfo(val) {
+        // alert(val);
+        $("#show_"+val).show();
     }
     function getEvaluate(flag) {
         $("table").hide();
         $("#evaluate").show();
         var outDate=$('input[name="outDate"]').val();
-        var flag=8;
+        var warehouse_id=$('select[name="warehouse"]').val();
+        // alert(flag);
+        flag=8;
         $.ajax({
             type: 'POST',
             url: 'getAbnormalData.php',
@@ -855,9 +919,10 @@ foreach($dataWarehouseRaw as $m){
             data: {
                 'flag': flag,
                 'sortStartDate': outDate,
+                'warehouse_id': warehouse_id,
             },
             success: function (data) {
-                console.log(data['count']['driver_score']);
+                // console.log(data['count']['driver_score']);
                 var li='';
                 $.each(data['base'],function (k,v) {
                     li+='<tr>';
@@ -873,8 +938,9 @@ foreach($dataWarehouseRaw as $m){
 
                 $("#evaluate tbody").html(li);
                 var p='';
-                p+='<strong>总分数</strong>'+data['count']['driver_score'];
-                p+='<strong>平均分</strong>'+data['count']['avgNum'];
+                p+='<strong>总分数</strong>'+data['idea']['count'];
+                p+='<strong>平均分</strong>'+data['idea']['avg'];
+                p+='<strong>总单数</strong>'+data['idea']['countNum'];
                 $("#evaluateCount").html(p);
                 $("#evaluateCount").show();
 
@@ -884,8 +950,9 @@ foreach($dataWarehouseRaw as $m){
     }
     //抽查问题列表
     function sortSearch(flag){
-
+        var flag=2;
         $("#pageBar").hide();
+        $("#showSortData_1").hide();
         var time=$('input[name="date"]').val();
         var warehouse=$('select[name="do_warehouse"]').val();
             $("#showSortData_2").show();
@@ -899,18 +966,39 @@ foreach($dataWarehouseRaw as $m){
                     'do_warehouse_id':warehouse
                 },
                 success: function (data) {
-                    var tr='';
-                    tr+='<tr >';
-                    tr+='<td>'+data['num']+'</td>';
-                    tr+='<td>'+data['total']+'</td>';
-                    tr+='<td>'+data['title']+'</td>';
-                    tr+='<td>'+data['date_added']+'</td>';
-                    tr+='<td><button onclick="findOne();" class="btn-default">查看</button></td>';
-                    tr+='</tr>';
-                    $("#showSortData_"+flag+" tbody").html(tr);
+                    console.log(data);
+                    var li='';
+                    $.each(data,function (k,v) {
+                        li+='<tr>';
+                        li+='<td>'+v.order_id+'</td>';
+                        li+='<td>'+v.date_added+'</td>';
+                        li+='<td>'+v.title+'</td>';
+                        li+='<td>'+v.sorting_quantity+'</td>';
+                        li+='<td>'+v.final_quantity+'</td>';
+                        li+='<td id="sortSearch_'+v.check_location_id+v.order_id+'" style="cursor: pointer" onclick="getSortSearch(\'sortSearch_' + v.check_location_id+v.order_id+ '\')">查看</td>';
+                        li+='</tr>';
+                        if (v.product) {
+                            $.each(v.product,function (k1, v1) {
+                                if (parseInt(v.check_location_id) == parseInt(v1['check_location_id']) && parseInt(v.order_id) == parseInt(v1['order_id'])&& v.title == v1['title']) {
+                                    li+='<tr class="sortSearch_' + v.check_location_id+v.order_id+ '" hidden>';
+                                    li+='<td colspan="8" class="f08rem"  style="padding-bottom: 1rem">';
+                                    li+='抽查商品:<b>'+v1['product_id']+'</b>-'+v1['name']+'<b>['+v1['title']+']<b>['+v1['repack']+']-[抽'+v1['final_quantity']+']-[分'+v1['sorting_quantity']+']</b>';
+                                    li+='</td>';
+                                    li+='</tr>';
+                                }
+                            });
+                        }
+
+                    });
+                    $("#showSortData_2 tbody").html(li);
 
                 }
             });//查询结束
+    }
+    function getSortSearch(str) {
+        $("."+str).each(function () {
+            $(this).toggle();
+        });
     }
     function findOne() {
         $("#showInfo").show();
@@ -920,7 +1008,7 @@ foreach($dataWarehouseRaw as $m){
 
         $.ajax({
             type: 'POST',
-            url: 'getAbnormalData.php/getOrderInfo',
+            url: 'getAbnormalData.php',
             dataType: 'json',
             data: {
                 'flag': flag,
@@ -954,7 +1042,7 @@ foreach($dataWarehouseRaw as $m){
         // $("#sortDate").hide();
 
         var time=$('input[name="date"]').val();
-        var warehouse=$('select[name="warehouse"]').val();
+        var warehouse=$('select[name="do_warehouse"]').val();
         var flag=1;
         $.ajax({
             type: 'POST',
@@ -983,6 +1071,7 @@ foreach($dataWarehouseRaw as $m){
 
                 $.each(data_content,function (k,v) {
                     li+='<tr>';
+                    li+='<td>'+v.date_added+'</td>';
                     li+='<td>'+v.deliver_order_id+'</td>';
                     li+='<td>'+v.order_id+'</td>';
                     li+='<td>'+v.shortname+'</td>';
@@ -990,13 +1079,17 @@ foreach($dataWarehouseRaw as $m){
                     li+='<td>'+v.sortNum+'</td>';
                     li+='<td>'+v.urgent+'</td>';
                     li+='<td>'+v.stageTarget+'</td>';
+                    li+='<td>'+v.deliver_date+'</td>';
+                    li+='<td>'+v.odsStatu+'</td>';
+                    li+='<td>'+v.osStatu+'</td>';
+                    li+='<td>'+v.container_id+'</td>';
                     li+='</tr>';
                 });
 
-                $("#showSortData_"+flag+" tbody").append(li);
+                $("#showSortData_"+flag+" tbody").html(li);
 
 
-                $("#data-area ul").append(data_html);
+                $("#data-area ul").html(data_html);
                 $("#showSortData_1").show();
             },
             complete: function() {
@@ -1063,10 +1156,20 @@ foreach($dataWarehouseRaw as $m){
     }
 
     function search_information(type) {
+        //position
+        // var str=$(this).text;
+        // console.log(str);
         $("#search_informations").show();
         $("#setOptions").hide();
         $('.list li').hide();
+        
         var type = type>0?type:window.search_type;
+        if (parseInt(type) == 3) {
+            $("#show_nullSingle").show();
+            $("#showNullSingle").show();
+        }else {
+            $("#show_nullSingle").hide();
+        }
         window.search_type = type;
         var do_warehouse_id = $("#do_warehouse_id").val();
         var warehouse_id = $("#warehouse_id").val();
@@ -1077,19 +1180,28 @@ foreach($dataWarehouseRaw as $m){
         var box_text = '';
         switch(type){
             case  1:
-                repack1_text = '分拣数';
-                repack2_text = '调拨出库数';
-                box2_text = '出库';
+                repack1_text = '分拣框数';
+                repack2_text = '调拨出库框数';
+                box2_text = '调拨出库';
+                relevantOrderId = '调拨单号';
+                relevantNum= '调拨单号';
+                deliverOrderId = '分拣单号';
                 break;
             case  2:
                 repack1_text = '调拨出库数';
                 repack2_text = '调拨入库数';
                 box2_text = '入库';
+                relevantOrderId = '调拨单号';
+                deliverOrderId = '分拣单号';
+                relevantNum= '调拨单号';
                 break;
             case  3:
                 repack1_text = '调拨入库数';
                 repack2_text = '投篮数';
                 box2_text = '合单';
+                relevantOrderId = '调拨单号';
+                deliverOrderId = '分拣单号';
+                relevantNum= '调拨单号';
                 break;
         }
         $("#search_type_name").html(box2_text);
@@ -1111,19 +1223,21 @@ foreach($dataWarehouseRaw as $m){
                 flag:3,
                 },
             success: function (response) {
+                console.log(response);
 
                 var jsonData = response;
                 if (jsonData.return_code != "SUCCESS") {
                     alert(jsonData.return_msg);
+                    return true;
                 }
                 var repack_product = jsonData.return_data.repack_products;
                 var box_product = jsonData.return_data.box_products;
                 var dataWarehouse = jsonData.return_data.dataWarehouse;
                 var html1 = '';
                 var html2 = '';
+                console.log(repack_product);
                 $.each(repack_product, function (index1, value1) {
                     html1 += '<tr>';
-                    html1 += '<th>' + value1.deliver_order_id + '</th>';
                     html1 += '<th>' + value1.order_id + '</th>';
                     html1 += '<th>' + value1.deliver_date + '</th>';
                     html1 += '<th>' + value1.warehouse_name + '</th>';
@@ -1133,13 +1247,15 @@ foreach($dataWarehouseRaw as $m){
                     html1 += '<th onclick="show_search_info(\'' + index1 + '\')">查看</th>';
                     html1 += '</tr>';
                     html1 += '<tr class = "show_repack_' + index1 + '" style="display: none;background-color: #bee5eb;">';
-                    html1 += '<td>框号</td><td>' + repack1_text + '</td><td>' + repack2_text + '</td>';
+                    html1 += '<td>分拣框号</td><td>' + repack1_text + '</td><td>' + repack2_text + '</td><td>' +deliverOrderId+ '</td><td>' +relevantOrderId+ '</td>';
                     html1 += '</tr>';
                     $.each(value1.containers, function (i1, v1) {
                         html1 += '<tr class = "show_repack_' + index1 + '" style="display: none;background-color: #bee5eb;">';
                         html1 += '<td>' + v1.container_id + '</td>';
                         html1 += '<td>' + (v1.ios_container > 0 ? 1 : 0) + '</td>';
                         html1 += '<td>' + (v1.diff_container > 0 ? 1 : 0) + '</td>';
+                        html1 += '<td>' + v1.deliver_order_id + '</td>';
+                        html1 += '<td>' + v1.relevant_id + '</td>';
                         html1 += '</tr>';
                     });
 
@@ -1154,7 +1270,7 @@ foreach($dataWarehouseRaw as $m){
                     html2 += '<th onclick="show_search_info(\'' + index2 + '\')">查看</th>';
                     html2 += '</tr>';
                     html2 += '<tr class = "show_repack_' + index2 + '" style="display: none;background-color: #bee5eb;">';
-                    html2 += '<td>商品ID</td><td>商品名称</td><td>' + repack1_text + '</td><td>' + repack2_text + '</td>';
+                    html2 += '<td>商品ID</td><td>商品名称</td><td>' + repack1_text + '</td><td>' + repack2_text + '</td><td>' + relevantNum + '</td>';
                     html2 += '</tr>';
                     $.each(value2.products, function (i2, v2) {
                         html2 += '<tr class = "show_repack_' + index2 + '" style="display: none;background-color: #bee5eb;">';
@@ -1162,10 +1278,14 @@ foreach($dataWarehouseRaw as $m){
                         html2 += '<td>' + v2.name + '</td>';
                         html2 += '<td>' + (v2.batch_quantity > 0 ? v2.batch_quantity : 0) + '</td>';
                         html2 += '<td>' + (v2.type_quantity > 0 ? v2.type_quantity : 0) + '</td>';
+                        html2 += '<td>' + v2.relevantNum + '</td>';
+
                         html2 += '</tr>';
                     });
 
                 });
+
+
                 // console.log(html1);
                 // console.log(html2);
                 $("#search_information_repack").html(html1);
@@ -1178,6 +1298,44 @@ foreach($dataWarehouseRaw as $m){
                 $(this).toggle();
             }
         )
+    }
+    function nullSingle(flag) {
+        var do_warehouse_id = $("#do_warehouse_id").val();
+        var warehouse_id = $("#warehouse_id").val();
+        var gap=$('select[name="gap"]').val();
+        $.ajax({
+            type: 'POST',
+            url: 'getAbnormalData.php',
+            dataType: 'json',
+            cache: false,
+            async: false,
+            data: {
+                warehouse_id: warehouse_id,
+                do_warehouse_id: do_warehouse_id,
+                date_search: gap,
+                flag: flag,
+            },
+            success:function (data) {
+                console.log(data);
+                var li='';
+                if (nullSingle.length > 0) {
+                    $.each(nullSingle,function (k,v) {
+                        li+='<tr>';
+                        li+='<td>'+v.sortZ+'</td>';
+                        li+='<td>'+v.sortS+'</td>';
+                        li+='<td>'+v.shootZ+'</td>';
+                        li+='<td>'+v.shootS+'</td>';
+                        li+='<td>'+v.is_urgent+'</td>';
+                        li+='<td>'+v.is_stage_target+'</td>';
+                        li+='</tr>';
+                    });
+                    $("#showNullSingle tbody").html(li);
+                }else {
+                    alert('暂无数据!');
+                }
+
+            }
+        });
     }
 
 </script>

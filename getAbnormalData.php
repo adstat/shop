@@ -54,9 +54,6 @@ class Good{
             case 3:
                 $this->getOtherFun();
                 break;
-            case 4:
-                $this->nullSingle();
-                break;
             case 5:
                 $this->getOrderInfo();
                 break;
@@ -70,13 +67,13 @@ class Good{
                 $this->evaluate();
                 break;
             case 9:
-                $this->returnPutaway();
+                $this->returnPutaway();//退货上架
                 break;
             case 10:
                 $this->returnContainer();
                 break;
             case 11:
-                $this->returnCity();//退货未上架
+                $this->returnCity();//城市仓系统未操作上架
                 break;
             case 12:
                 $this->returnCityAllot();
@@ -97,95 +94,129 @@ class Good{
         $class->$action();
 
     }
-    //退货未上架
+    //城市仓系统未操作上架
     public function returnCity()
     {
-        $sql="
-                SELECT
-                    DATE(rdp.date_added) date_added,
-                    rp.product_id,
-                    rdp.box_quantity,
-                    ww.shortname outWarehouse,
-                    pw.stock_area,
-                    sum(rp.quantity) return_quantity,
-                    sum(
-        
-                        IF (
-                            rp.return_confirmed > 0,
-                            rp.quantity,
-                            0
-                        )
-                    ) self_quantity,
-                    if(p.repack=0,'整','散') repack,
-                    p.box_size,
-                    rdp.in_part,
-                    p.name,
-        
-                IF (
-                    pw.do_warehouse_id = pw.warehouse_id,
-                    1,
-                    0
-                ) isDoWarehouse,
-                w.shortname doWarehouse
-            FROM
-                oc_return_deliver_product rdp
-            LEFT JOIN oc_return r ON r.return_id = rdp.return_id
-            AND r.return_status_id != 3
-            LEFT JOIN oc_return_product rp ON r.return_id = rp.return_id
-            AND rp.product_id = rdp.product_id
-            LEFT JOIN oc_order o ON o.order_id = r.order_id
-            LEFT JOIN oc_product p ON rp.product_id = p.product_id
-            LEFT JOIN oc_product_to_warehouse pw ON p.product_id = pw.product_id
-            AND pw.warehouse_id = rdp.warehouse_id
-            LEFT JOIN oc_x_warehouse w ON pw.do_warehouse_id = w.warehouse_id
-            LEFT JOIN oc_x_warehouse ww ON rdp.warehouse_id = ww.warehouse_id
-            WHERE
-                rdp.status = 1
-            AND rdp.date_added between '".$this->sortStartDate."' and date_add(current_date(), interval 1 day)
-            AND rdp.warehouse_id = '" . $this->warehouse_id . "'
-            AND rdp.confirmed = '0'
-            AND rdp.is_repack_missing = '0'
-            AND rdp.is_back = '1'
-            AND r.return_reason_id IN (2, 3, 4, 5, 6)
-            GROUP BY
-                rdp.product_id,date_added,rdp.warehouse_id ORDER BY rdp.warehouse_id,date_added
-            ";
-//        echo $sql;
-        $list=$this->Db->query($sql);
-        $msg= $list->rows;
-        echo json_encode($msg);
-    }
+        //城市仓系统未操作上架
+        $sql_return = "
+		SELECT
+			date_format(rdp.date_added, '%m%d') date_added,
+			rp.product_id,
+			rdp.box_quantity,
+			rdp.warehouse_id,pw.stock_area,
+			sum(rp.quantity) return_quantity,
+			sum(
 
+				IF (
+					rp.return_confirmed = 0,
+					rp.quantity,
+					0
+				)
+			) self_quantity,
+			p.repack,
+			p.box_size,
+			rdp.in_part,
+			p.name,
+
+		IF (
+			pw.do_warehouse_id = pw.warehouse_id,
+			1,
+			0
+		) isDoWarehouse,
+		w.shortname doWarehouse,
+		o.order_id
+	FROM
+		oc_return_deliver_product rdp
+	LEFT JOIN oc_return r ON r.return_id = rdp.return_id
+	AND r.return_status_id != 3
+	LEFT JOIN oc_return_product rp ON r.return_id = rp.return_id
+	AND rp.product_id = rdp.product_id
+	LEFT JOIN oc_order o ON o.order_id = r.order_id
+	LEFT JOIN oc_product p ON rp.product_id = p.product_id
+	LEFT JOIN oc_product_to_warehouse pw ON p.product_id = pw.product_id
+	AND pw.warehouse_id = rdp.warehouse_id
+	LEFT JOIN oc_x_warehouse w ON pw.do_warehouse_id = w.warehouse_id
+	WHERE
+		rdp.status = 1
+	AND rdp.date_added between '".$this->sortStartDate."' and date_add(current_date(), interval 1 day)
+	";
+        if ($this->warehouse_id) {
+            $sql_return .= " AND rdp.warehouse_id = '" . $this->warehouse_id. "'";
+        }
+        $sql_return .= "
+	AND rdp.is_repack_missing = '0'
+	AND rdp.is_back = '1'
+	AND r.return_reason_id IN (2, 3, 4, 5, 6)
+	GROUP BY
+		rdp.product_id,date_added,r.order_id,rdp.warehouse_id ORDER BY rdp.warehouse_id,date_added
+	";
+        $return_data_raw = $this->Db->query($sql_return)->rows;
+        $return_data = [];
+        if (!empty($return_data_raw)) {
+            foreach ($return_data_raw as $v1){
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['return_num'] = empty($return_data[$v1['date_added'].$v1['warehouse_id']]['return_num'])?intval($v1['return_quantity']):intval($v1['return_quantity'])+intval($return_data[$v1['date_added'].$v1['warehouse_id']]['return_num']);
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['shelf_num'] = empty($return_data[$v1['date_added'].$v1['warehouse_id']]['shelf_num'])?intval($v1['self_quantity']):intval($v1['self_quantity'])+intval($return_data[$v1['date_added'].$v1['warehouse_id']]['shelf_num']);
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['date_added'] = $v1['date_added'];
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['warehouse_id'] = $v1['warehouse_id'];
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['order_id'] = $v1['order_id'];
+                if (intval($v1['return_quantity'])!= intval($v1['self_quantity'])) {
+                    $return_data[$v1['date_added'].$v1['warehouse_id']]['product'][] = $v1;
+                }
+            }
+        }
+        echo json_encode($return_data);
+    }
+    //城市仓调拨退货回总仓
     public function returnCityAllot()
     {
-        $sql="SELECT A.order_id,A.product_id,A.quantity,w.shortname returnHouse,dop.deliver_order_id,w2.shortname relevantHouse,wr.relevant_id,wr.out_type,IFNULL(SUM(wrt.quantity),0) relevantOutNum,IFNULL(SUM(wrt2.quantity),0)relevantEntryNum FROM
-                (
-                SELECT
-                    rdp.order_id,
-                    rdp.product_id,
-                    rdp.warehouse_id,
-                    rdp.quantity
-                FROM
-                    oc_return_deliver_product rdp
-                WHERE
-                    DATE(rdp.date_added) BETWEEN '".$this->sortStartDate."' 
-                AND date_add(
-                    CURRENT_DATE (),
-                    INTERVAL 0 DAY
-                )
-                AND warehouse_id = '".$this->warehouse_id."'
-                ) A 
-                INNER JOIN oc_x_deliver_order_product dop ON A.order_id=dop.order_id AND A.product_id=dop.product_id
-                INNER JOIN oc_x_deliver_order doo ON dop.deliver_order_id=doo.deliver_order_id AND doo.do_warehouse_id !=A.warehouse_id
-                LEFT JOIN oc_x_warehouse_requisition wr ON doo.relevant_id=wr.relevant_id AND wr.out_type=4
-                LEFT JOIN oc_x_warehouse_requisition_temporary wrt ON wr.relevant_id=wrt.relevant_id AND A.product_id=wrt.product_id AND wrt.relevant_status_id=2
-                LEFT JOIN oc_x_warehouse_requisition_temporary wrt2 ON wr.relevant_id=wrt2.relevant_id AND A.product_id=wrt2.product_id AND wrt2.relevant_status_id=4
-                LEFT JOIN oc_x_warehouse w ON A.warehouse_id=w.warehouse_id
-                LEFT JOIN oc_x_warehouse w2 ON doo.do_warehouse_id=w2.warehouse_id
-                GROUP BY A.product_id";
-            $list=$this->Db->query($sql);
-            $msg= $list->rows;
-            echo json_encode($msg);
+
+
+        $sql="SELECT A.return_id,A.relevant_id,A.order_id,A.deliver_order_id,A.product_id,A.returnNum,A.deliverNum,A.rdbData,SUM(wrt.quantity)wrtNum,GROUP_CONCAT(DISTINCT wrt.container_id) useContainer,GROUP_CONCAT(DISTINCT rdb.relevant_id) otherRelevantId,ww.shortname returnHouse,ww1.shortname deliverHouse,ww2.shortname deliverToHouse,ww3.shortname from_warehouse,ww4.shortname to_warehouse
+FROM
+(
+SELECT
+	rdp.return_id,
+	rdp.order_id,
+	rdp.product_id,
+	rdp.warehouse_id returnHouse,
+	rdp.quantity returnNum,
+	dop.quantity deliverNum,
+	DATE( rdp.date_added ) rdbData,
+	dop.deliver_order_id,
+	doo.do_warehouse_id deliverToHouse,
+	doo.warehouse_id deliverHouse,
+	doo.relevant_id
+FROM
+	oc_return_deliver_product rdp
+INNER JOIN oc_x_deliver_order_product dop ON rdp.order_id=dop.order_id	AND rdp.product_id=dop.product_id
+INNER JOIN oc_x_deliver_order doo ON dop.deliver_order_id=doo.deliver_order_id
+
+WHERE
+	DATE(rdp.date_added)BETWEEN '".$this->sortStartDate."' 
+	AND date_add( CURRENT_DATE (), INTERVAL 0 DAY) 
+	AND rdp.warehouse_id = '".$this->warehouse_id."'
+	AND rdp.confirmed>0
+	AND rdp.STATUS=1
+	AND doo.relevant_id >0
+) A
+LEFT JOIN oc_x_relevant_deliver_binding rdb ON A.relevant_id=rdb.relevant_id AND A.deliver_order_id=rdb.deliver_order_id
+LEFT JOIN oc_x_warehouse_requisition_temporary wrt ON rdb.relevant_id=wrt.relevant_id AND A.product_id=wrt.product_id AND wrt.relevant_status_id=4
+LEFT JOIN oc_x_warehouse_requisition wr ON wrt.relevant_id=wr.relevant_id 
+LEFT JOIN oc_x_warehouse ww ON A.returnHouse=ww.warehouse_id
+LEFT JOIN oc_x_warehouse ww1 ON A.deliverHouse=ww1.warehouse_id
+LEFT JOIN oc_x_warehouse ww2 ON A.deliverToHouse=ww2.warehouse_id
+LEFT JOIN oc_x_warehouse ww3 ON wr.from_warehouse=ww3.warehouse_id
+LEFT JOIN oc_x_warehouse ww4 ON wr.to_warehouse=ww4.warehouse_id
+GROUP BY wrt.product_id
+HAVING returnHouse != from_warehouse
+order by rdbData DESC";
+        $list=$this->Db->query($sql);
+        $msg= $list->rows;
+        $_arr=[];
+
+        echo json_encode($msg);
+//
+//
     }
 
 
@@ -221,7 +252,7 @@ WHERE deliver_date BETWEEN '".$this->sortStartDate."' AND '$this->sortEndDate ' 
     private function setOrderList()
     {
         $sql="SELECT GROUP_CONCAT(distinct order_id) ooList FROM oc_x_deliver_order
-WHERE deliver_date BETWEEN  date_sub(current_date(), interval '".$this->sortStartDate."' day)  AND date_sub(current_date(), interval '0' day)
+WHERE date(date_added) BETWEEN  date_sub(current_date(), interval '".$this->sortStartDate."' day)  AND date_sub(current_date(), interval '0' day)
 AND do_warehouse_id = $this->do_warehouse_id";
         $info=$this->Db->query($sql);
         return $info->row;
@@ -244,30 +275,60 @@ AND do_warehouse_id = $this->do_warehouse_id";
      * */
     public function stopCheck()
     {
-        //订单数量
-        $orderList=$this->setOrderList();
-        $str=explode(',',$orderList['ooList']);
-        $arrNum=count($str);
-        $sql="SELECT
-	IFNULL(sum(c.total),0)AS total,title,date_added
+
+//        $sql="SELECT
+//	IFNULL(sum(c.total),0)AS total,title,date_added
+//FROM
+//	(
+//		SELECT
+//			count(DISTINCT ocl.order_id) total,wu.title,ocl.date_added
+//		FROM
+//			oc_x_deliver_order_check_location ocl
+//		LEFT JOIN oc_x_deliver_order_check_details ocd ON ocd.check_location_id = ocl.check_location_id
+//		left join  oc_w_user wu on ocl.add_user=wu.user_id
+//		left join oc_order oo on ocl.order_id=oo.order_id
+//		WHERE
+//			ocl.date_added BETWEEN $this->sortStartDate AND SUBDATE(CURRENT_DATE(),INTERVAL 0 DAY)
+//			and oo.warehouse_id=$this->do_warehouse_id
+//		AND ocl. STATUS = 1
+//		GROUP BY
+//			ocl.order_id
+//	) c";
+        $sql="SELECT A.*,IF(pp.repack=0,'整','散')repack,pp.`name`,wu.title FROM
+(
+SELECT
+	docl.check_location_id,docl.order_id,docd.container_id,docd.product_id,docd.quantity,docd.sorting_quantity,docd.final_quantity,DATE(docl.date_added) date_added,docl.add_user 
 FROM
-	(
-		SELECT
-			count(DISTINCT ocl.order_id) total,wu.title,ocl.date_added
-		FROM
-			oc_x_deliver_order_check_location ocl
-		LEFT JOIN oc_x_deliver_order_check_details ocd ON ocd.check_location_id = ocl.check_location_id
-		left join  oc_w_user wu on ocl.add_user=wu.user_id
-		WHERE
-			ocl.order_id IN (".$orderList['ooList'].")
-		AND ocl. STATUS = 1
-		GROUP BY
-			ocl.order_id
-	) c";
+	oc_x_deliver_order_check_location docl
+	LEFT JOIN oc_x_deliver_order_check_details docd ON docl.check_location_id = docd.check_location_id
+	LEFT JOIN oc_order oo ON docl.order_id=oo.order_id
+WHERE
+	DATE(docl.date_added) BETWEEN $this->sortStartDate
+	AND SUBDATE(CURRENT_DATE(),INTERVAL 0 DAY)
+	AND warehouse_id=$this->do_warehouse_id
+	AND docl.`status`=1
+	AND docd.`status`=1
+	) A
+	LEFT JOIN oc_product pp ON A.product_id=pp.product_id
+	LEFT JOIN oc_w_user wu ON A.add_user=wu.user_id
+	ORDER BY check_location_id,order_id DESC";
         $info=$this->Db->query($sql);
-        $msg=$info->row;
-        $arr_['num']=$arrNum;
-        $_arr=array_merge($msg,$arr_);
+        $msg=$info->rows;
+
+
+//        $arr_['num']=$arrNum;
+//        $_arr=array_merge($msg,$arr_);
+        $_arr=[];
+        foreach ($msg as $k=>$v){
+            $_arr[$v['check_location_id'].$v['order_id']]['product'][]=$v;
+            $_arr[$v['check_location_id'].$v['order_id']]['order_id']=$v['order_id'];
+            $_arr[$v['check_location_id'].$v['order_id']]['check_location_id']=$v['check_location_id'];
+            $_arr[$v['check_location_id'].$v['order_id']]['date_added']=$v['date_added'];
+            $_arr[$v['check_location_id'].$v['order_id']]['final_quantity']=empty($_arr[$v['check_location_id'].$v['order_id']]['final_quantity'])?intval($v['final_quantity']):intval($v['final_quantity'])+intval($_arr[$v['check_location_id'].$v['order_id']]['final_quantity']);
+            $_arr[$v['check_location_id'].$v['order_id']]['sorting_quantity']=empty($_arr[$v['check_location_id'].$v['order_id']]['sorting_quantity'])?intval($v['sorting_quantity']):intval($v['sorting_quantity'])+intval($_arr[$v['check_location_id'].$v['order_id']]['sorting_quantity']);
+            $_arr[$v['check_location_id'].$v['order_id']]['quantity']=empty($_arr[$v['quantity'].$v['order_id']]['quantity'])?intval($v['quantity']):intval($v['quantity'])+intval($_arr[$v['check_location_id'].$v['order_id']]['quantity']);
+            $_arr[$v['check_location_id'].$v['order_id']]['title']=$v['title'];
+        }
         echo json_encode($_arr);
     }
 
@@ -291,6 +352,7 @@ FROM
     //周转筐
     public function getOtherFun()
     {
+//        var_dump($_REQUEST);
         $sql = "select warehouse_id, shortname warehouse from oc_x_warehouse where status = 1 and station_id = 2";
         $list = $this->Db->query($sql);
         $dataWarehouseRaw = $list->rows;
@@ -302,17 +364,20 @@ FROM
                 $sql = "SELECT
 			ios.warehouse_id,
 			ios.deliver_order_id,
+			ios.relevant_id,
 			ios.do_warehouse_id,
 			ios.container_id ios_container,ios.deliver_date,ios.order_id,ios.container_id container_id,
-            oxw.container_id diff_container,ios.is_urgent,ios.is_stage_target							
+            oxw.container_id diff_container,ios.is_urgent,ios.is_stage_target,oxw.otherRelevant							
 		FROM
 			(
 				SELECT
 					ioss.container_id,
 					odo.deliver_order_id,
+					odo.relevant_id,
 					odo.warehouse_id,
 					odo.do_warehouse_id,
-					odo.deliver_date,odo.order_id,o.is_urgent,oc.is_stage_target
+					odo.deliver_date,
+					odo.order_id,o.is_urgent,oc.is_stage_target
 				FROM
 					oc_x_deliver_order odo
 					LEFT JOIN oc_order o ON odo.order_id = o.order_id
@@ -338,15 +403,19 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
  				AND ioss.container_id > 0
 				GROUP BY
 					odo.deliver_order_id,
+					odo.relevant_id,
 					ioss.container_id
 			) ios 
 		LEFT JOIN (
 			SELECT
 				doo1.deliver_order_id,
-				oxwt1.container_id
+				doo1.relevant_id,
+				oxwt1.container_id,
+				GROUP_CONCAT(DISTINCT doo1.relevant_id) otherRelevant
 			FROM
 				oc_x_deliver_order doo1
-			LEFT JOIN oc_x_warehouse_requisition_temporary oxwt1 ON oxwt1.relevant_id = doo1.relevant_id
+			INNER JOIN oc_x_relevant_deliver_binding rdb ON doo1.relevant_id=rdb.relevant_id AND rdb.deliver_order_id=doo1.deliver_order_id
+			INNER JOIN oc_x_warehouse_requisition_temporary oxwt1 ON oxwt1.relevant_id = doo1.relevant_id
 			WHERE
 				doo1.deliver_date BETWEEN DATE_SUB(
 			CURRENT_DATE (),
@@ -367,9 +436,12 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
 			AND oxwt1.relevant_status_id = 2
 			GROUP BY
 				doo1.deliver_order_id,
+				doo1.relevant_id,
 				oxwt1.container_id
 		) oxw ON oxw.deliver_order_id = ios.deliver_order_id
-		AND oxw.container_id = ios.container_id";
+		AND oxw.container_id = ios.container_id AND oxw.relevant_id = ios.relevant_id ";
+//                var_dump($sql);
+
 
 
 
@@ -380,7 +452,8 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
 	batch.warehouse_id,
 	batch.product_id,oop.name,
 	batch.quantity batch_quantity,
-	wrt_out.quantity type_quantity
+	wrt_out.quantity type_quantity,
+	wrt_out.relevantNum
 	
 FROM
 	(
@@ -432,7 +505,8 @@ LEFT JOIN (
 		sum(wrt.quantity) quantity,
 		wrt.product_id,
 		wr.from_warehouse do_warehouse_id,
-		wr.to_warehouse warehouse_id
+		wr.to_warehouse warehouse_id,
+		GROUP_CONCAT(DISTINCT wrt.relevant_id) relevantNum
 	FROM
 		oc_x_warehouse_requisition wr
 	LEFT JOIN oc_x_warehouse_requisition_temporary wrt ON wrt.relevant_id = wr.relevant_id
@@ -473,6 +547,7 @@ AND wrt_out.product_id = batch.product_id";
                 $sql = "SELECT
 			ios.warehouse_id,
 			ios.deliver_order_id,
+			ios.relevant_id,
 			ios.do_warehouse_id,
 			ios.container_id ,ios.deliver_date,ios.order_id,ios.container_id container_id,
             oxw.container_id ios_container,oxw2.container_id diff_container	,ios.is_urgent,ios.is_stage_target							
@@ -481,6 +556,7 @@ AND wrt_out.product_id = batch.product_id";
 				SELECT
 					ioss.container_id,
 					odo.deliver_order_id,
+					odo.relevant_id,
 					odo.warehouse_id,
 					odo.do_warehouse_id,
 					odo.deliver_date,odo.order_id,o.is_urgent,oc.is_stage_target
@@ -518,6 +594,7 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
 				oxwt1.container_id
 			FROM
 				oc_x_deliver_order doo1
+			INNER JOIN oc_x_relevant_deliver_binding rdb ON doo1.relevant_id=rdb.relevant_id AND rdb.deliver_order_id=doo1.deliver_order_id 
 			LEFT JOIN oc_x_warehouse_requisition_temporary oxwt1 ON oxwt1.relevant_id = doo1.relevant_id
 			WHERE
 				doo1.deliver_date BETWEEN DATE_SUB(
@@ -570,6 +647,7 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
 				oxwt2.container_id
 		) oxw2 ON oxw2.deliver_order_id = ios.deliver_order_id
 		AND oxw2.container_id = ios.container_id ";
+//                var_dump($sql);
 
 
 
@@ -578,7 +656,7 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
 	batch.do_warehouse_id ,
 	batch.warehouse_id,
 	batch.product_id,oop.name,
-	wrt_out.quantity batch_quantity,wrt_out2.quantity type_quantity
+	wrt_out.quantity batch_quantity,wrt_out2.quantity type_quantity,wrt_out.relevantNum
 	
 FROM
 	(
@@ -631,7 +709,8 @@ LEFT JOIN (
 		sum(wrt.quantity) quantity,
 		wrt.product_id,
 		wr.from_warehouse do_warehouse_id,
-		wr.to_warehouse warehouse_id
+		wr.to_warehouse warehouse_id,
+		GROUP_CONCAT(DISTINCT wrt.relevant_id) relevantNum
 	FROM
 		oc_x_warehouse_requisition wr
 	LEFT JOIN oc_x_warehouse_requisition_temporary wrt ON wrt.relevant_id = wr.relevant_id
@@ -710,6 +789,7 @@ AND wrt_out2.product_id = batch.product_id";
                 $sql = "SELECT
 			ios.warehouse_id,
 			ios.deliver_order_id,
+			ios.relevant_id,
 			ios.do_warehouse_id,
 			ios.container_id ,ios.deliver_date,ios.order_id,ios.container_id container_id,
             oxw.container_id ios_container,oxw2.container_id diff_container	,ios.is_urgent,ios.is_stage_target							
@@ -718,6 +798,7 @@ AND wrt_out2.product_id = batch.product_id";
 				SELECT
 					ioss.container_id,
 					odo.deliver_order_id,
+					odo.relevant_id,
 					odo.warehouse_id,
 					odo.do_warehouse_id,
 					odo.deliver_date,odo.order_id,o.is_urgent,oc.is_stage_target
@@ -753,7 +834,8 @@ LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
 				oxwt2.container_id
 			FROM
 				oc_x_deliver_order doo2
-			LEFT JOIN oc_x_warehouse_requisition_temporary oxwt2 ON oxwt2.relevant_id = doo2.relevant_id
+			INNER JOIN oc_x_relevant_deliver_binding rdb ON doo2.relevant_id=rdb.relevant_id AND rdb.deliver_order_id=doo2.deliver_order_id
+			INNER JOIN oc_x_warehouse_requisition_temporary oxwt2 ON oxwt2.relevant_id = doo2.relevant_id
 			WHERE
 				doo2.deliver_date BETWEEN DATE_SUB(
 			CURRENT_DATE (),
@@ -804,6 +886,8 @@ LEFT JOIN (
 				doo3.container_id
 		) oxw2 ON oxw2.deliver_order_id = ios.deliver_order_id
 		AND oxw2.container_id = ios.container_id ";
+//                var_dump($sql);
+
 
 
 
@@ -813,7 +897,7 @@ LEFT JOIN (
 	batch.do_warehouse_id ,
 	batch.warehouse_id,
 	batch.product_id,oop.name,
-	wrt_out.quantity batch_quantity,wrt_out2.quantity type_quantity
+	wrt_out.quantity batch_quantity,wrt_out2.quantity type_quantity,wrt_out.relevantNum
 	
 FROM
 	(
@@ -865,7 +949,8 @@ LEFT JOIN (
 		sum(wrt2.quantity) quantity,
 		wrt2.product_id,
 		wr2.from_warehouse do_warehouse_id,
-		wr2.to_warehouse warehouse_id
+		wr2.to_warehouse warehouse_id,
+		GROUP_CONCAT(DISTINCT wrt2.relevant_id) relevantNum
 	FROM
 		oc_x_warehouse_requisition wr2
 	LEFT JOIN oc_x_warehouse_requisition_temporary wrt2 ON wrt2.relevant_id = wr2.relevant_id
@@ -928,15 +1013,108 @@ AND wrt_out2.product_id = batch.product_id";
         }
         $sql .= " having ios_container >0 and  ISNULL(diff_container) ";
         $sql1 .= " left join oc_product oop on oop.product_id = batch.product_id having batch_quantity != type_quantity";
-//var_dump($sql);
 //var_dump($sql1);
+//        echo $sql1;
+//        var_dump($sql);
+
         $repack_product = $this->Db->query($sql)->rows;
         $box_product = $this->Db->query($sql1)->rows;
 //echo "<pre>";print_r($repack_product);echo "<pre>";exit;
+        if ($this->search_type == '3'){
+            /*
+             * 入库（已入库未合单和货未合齐）
+             * */
+            $sql = "SELECT
+                GROUP_CONCAT(DISTINCT odo.deliver_order_id)deliver_order_id
+            FROM
+                oc_x_deliver_order odo
+            LEFT JOIN oc_order o ON odo.order_id = o.order_id
+            WHERE
+                odo.order_status_id IN (12) and odo.deliver_date > DATE_SUB(CURRENT_DATE (),INTERVAL '" . $this->date_search . "' DAY) ";
+//        echo $sql;
+            if ($this->warehouse_id >0) {
+                $sql .= " and odo.warehouse_id = '".$this->warehouse_id."' ";
+            }
+            if ($this->do_warehouse_id >0) {
+                $sql .= " and odo.do_warehouse_id = '".$this->do_warehouse_id."' ";
+            }
+            $sql .= "
+AND o.order_status_id = 5 and (odo.do_warehouse_id !=  odo.warehouse_id or (odo.warehouse_id = odo.do_warehouse_id and odo.is_repack = 1))";
+//        echo $sql;
+//        $result=[];
+//            var_dump($sql);
+            $result = $this->Db->query($sql)->rows;
+            if (!empty($result['deliver_order_id'])) {
+                $sql = "SELECT
+        o.order_id,
+        sum(ios.repack_quantity) sortS,
+        sum(ios.box_quantity) sortZ,
+        sum(dos.repack_quantity) shootS,
+        sum(dos.box_quantity) shootZ,
+        o.warehouse_id,if(o.is_urgent=0,null ,'是') is_urgent,if(oc.is_stage_target=0,null ,'是') is_stage_target
+    FROM
+        oc_x_deliver_order odo
+    LEFT JOIN oc_order o ON odo.order_id = o.order_id
+    LEFT JOIN oc_customer oc on oc.customer_id = o.customer_id
+    LEFT JOIN (
+        SELECT
+            sum(
+    
+                IF (container_id = 0, quantity, 0)
+            ) AS box_quantity,
+            sum(
+    
+                IF (container_id > 0, quantity, 0)
+            ) repack_quantity,
+            deliver_order_id,
+            order_id
+        FROM
+            oc_x_inventory_deliver_order_sorting
+        WHERE
+            deliver_order_id IN (".$result['deliver_order_id'].")
+        GROUP BY
+            deliver_order_id
+    ) dos ON dos.deliver_order_id = odo.deliver_order_id
+    LEFT JOIN (
+        SELECT
+            sum(
+    
+                IF (container_id > 0, 0, quantity)
+            ) AS box_quantity,
+            COUNT(
+                DISTINCT
+                IF (
+                    container_id > 0,
+                    container_id,
+                    NULL
+                )
+            ) repack_quantity,
+            deliver_order_id,
+            order_id
+        FROM
+            oc_x_inventory_order_sorting
+        WHERE
+            deliver_order_id IN (".$result['deliver_order_id'].")
+        AND STATUS = 1
+        GROUP BY
+            deliver_order_id
+    ) ios ON ios.deliver_order_id = odo.deliver_order_id
+    WHERE
+        odo.deliver_order_id IN (".$result['deliver_order_id'].")
+    GROUP BY
+     order_id";
+//                var_dump($sql);
+            $nullSingle = $this->Db->query($sql)->rows;
+
+            }
+
+        }
+//        echo $sql;
         $repack_products = [];
         $box_products = [];
         foreach ($repack_product as $value1) {
             $repack_products[$value1['deliver_order_id']]['deliver_order_id'] = $value1['deliver_order_id'];
+            $repack_products[$value1['deliver_order_id']]['relevant_id'] = $value1['relevant_id'];
             $repack_products[$value1['deliver_order_id']]['do_warehouse_id'] = $value1['do_warehouse_id'];
             $repack_products[$value1['deliver_order_id']]['do_warehouse_name'] = $dataWarehouse[$value1['do_warehouse_id']]['warehouse'];
             $repack_products[$value1['deliver_order_id']]['warehouse_id'] = $value1['warehouse_id'];
@@ -950,6 +1128,7 @@ AND wrt_out2.product_id = batch.product_id";
             $repack_products[$value1['deliver_order_id']]['containers'][$value1['container_id']] = $value1;
         }
         foreach ($box_product as $value2) {
+
             $key1 = strtotime($value2['deliver_date']).'_'.$value2['warehouse_id'].'_'.$value2['do_warehouse_id'];
             $box_products[$key1]['do_warehouse_id'] = $value2['do_warehouse_id'];
             $box_products[$key1]['do_warehouse_name'] =  $dataWarehouse[$value2['do_warehouse_id']]['warehouse'];
@@ -957,15 +1136,18 @@ AND wrt_out2.product_id = batch.product_id";
             $box_products[$key1]['warehouse_name'] = $dataWarehouse[$value2['warehouse_id']]['warehouse'];
             $box_products[$key1]['deliver_date'] = $value2['deliver_date'];
             $box_products[$key1]['ios_num'] = empty($box_products[$key1]['ios_num']) ? (empty($value2['batch_quantity'])?0:(int)$value2['batch_quantity']) : $box_products[$key1]['ios_num'] + (empty($value2['batch_quantity'])?0:(int)$value2['batch_quantity']);
-            $box_products[$key1]['diff_num'] = empty($box_products[$key1]['diff_num']) ? (empty($value2['type_quantity'])?0:(int)$value2['type_quantity']) : $box_products[$key1]['ios_num'] + (empty($value2['type_quantity'])?0:(int)$value2['type_quantity']);
+//            $box_products[$key1]['diff_num'] = empty($box_products[$key1]['diff_num']) ? (empty($value2['type_quantity'])?0:(int)$value2['type_quantity']) : $box_products[$key1]['ios_num'] + (empty($value2['type_quantity'])?0:(int)$value2['type_quantity']);
+            @$box_products[$key1]['diff_num'] += $value2['type_quantity'];
             $box_products[$key1]['products'][$value2['product_id']] = $value2;
+
         }
+//        var_dump($box_products);
 //echo "<pre>";print_r($box_products);echo "<pre>";exit;
 
         $return = [
             'return_code' => 'SUCCESS',
             'return_msg'  => '',
-            'return_data' => ['repack_products'=>$repack_products,'box_products'=>$box_products,'dataWarehouse'=>$dataWarehouse]
+            'return_data' => ['repack_products'=>$repack_products,'box_products'=>$box_products,'dataWarehouse'=>$dataWarehouse,'nullSingle'=>isset($nullSingle)?$nullSingle:'null',]
         ];
 
         if(empty($repack_products) && empty($box_products)) {
@@ -991,7 +1173,7 @@ FROM
 	oc_x_deliver_order odo
 LEFT JOIN oc_order o ON odo.order_id = o.order_id
 WHERE
-	odo.order_status_id IN (12) and odo.deliver_date > '$this->sortStartDate' ";
+	odo.order_status_id IN (12) and date(odo.deliver_date) >  DATE_SUB(CURRENT_DATE(),INTERVAL '".$this->date_search."' DAY)  ";
 //        echo $sql;
         if ($this->warehouse_id >0) {
             $sql .= " and odo.warehouse_id = '".$this->warehouse_id."' ";
@@ -1003,6 +1185,7 @@ WHERE
 AND o.order_status_id = 5 and (odo.do_warehouse_id !=  odo.warehouse_id or (odo.warehouse_id = odo.do_warehouse_id and odo.is_repack = 1))";
 //        echo $sql;
 //        $result=[];
+//        var_dump($sql);
         $result = $this->Db->query($sql)->rows;
 
 
@@ -1088,7 +1271,7 @@ o.customer_id,
 o.deliver_date logisticDate,
 ifnull(la.logistic_driver_title,'暂无') logisticPer,
 if(o.is_urgent=0,'否' ,'是') is_urgent,if(c.is_stage_target=0,'否','是') is_stage_target,
-DATEDIFF(o.deliver_date,o.date_added) diffDates	
+DATEDIFF(current_date(),o.deliver_date) diffDates	
 from oc_x_deliver_order oo
 inner join oc_x_deliver_order_product op on oo.deliver_order_id = op.deliver_order_id
 inner join oc_order o on oo.order_id = o.order_id
@@ -1096,7 +1279,7 @@ left join oc_customer c on o.customer_id = c.customer_id
 left join oc_customer_group cg on c.customer_group_id = cg.customer_group_id
 left join oc_x_customer_class cc on c.current_customer_class_id = cc.customer_class_id
 left join oc_x_deliver_order_status oos on oo.order_status_id = oos.order_status_id
-left join oc_x_deliver_order_inv doi on oo.deliver_order_id = doi.deliver_order_id and oo.warehouse_id = 22
+left join oc_x_deliver_order_inv doi on oo.deliver_order_id = doi.deliver_order_id and oo.warehouse_id = $this->warehouse_id
 left join oc_order_inv oi on o.order_id = oi.order_id
 left join oc_x_area ar on o.area_id = ar.area_id
 left join oc_x_bd bd on o.bd_id  = bd.bd_id
@@ -1111,7 +1294,8 @@ left join oc_x_logistic_allot la on lao.logistic_allot_id = la.logistic_allot_id
 where oo.warehouse_id = '".$this->warehouse_id."' and o.order_status_id !=3 and o.deliver_date between '".$this->sortStartDate."' and SUBDATE(CURRENT_DATE(),INTERVAL 0 DAY)
 and o.order_deliver_status_id = 1
 group by oo.order_id";
-//        echo $sql;
+
+        echo $sql;
         $list=$this->Db->query($sql);
         $msg= $list->rows;
         echo json_encode($msg);
@@ -1131,36 +1315,30 @@ group by oo.order_id";
                 left join oc_x_logistic_driver ld on la.logistic_driver_id = ld.logistic_driver_id
                 left join oc_x_logistic_agent lag on ld.logistic_agent_id = lag.logistic_agent_id
                 WHERE
-                    DATE(ff.date_added) BETWEEN '".$this->sortStartDate."'
+                    DATE(la.deliver_date) BETWEEN '".$this->sortStartDate."'
                 AND SUBDATE(
                     CURRENT_DATE (),
                     INTERVAL 0 DAY
                 )
+                and la.warehouse_id='".$this->warehouse_id."' 
+                and ff.driver_score>0
                 GROUP BY order_id
-                ORDER BY driver_score ASC";
+                ORDER BY driver_score,date_added ASC";
+//        var_dump($sql);
 //        echo $sql;
         $list=$this->Db->query($sql);
         $msg= $list->rows;
-        $_arr['base']=$msg;
-        $_arr['count']=$this->evaluateCount();
-        echo json_encode($_arr);
-    }
+        $_arr=[];
+        if (!empty($msg)){
+            foreach ($msg as $k=>$v){
+                $_arr['base']=$msg;
+                @$_arr['idea']['count']+=$v['driver_score'];
+                @$_arr['idea']['countNum']+=1;
+            }
+            $_arr['idea']['avg']=round($_arr['idea']['count']/$_arr['idea']['countNum'],2);
+        }
 
-    private function evaluateCount()
-    {
-        $sql="SELECT
-                SUM(ff.driver_score) AS driver_score,AVG(ff.driver_score) avgNum
-                FROM
-                    `oc_x_feedback` ff
-                WHERE
-                    DATE(ff.date_added) BETWEEN '".$this->sortStartDate."'
-                AND SUBDATE(
-                    CURRENT_DATE (),
-                    INTERVAL 0 DAY
-                )";
-        $list=$this->Db->query($sql);
-        $msg= $list->row;
-        return $msg;
+        echo json_encode($_arr);
     }
     /*
      * 回库退货
@@ -1169,58 +1347,75 @@ group by oo.order_id";
     //退货上架
     public function returnPutaway()
     {
-        $sql="
-                SELECT
-                    DATE(rdp.date_added) date_added,
-                    rp.product_id,
-                    rdp.box_quantity,
-                    ww.shortname outWarehouse,
-                    pw.stock_area,
-                    sum(rp.quantity) return_quantity,
-                    sum(
-        
-                        IF (
-                            rp.return_confirmed > 0,
-                            rp.quantity,
-                            0
-                        )
-                    ) self_quantity,
-                    if(p.repack,'整','散') repack,
-                    p.box_size,
-                    rdp.in_part,
-                    p.name,
-        
-                IF (
-                    pw.do_warehouse_id = pw.warehouse_id,
-                    1,
-                    0
-                ) isDoWarehouse,
-                w.shortname doWarehouse
-            FROM
-                oc_return_deliver_product rdp
-            LEFT JOIN oc_return r ON r.return_id = rdp.return_id
-            AND r.return_status_id != 3
-            LEFT JOIN oc_return_product rp ON r.return_id = rp.return_id
-            AND rp.product_id = rdp.product_id
-            LEFT JOIN oc_order o ON o.order_id = r.order_id
-            LEFT JOIN oc_product p ON rp.product_id = p.product_id
-            LEFT JOIN oc_product_to_warehouse pw ON p.product_id = pw.product_id
-            AND pw.warehouse_id = rdp.warehouse_id
-            LEFT JOIN oc_x_warehouse w ON pw.do_warehouse_id = w.warehouse_id
-            LEFT JOIN oc_x_warehouse ww ON rdp.warehouse_id = ww.warehouse_id
-            WHERE
-                rdp.status = 1
-            AND rdp.date_added between '".$this->sortStartDate."' and date_add(current_date(), interval 1 day)
-            AND rdp.warehouse_id = '" . $this->warehouse_id . "'
-            AND rdp.is_repack_missing = '0'
-            AND rdp.is_back = '1'
-            AND r.return_reason_id IN (2, 3, 4, 5, 6)
-            GROUP BY
-                rdp.product_id,date_added,rdp.warehouse_id ORDER BY rdp.warehouse_id,date_added
-            ";
-        $list=$this->Db->query($sql);
-        $msg= $list->rows;
-        echo json_encode($msg);
+
+        //退货上架
+        $sql_return = "
+		SELECT
+			date_format(rdp.date_added, '%m%d') date_added,
+			rp.product_id,
+			rdp.box_quantity,
+			rdp.warehouse_id,pw.stock_area,
+			sum(rp.quantity) return_quantity,
+			sum(
+
+				IF (
+					rp.return_confirmed > 0,
+					rp.quantity,
+					0
+				)
+			) self_quantity,
+			p.repack,
+			p.box_size,
+			rdp.in_part,
+			p.name,
+
+		IF (
+			pw.do_warehouse_id = pw.warehouse_id,
+			1,
+			0
+		) isDoWarehouse,
+		w.shortname doWarehouse,
+		o.order_id
+	FROM
+		oc_return_deliver_product rdp
+	LEFT JOIN oc_return r ON r.return_id = rdp.return_id
+	AND r.return_status_id != 3
+	LEFT JOIN oc_return_product rp ON r.return_id = rp.return_id
+	AND rp.product_id = rdp.product_id
+	LEFT JOIN oc_order o ON o.order_id = r.order_id
+	LEFT JOIN oc_product p ON rp.product_id = p.product_id
+	LEFT JOIN oc_product_to_warehouse pw ON p.product_id = pw.product_id
+	AND pw.warehouse_id = rdp.warehouse_id
+	LEFT JOIN oc_x_warehouse w ON pw.do_warehouse_id = w.warehouse_id
+	WHERE
+		rdp.status = 1
+	AND rdp.date_added between '".$this->sortStartDate."' and date_add(current_date(), interval 1 day)
+	";
+        if ($this->warehouse_id) {
+            $sql_return .= " AND rdp.warehouse_id = '" . $this->warehouse_id. "'";
+        }
+        $sql_return .= "
+	AND rdp.is_repack_missing = '0'
+	AND rdp.is_back = '1'
+	AND r.return_reason_id IN (2, 3, 4, 5, 6)
+	GROUP BY
+		rdp.product_id,date_added,r.order_id,rdp.warehouse_id ORDER BY rdp.warehouse_id,date_added
+	";
+        $return_data_raw = $this->Db->query($sql_return)->rows;
+        $return_data = [];
+        if (!empty($return_data_raw)) {
+            foreach ($return_data_raw as $v1){
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['return_num'] = empty($return_data[$v1['date_added'].$v1['warehouse_id']]['return_num'])?intval($v1['return_quantity']):intval($v1['return_quantity'])+intval($return_data[$v1['date_added'].$v1['warehouse_id']]['return_num']);
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['shelf_num'] = empty($return_data[$v1['date_added'].$v1['warehouse_id']]['shelf_num'])?intval($v1['self_quantity']):intval($v1['self_quantity'])+intval($return_data[$v1['date_added'].$v1['warehouse_id']]['shelf_num']);
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['date_added'] = $v1['date_added'];
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['warehouse_id'] = $v1['warehouse_id'];
+                $return_data[$v1['date_added'].$v1['warehouse_id']]['order_id'] = $v1['order_id'];
+                if (intval($v1['return_quantity'])!= intval($v1['self_quantity'])) {
+                    $return_data[$v1['date_added'].$v1['warehouse_id']]['product'][] = $v1;
+                }
+            }
+        }
+        echo json_encode($return_data);
     }
     //回框准确率
     public function returnContainer()
@@ -1348,96 +1543,28 @@ group by oo.order_id";
         $list=$this->Db->query($sql);
         $msg= $list->rows;
 //        var_dump($msg);
-//        $arr_=[];
-//        foreach ($msg as $k => $v){
-////            $arr_['count'] += $v['have_count'];
-////            $arr_['count'] += $v['admin_count'];
-////            $arr_['count'] += $v['out_plan'];
-//            $arr_[$k['outCount']] += $v['plan_count'];
-//        }
-//        print_r($arr_);die;
-//        $str=($arr_['count']-$arr_['outCount'])/$arr_['outCount'];
-//        echo $str;
-//        echo json_encode($msg);
+        $arr_=[];
+        $arr_['count']=0;
+        $arr_['plan_count']=0;
+        foreach ($msg as $k => $v){
+            $arr_['count'] += $v['have_count'];//b
+            $arr_['plan_count'] += $v['plan_count'];//a
+        }
+        $str=($arr_['count']-$arr_['plan_count'])/$arr_['count']*100;
+        $avg=round($str,2);
         $_arr=[];
-//        $_arr['base']=$msg;
-//        echo json_encode($_arr['base']);
         if (isset($msg)){
             $_arr['base']=$msg;
-            $containerAvg=$this->setContainer($logisticList);
-            $_arr['avg']=$containerAvg;
-            $_arr['avg']=round($str,2);
+            $_arr['avg']=$avg;
+            $_arr['plan_count']=$arr_['plan_count'];
+            $_arr['count']=$arr_['count'];
         }
 
         echo json_encode($_arr);
 
     }
 
-    private function setContainer($logisticList)
-    {
-        $sql="SELECT 
-(SUM(B.have_count)-SUM(A.plan_count))/SUM(A.plan_count) plan,ww.shortname
-FROM 
-(
--- 出库 
-SELECT
-	count(DISTINCT ios.container_id) AS plan_count,
-	lao.logistic_allot_id,
-	la.warehouse_id
-FROM
-	oc_x_container_fast_move ios
-LEFT JOIN oc_x_logistic_allot_order lao ON lao.order_id = ios.order_id
-LEFT JOIN oc_x_logistic_allot la ON lao.logistic_allot_id=la.logistic_allot_id
-LEFT JOIN oc_x_container oc ON oc.container_id = ios.container_id
-WHERE
-	ios.move_type = 1
-AND ios.container_id > 0
-AND oc.type != 8
-AND lao.logistic_allot_id IN($logisticList)
-GROUP BY
-	lao.logistic_allot_id
-HAVING
-	plan_count > 0
-) A
-INNER JOIN 
-(
--- 入库 
-SELECT
-	count(DISTINCT odr.container_id) AS have_count,
-	count(
-		DISTINCT
-		IF (
-			odr.added_by_manager > 0,
-			odr.container_id,
-			NULL
-		)
-	) AS admin_count,
-	count(
-		DISTINCT
-		IF (
-			odr.order_id = 0,
-			odr.container_id,
-			NULL
-		)
-	) AS out_plan,
-	odr.logistic_allot_id
-FROM
-	oc_x_container_deliver_return odr
-LEFT JOIN oc_x_container ocr ON ocr.container_id = odr.container_id
-LEFT JOIN oc_x_logistic_allot la ON odr.logistic_allot_id=la.logistic_allot_id
-WHERE
-	odr.logistic_allot_id IN($logisticList)
-AND odr.container_id > 0
-AND ocr.type != 8
-AND odr. STATUS = 1
-AND odr.checked = 1
-GROUP BY
-	odr.logistic_allot_id
-) B ON A.logistic_allot_id=B.logistic_allot_id
-LEFT JOIN oc_x_warehouse ww ON A.warehouse_id=ww.warehouse_id";
-        $list=$this->Db->query($sql);
-        return $list->row;
-    }
+
 
 
     protected  function getScanFailureData()
@@ -1470,20 +1597,60 @@ LEFT JOIN oc_x_warehouse ww ON A.warehouse_id=ww.warehouse_id";
     //散件
     public function getSortData()
     {
-        $sql="SELECT  A.deliver_order_id,A.order_id,SUM(A.quantity)AS sortNum,ww.shortname as title,IF(ww.repack=0,'散件仓库','整件仓库') warehouseZS,IF(oo.is_urgent=0,'否','是') AS urgent,IF(cc.is_stage_target=0,'否','是') AS stageTarget FROM
-                (
-                SELECT doo.deliver_order_id,doo.order_id,dop.product_id,doo.warehouse_id,doo.do_warehouse_id,dop.quantity 
-                FROM oc_x_deliver_order doo
-                LEFT JOIN oc_x_deliver_order_product dop ON doo.deliver_order_id=dop.deliver_order_id
-                WHERE DATE(doo.deliver_date) BETWEEN '".$this->sortStartDate."' AND  date_sub(current_date(), interval 0 day)
-                AND doo.do_warehouse_id='".$this->do_warehouse_id."'
-                AND doo.order_status_id IN(2,4,5)
-                )A
-                INNER JOIN oc_product pp ON A.product_id=pp.product_id
-                INNER JOIN oc_x_warehouse ww ON A.warehouse_id=ww.warehouse_id and ww.status=1
-                INNER JOIN oc_order oo ON A.order_id=oo.order_id
-                INNER JOIN oc_customer cc ON oo.customer_id = cc.customer_id
-                GROUP BY deliver_order_id";
+
+        $sql="SELECT
+	A.date_added,
+	A.deliver_order_id,
+	A.order_id,
+	SUM( A.quantity ) AS sortNum,
+	ww.shortname,
+	A.odsStatu,
+	A.osStatu,
+	A.deliver_date,
+	GROUP_CONCAT(DISTINCT ios.container_id) container_id,
+IF
+	( ww.repack = 0, '散件仓库', '整件仓库' ) warehouseZS,
+IF
+	( oo.is_urgent = 0, '否', '是' ) AS urgent,
+IF
+	( cc.is_stage_target = 0, '否', '是' ) AS stageTarget 
+FROM
+	(
+	SELECT
+		doo.deliver_order_id,
+		doo.order_id,
+		dop.product_id,
+		doo.warehouse_id,
+		doo.do_warehouse_id,
+		SUM(dop.quantity)quantity,
+		doo.date_added,
+		ods.name odsStatu,
+		dos.`name` osStatu,
+		doo.deliver_date
+	FROM
+		oc_x_deliver_order doo
+		LEFT JOIN oc_x_deliver_order_product dop ON doo.deliver_order_id = dop.deliver_order_id
+		LEFT JOIN oc_order_deliver_status ods ON doo.order_deliver_status_id=ods.order_deliver_status_id
+	LEFT JOIN oc_order_status dos ON	doo.order_status_id=dos.order_status_id
+	WHERE
+		DATE( doo.deliver_date ) BETWEEN '".$this->sortStartDate."'
+		AND date_sub( CURRENT_DATE ( ), INTERVAL 0 DAY ) 
+		AND doo.do_warehouse_id = '".$this->do_warehouse_id."'
+		AND doo.order_status_id IN ( 2, 4, 5 )
+		AND dop.STATUS=1
+	GROUP BY deliver_order_id,product_id	
+	) A
+	LEFT JOIN oc_x_inventory_order_sorting ios ON A.order_id=ios.order_id AND A.deliver_order_id=ios.deliver_order_id AND A.product_id=ios.product_id
+	LEFT JOIN oc_product pp ON A.product_id = pp.product_id
+	LEFT JOIN oc_x_warehouse ww ON A.do_warehouse_id = ww.warehouse_id
+	LEFT JOIN oc_order oo ON A.order_id = oo.order_id
+	LEFT JOIN oc_customer cc ON oo.customer_id = cc.customer_id 
+GROUP BY
+	deliver_order_id 
+ORDER BY
+	deliver_date DESC";
+//        echo $sql;
+//        var_dump($sql);
         $info=$this->Db->query($sql);
         $msg['data']=$info->rows;
         $totalItem=count($msg['data']);
@@ -1491,22 +1658,59 @@ LEFT JOIN oc_x_warehouse ww ON A.warehouse_id=ww.warehouse_id";
         $pageNum=$_REQUEST['pageNum'];
         $totalPage = ceil($totalItem/$pageSize);
         $startItem = ($pageNum-1) * $pageSize;
-        $sql="SELECT  A.deliver_order_id,A.order_id,SUM(A.quantity)AS sortNum,ww.shortname,IF(ww.repack=0,'散件仓库','整件仓库') warehouseZS,IF(oo.is_urgent=0,'否','是') AS urgent,IF(cc.is_stage_target=0,'否','是') AS stageTarget FROM
-                (
-                SELECT doo.deliver_order_id,doo.order_id,dop.product_id,doo.warehouse_id,doo.do_warehouse_id,dop.quantity 
-                FROM oc_x_deliver_order doo
-                LEFT JOIN oc_x_deliver_order_product dop ON doo.deliver_order_id=dop.deliver_order_id
-                WHERE DATE(doo.deliver_date) BETWEEN '".$this->sortStartDate."' AND  date_sub(current_date(), interval 0 day)
-                AND doo.do_warehouse_id='".$this->do_warehouse_id."'
-                AND doo.order_status_id IN(2,4,5)
-                )A
-                INNER JOIN oc_product pp ON A.product_id=pp.product_id
-                INNER JOIN oc_x_warehouse ww ON A.warehouse_id=ww.warehouse_id
-                INNER JOIN oc_order oo ON A.order_id=oo.order_id
-                INNER JOIN oc_customer cc ON oo.customer_id = cc.customer_id
-                GROUP BY deliver_order_id
-                order by deliver_order_id desc 
-                limit $startItem,$pageSize";
+        $sql="SELECT
+	A.date_added,
+	A.deliver_order_id,
+	A.order_id,
+	SUM( A.quantity ) AS sortNum,
+	ww.shortname,
+	A.odsStatu,
+	A.osStatu,
+	A.deliver_date,
+	ifnull(GROUP_CONCAT(DISTINCT ios.container_id),'无') container_id,
+IF
+	( ww.repack = 0, '散件仓库', '整件仓库' ) warehouseZS,
+IF
+	( oo.is_urgent = 0, '否', '是' ) AS urgent,
+IF
+	( cc.is_stage_target = 0, '否', '是' ) AS stageTarget 
+FROM
+	(
+	SELECT
+		doo.deliver_order_id,
+		doo.order_id,
+		dop.product_id,
+		doo.warehouse_id,
+		doo.do_warehouse_id,
+		SUM(dop.quantity)quantity,
+		doo.date_added,
+		ods.name odsStatu,
+		dos.`name` osStatu,
+		doo.deliver_date
+	FROM
+		oc_x_deliver_order doo
+		LEFT JOIN oc_x_deliver_order_product dop ON doo.deliver_order_id = dop.deliver_order_id
+		LEFT JOIN oc_order_deliver_status ods ON doo.order_deliver_status_id=ods.order_deliver_status_id
+	LEFT JOIN oc_order_status dos ON	doo.order_status_id=dos.order_status_id
+	WHERE
+		DATE( doo.deliver_date ) BETWEEN '".$this->sortStartDate."'
+		AND date_sub( CURRENT_DATE ( ), INTERVAL 0 DAY ) 
+		AND doo.do_warehouse_id = '".$this->do_warehouse_id."'
+		AND doo.order_status_id IN ( 2, 4, 5 )
+		AND dop.STATUS=1
+	GROUP BY deliver_order_id,product_id	
+	) A
+	LEFT JOIN oc_x_inventory_order_sorting ios ON A.order_id=ios.order_id AND A.deliver_order_id=ios.deliver_order_id AND A.product_id=ios.product_id
+	LEFT JOIN oc_product pp ON A.product_id = pp.product_id
+	LEFT JOIN oc_x_warehouse ww ON A.do_warehouse_id = ww.warehouse_id
+	LEFT JOIN oc_order oo ON A.order_id = oo.order_id
+	LEFT JOIN oc_customer cc ON oo.customer_id = cc.customer_id 
+GROUP BY
+	deliver_order_id 
+ORDER BY
+	deliver_date DESC 
+LIMIT $startItem,$pageSize";
+
 //        var_dump($sql);
         $info=$this->Db->query($sql);
         $labels=$info->rows;
